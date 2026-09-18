@@ -15,6 +15,19 @@ UI/UX 연구용 시제품이다. **서버와 실제 데이터는 없다.** 가�
 - 첫 화면에서 역할을 고른다: 근로자 · 안전지킴이 · 공장주·운영자. 아래 "⚙ 조작판"과 "처음 상태로"가 있다.
 - 서버 없이(`python3 -m http.server`) 열면 브라우저 저장소로 돌아가고, 공장주·운영자 로그인은 안 된다.
 
+### 다른 기계에서 시작할 때
+
+필요한 것은 **파이썬 3뿐**이다. 설치할 꾸러미가 없다(`server.py`는 기본 라이브러리만 쓴다).
+
+```bash
+git clone https://github.com/BlueWorks24/Industrial_Safety_AI_UIUX.git
+cd Industrial_Safety_AI_UIUX/시제품 && ./serve.sh
+```
+
+- `data/proto.db`는 따라오지 않는다(깃에서 뺐다). 처음 띄우면 시험용 계정과 씨앗 데이터로 다시 만들어진다.
+- 화면 시험(`_시험/*.js`)까지 돌리려면 Playwright가 따로 필요하다: `npm i -g playwright && npx playwright install chromium`. 실행은 `NODE_PATH=$(npm root -g) node _시험/flow.js <캡처 폴더>`.
+- 인터넷에 올릴 때는 저장소 뿌리의 `render.yaml`을 쓴다(Render 무료 등급, `python 시제품/server.py --port $PORT`).
+
 ## 실증 사이트와 센서 (2026-09-17)
 
 - **사이트 3곳 × 센서 5개**(사용자): 사이트 = 공장 하나(실증 현장 하나). 시제품은 대성정밀 · 한빛화학 · 동방금속에 센서 5개씩, 태광기계는 센서 없이 지킴이 점검만 하는 곳이다.
