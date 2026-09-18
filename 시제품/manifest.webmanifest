@@ -1,0 +1,9 @@
+{
+  "name": "산업안전 시제품",
+  "short_name": "안전 시제품",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

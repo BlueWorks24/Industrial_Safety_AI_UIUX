@@ -1,0 +1,1 @@
+<script>addEventListener('load',()=>{document.body.setAttribute('data-cap',[...document.querySelectorAll('.cap')].map(h=>{const r=h.getBoundingClientRect();return h.textContent.slice(0,6)+'@'+Math.round(r.left)+','+Math.round(r.top+scrollY)}).join(';'))})</script>

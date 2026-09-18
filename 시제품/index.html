@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#2458d6">
+<link rel="manifest" href="manifest.webmanifest">
+<title>안전 시제품</title>
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="common.css">
+<style>
+.hero{padding:36px 8px 8px;text-align:center}
+.logo{width:72px;height:72px;margin:0 auto 16px;border-radius:22px;background:linear-gradient(135deg,#2458d6,#4f7cf0);display:grid;place-items:center;box-shadow:0 10px 24px rgba(36,88,214,.3)}
+.logo svg{width:40px;height:40px}
+.hero h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.hero p{margin:8px 0 0;color:var(--mid);font-size:15px}
+.roles{display:flex;flex-direction:column;gap:12px;margin-top:20px}
+.role{display:flex;align-items:center;gap:14px;background:var(--surface);border-radius:18px;padding:18px;border:1px solid #e6ebf3;box-shadow:0 2px 10px rgba(23,32,51,.05);transition:transform .08s}
+.role:active{transform:scale(.98)}
+.role .ic{flex:none;width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:26px}
+.role b{display:block;font-size:18px}
+.role span{font-size:14px;color:var(--mid)}
+.role .go{margin-left:auto;color:var(--soft);font-size:22px}
+.tools{display:flex;justify-content:center;gap:4px;margin-top:auto;padding-top:24px}
+.tools button,.tools a{background:none;border:none;color:var(--mid);font-size:14px;font-weight:600;padding:0 12px;min-height:44px;display:inline-flex;align-items:center;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="app"><div class="scr"><div class="bd">
+  <div class="hero">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5" stroke-linecap="round"/></svg></div>
+    <h1>산업안전 서비스</h1>
+    <p>역할을 골라 시작하세요</p>
+  </div>
+  <div class="roles">
+    <a class="role" href="worker.html"><span class="ic" style="background:#fef1f0">👷</span><div><b>근로자</b><span>경보 받고 조치하기</span></div><span class="go">›</span></a>
+    <a class="role" href="guard.html"><span class="ic" style="background:#eaf0fd">🦺</span><div><b>안전지킴이</b><span>공장 점검 · 재점검</span></div><span class="go">›</span></a>
+    <a class="role" href="web.html"><span class="ic" style="background:#e8f6ef">🏭</span><div><b>공장주 · 운영자</b><span>로그인 · 현황 · 고칠 것 · 공장 관리</span></div><span class="go">›</span></a>
+  </div>
+  <div class="tools">
+    <a href="control.html">⚙ 조작판</a>
+    <button id="reset">↺ 처음 상태로</button>
+  </div>
+  <div class="proto">시제품 · 가상 데이터 · 조작판은 앱 머리글의 파란 방패를 세 번 누르면 열려요</div>
+</div></div></div>
+<script src="seed.js"></script>
+<script src="common.js"></script>
+<script>
+document.getElementById('reset').onclick = () => { if (confirm('처음 상태(09:10)로 되돌릴까요?')) { sessionStorage.clear(); DB.reset(); toast('처음 상태로 되돌렸어요'); } };
+</script>
+</body>
+</html>

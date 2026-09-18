@@ -1,0 +1,1307 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>공장주·운영자 웹 시안</title>
+<style>
+:root{--ink:#111;--mid:#555;--soft:#888;--line:#bbb;--fill:#e4e4e4;--fill2:#f2f2f2;--bg:#fafafa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;padding:24px 16px 48px}
+h1{font-size:22px;margin:0 0 6px}
+.lead{color:var(--mid);margin:0 0 28px;font-size:14px;line-height:1.6}
+section{margin-bottom:48px}
+h2{font-size:18px;border-bottom:2px solid var(--ink);padding-bottom:6px;margin:0 0 8px}
+.sub{font-size:13px;color:var(--mid);margin:0 0 16px;line-height:1.6}
+.cap{font-size:13px;font-weight:700;margin:22px 0 8px}
+.n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;margin-right:4px;vertical-align:1px}
+.tag{display:inline-block;border:1px solid var(--ink);border-radius:4px;padding:0 5px;font-size:11px;font-weight:700;vertical-align:1px}
+.small{font-size:12px;color:var(--mid);line-height:1.45}
+.lbl{font-size:12px;color:var(--mid);font-weight:700}
+.notes{font-size:13px;line-height:1.6;margin:14px 0 0;padding:0;list-style:none;max-width:900px}
+.notes li{margin-bottom:6px}
+.notes .g{display:inline-block;border:1px solid var(--ink);border-radius:4px;padding:0 4px;font-size:11px;margin-left:4px}
+
+/* 데스크톱 창 */
+.scroll{overflow-x:auto;padding-bottom:6px}
+.win{width:920px;border:2px solid var(--ink);border-radius:10px;background:#fff;overflow:hidden}
+.wbar{height:28px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 10px;font-size:11px;color:var(--soft)}
+.wbar i{display:inline-block;width:9px;height:9px;border-radius:50%;border:1px solid var(--soft);margin-right:3px}
+.top{display:flex;align-items:center;gap:18px;padding:12px 18px;border-bottom:2px solid var(--ink)}
+.brand{font-size:18px;font-weight:850}
+.tabs{display:flex;gap:4px}
+.tabs span{padding:7px 14px;border-radius:8px;font-size:15px;font-weight:700;color:var(--mid)}
+.tabs span.on{background:var(--ink);color:#fff}
+.who{margin-left:auto;font-size:13px;color:var(--mid)}
+.wbody{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.verdict{border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+.verdict.bad{border:3px solid var(--ink)}
+.verdict .v{font-size:26px;font-weight:850}
+.verdict .ic{font-size:30px;line-height:1}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.eq{border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:var(--soft)}
+.eq .nm{display:flex;justify-content:space-between;align-items:baseline;color:var(--mid)}
+.eq .nm b{font-size:16px}
+.eq.bad{border:3px solid var(--ink);color:var(--ink)}
+.eq.bad .nm{color:var(--ink)}
+.spark{display:block;width:100%;height:30px;margin-top:6px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.card{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.card .t{font-size:15px;font-weight:800}
+.card.todo{border:2px solid var(--ink)}
+.btn .n{background:#fff;color:#111}
+.fixrow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px}
+.state{font-size:13px;font-weight:700}
+.card .big{font-size:18px;font-weight:800}
+.btn{display:block;text-align:center;border:2px solid var(--ink);border-radius:8px;padding:10px 0;font-weight:800;font-size:15px;background:var(--ink);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink)}
+.btn.inl{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;font-size:14px;white-space:nowrap}
+.split{display:grid;grid-template-columns:260px 1fr;gap:16px}
+.list{display:flex;flex-direction:column;gap:8px}
+.sensor{display:grid;grid-template-columns:60px 1fr 96px;align-items:center;gap:10px;font-size:15px;font-weight:700;border-bottom:1px solid var(--fill);padding:4px 0}
+.sensor .x{text-align:right;white-space:nowrap}
+.tl{list-style:none;margin:0;padding:0;font-size:14px;line-height:1.9}
+.tl li{display:grid;grid-template-columns:56px 1fr}
+.tl .wait{color:var(--mid);font-weight:700}
+.lock{font-size:12px;color:var(--mid)}
+.sel{border:3px solid var(--ink) !important}
+.item{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.item b{font-size:15px}
+.ph{display:inline-grid;place-items:center;width:46px;height:34px;background:var(--fill);border:1px solid var(--line);border-radius:4px;font-size:11px;color:var(--mid)}
+table{border-collapse:collapse;width:100%;background:#fff}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:middle;line-height:1.4}
+th{background:var(--fill2);font-size:14px;color:var(--mid)}
+.dense{font-size:15px}
+.dense td b{font-size:15px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kpi{border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.kpi .k{font-size:24px;font-weight:850}
+.kpi.bad{border:3px solid var(--ink)}
+.filters{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px}
+.filters span:not(.n){border:1px solid var(--line);border-radius:6px;padding:0 10px;min-height:36px;display:inline-flex;align-items:center}
+.fold{border:1px dashed var(--mid);border-radius:8px;padding:9px;text-align:center;font-size:13px;color:var(--mid)}
+.expand{background:var(--fill2)}
+.cmp{border:1px solid var(--ink);border-radius:8px;padding:10px;background:#fff;font-size:13px;line-height:1.6}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.panel{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.panel .t{font-size:15px;font-weight:800}
+.bar{height:10px;background:var(--fill2);border:1px solid var(--line);border-radius:3px;position:relative}
+.bar span{position:absolute;left:0;top:0;bottom:0;background:var(--mid)}
+
+/* 휴대폰 */
+.phone{width:280px;border:2px solid var(--ink);border-radius:22px;height:320px;background:var(--fill2);overflow:hidden;display:flex;flex-direction:column}
+.pbar{height:24px;border-bottom:1px solid var(--line);font-size:10px;color:var(--soft);display:flex;justify-content:space-between;align-items:center;padding:0 14px;background:#fff}
+.phead{background:#fff;border-bottom:1px solid var(--line);padding:8px 12px;font-size:13px;font-weight:700}
+.pbody{padding:14px 12px;display:flex;flex-direction:column;gap:8px}
+.bubble{background:#fff;border:1.5px solid var(--ink);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.55;max-width:92%}
+.link{display:inline-block;margin-top:6px;border:1px solid var(--ink);border-radius:6px;padding:4px 10px;font-weight:800;font-size:13px}
+.phone.tall{height:600px;background:#fff}
+.msensor{display:grid;grid-template-columns:36px 1fr 44px;align-items:center;gap:8px;font-size:14px;font-weight:700;padding:3px 0}
+.msensor svg{width:100%;height:26px}
+.msensor b{text-align:right}
+.side{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+.side .expl{max-width:520px;font-size:13px;line-height:1.7;color:var(--mid);padding-top:30px}
+
+/* 2026-09-17 추가 */
+.field{display:flex;flex-direction:column;gap:5px}
+.input{border:1px solid var(--mid);border-radius:6px;padding:8px 10px;font-size:14px;background:#fff}
+.input.area{min-height:96px;line-height:1.6}
+.wseg{display:flex;flex-wrap:wrap;gap:6px}
+.wseg span{white-space:nowrap;border:1px solid var(--line);border-radius:6px;padding:0 14px;min-height:36px;display:inline-flex;align-items:center;font-size:14px;font-weight:700;color:var(--mid)}
+.wseg span.on{border:2px solid var(--ink);background:var(--ink);color:#fff}
+.wseg span.on::before{content:"✓";margin-right:5px}
+.wseg span.tg::before{content:"☐";margin-right:5px}
+.wseg span.tg.on::before{content:"☑"}
+.warn{border:2px solid var(--ink);border-radius:8px;padding:9px 12px;font-size:13px;font-weight:700}
+.stage{position:relative}
+.stage .faded{opacity:.3}
+.dim2{position:absolute;inset:0;background:rgba(0,0,0,.35)}
+.dialog{position:absolute;left:190px;top:40px;width:520px;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.btnrow{display:flex;gap:8px;justify-content:flex-end}
+.back{border:2px solid var(--ink);border-radius:8px;padding:10px 12px}
+.names{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13px}
+.guess{display:inline-block;border:1px dashed var(--mid);border-radius:4px;padding:0 4px;font-size:10px;font-weight:800;color:var(--mid);margin-left:4px;vertical-align:1px}
+.eq.unk{border:2px dashed var(--ink);color:var(--ink)}
+.eq.unk .nm{color:var(--ink)}
+/* 2026-09-17 원칙 점검 E36·E38 — 웹 글씨·누를 곳 */
+.win .small{font-size:14px}
+.win .lbl{font-size:13px}
+.win .lock{font-size:14px}
+.win .n{font-size:11px}
+td.go{white-space:nowrap;font-weight:700;color:var(--ink)}
+.dialog.c{left:230px;top:30px;width:460px}
+.btn.danger{border-style:dashed}
+</style>
+</head>
+<body>
+
+<h1>공장주·운영자 웹 시안</h1>
+<p class="lead">서비스 구성: 근로자 앱 · 지킴이 앱 · 공장주·운영자 웹 중 <b>공장주·운영자 웹</b>. 로그인한 역할에 따라 공장주 화면(O1~O8) 또는 운영자 화면(M1~M5)이 뜬다. <b>공장주는 맨 위가 기본화면(O1 지금 현황)이고, 그 아래는 웹 위쪽 탭 순서대로 기능별로 선다</b> (2026-09-17 정리).<br>
+<span class="guess">가설</span>이 붙은 것은 아직 정하지 않아 짐작으로 그린 부분이다.<br>
+흑백 스케치다. 화면 속 공장·설비·숫자는 모두 설명용 예시다. 동그라미 숫자는 아래 설명과 짝이다.<br>
+원칙 묶음: ① 쓰기 편한가 · ② 경보가 잘 전달되나 · ③ AI를 적당히 믿게 하나 · ④ 현장에서 쓸 수 있나<br>
+두 화면 모두 PC 웹이다. 넓은 창이라 좁은 화면에서는 옆으로 밀어서 본다.<br>
+<b>글씨와 누를 곳 (원칙 점검 E36·E38, 2026-09-17)</b>: 안내 글씨는 14px 이상, 표는 15px, 버튼·거르기 칸은 높이 36px 이상으로 그린다. 표 줄 끝의 "›"에는 "보기" 글자를 붙인다. 누름표에서 고른 칸은 채움과 함께 ✓ 글자를 붙인다.</p>
+
+<!-- ================= 공장주 ================= -->
+<section>
+<h2>O1. 지금 현황 — 공장주 기본화면 [Web] + 경보 알림 [App]</h2>
+<p class="sub">공장주는 <b>자기 공장만</b> 본다. 점검 기록은 고치지 못하고 보기·내려받기만 한다. 경보 조치 완료는 <b>근로자 또는 공장주</b>가 앱에서 누르고(2026-09-16 결정), "고쳤어요"(개선 완료 표시)는 공장주가 웹에서 누른다. (2단계 누가 무엇을 보나 표)</p>
+
+<div class="cap">O1-가. <b>홈</b> — 평소 (이상 없음)</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span class="on">지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div class="verdict"><span class="ic">✓</span><div><div class="v"><span class="n">1</span>지금 이상 없음</div><div class="small">기계 2대와 공장 전체 모두 정상 · 17:00 기준</div></div></div>
+  <div class="lbl"><span class="n">2</span>기계 2대 — 기계에 직접 붙은 센서</div>
+  <div class="grid3">
+   <div class="eq"><div class="nm"><b>2번 프레스</b><span>정상</span></div><svg class="spark" viewBox="0 0 200 30" preserveAspectRatio="none"><rect x="0" y="9" width="200" height="12" fill="#eee"/><polyline fill="none" stroke="#999" stroke-width="1.5" points="0,14 25,16 50,15 75,14 100,16 125,15 150,14 175,16 200,15"/></svg><div class="small">진동 · 온도</div></div>
+   <div class="eq"><div class="nm"><b>컴프레서</b><span>정상</span></div><svg class="spark" viewBox="0 0 200 30" preserveAspectRatio="none"><rect x="0" y="9" width="200" height="12" fill="#eee"/><polyline fill="none" stroke="#999" stroke-width="1.5" points="0,16 25,15 50,14 75,15 100,16 125,14 150,15 175,15 200,14"/></svg><div class="small">진동</div></div>
+  </div>
+  <div class="lbl">공장 전체 — 기계가 아니라 공장에 붙은 센서</div>
+  <div class="grid3">
+   <div class="eq"><div class="nm"><b>전기</b><span>정상</span></div><svg class="spark" viewBox="0 0 200 30" preserveAspectRatio="none"><rect x="0" y="9" width="200" height="12" fill="#eee"/><polyline fill="none" stroke="#999" stroke-width="1.5" points="0,15 25,15 50,16 75,14 100,15 125,16 150,15 175,14 200,15"/></svg><div class="small">공장에 들어오는 전기 전체</div></div>
+   <div class="eq"><div class="nm"><b>가스</b><span>정상</span></div><svg class="spark" viewBox="0 0 200 30" preserveAspectRatio="none"><rect x="0" y="9" width="200" height="12" fill="#eee"/><polyline fill="none" stroke="#999" stroke-width="1.5" points="0,14 25,15 50,15 75,16 100,14 125,15 150,16 175,15 200,14"/></svg><div class="small">공기 중 농도</div></div>
+   <div class="eq"><div class="nm"><b>온·습도</b><span>정상</span></div><svg class="spark" viewBox="0 0 200 30" preserveAspectRatio="none"><rect x="0" y="9" width="200" height="12" fill="#eee"/><polyline fill="none" stroke="#999" stroke-width="1.5" points="0,15 25,16 50,14 75,15 100,15 125,14 150,16 175,15 200,15"/></svg><div class="small">실내</div></div>
+   <div class="eq"><div class="nm"><b>누수</b><span>물 닿음 없음</span></div><div style="height:30px;display:flex;align-items:center;font-size:13px;color:#555;border-top:1px dashed #bbb;border-bottom:1px dashed #bbb;padding:0 6px">켜짐 · 꺼짐만 있음 — 그래프 없음</div><div class="small">냉각수 배관 밑 1m</div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px"><span class="btn inl"><span class="n">17</span>📝 작업 예정 알리기</span><span class="small">예정된 작업: 오늘 18:00~22:00 도장 · 전기 50 부근 ›</span></div>
+  <div class="cards">
+   <div class="card"><span class="lbl"><span class="n">3</span>최근 30일 경보</span><span class="big">7건 · 조치 완료 6 · 아무도 안 누름 1</span><span class="small">기록 보기 ›</span></div>
+   <div class="card todo"><span class="lbl">지킴이 개선 요청 (8월 28일 점검)</span><span class="big">고칠 것 1개 · 재점검에서 되돌아옴</span><span class="small">고칠 것 보러 가기 (O3) ›</span></div>
+   <div class="card"><span class="lbl">2026년 하반기 점검 증빙</span><span class="small">7월~12월 기록을 한 파일로</span><span class="btn">증빙 내려받기</span></div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">1</span>맨 위 한 줄에 결론을 쓴다. 이상이 없으면 이 줄만 보고 닫아도 된다. <span class="g">①</span></li>
+ <li><span class="n">2</span>정상일 때는 모든 칸을 흐리고 조용하게 둔다. 굵은 테두리와 경고 아이콘은 이상할 때만 쓴다. 작은 그래프의 회색 띠가 정상 범위다. <span class="g">②</span></li>
+ <li><b>두 묶음으로 나눈 이유</b> — 센서가 붙는 자리가 두 가지여서 칸도 두 묶음으로 나눈다. 진동·접촉온도는 <b>기계 한 대</b>에 붙고, 전력·가스·온·습도·누수는 기계가 아니라 <b>공장</b>에 붙는다. 특히 전력계는 공장에 들어오는 전기 전체를 재므로 어느 기계 때문인지 말해 주지 못한다. 섞어 놓으면 공장주가 "전기 이상"을 보고 기계를 찾으러 다니게 된다 (2026-09-16 바로잡음). <span class="g">①</span></li>
+ <li><b>누수 칸</b> — 누수만 그래프가 없다. 물이 닿았나 아닌가 두 상태뿐이라 "평소 몇 배"도 정상 범위 띠도 그릴 수 없다. 값 칸 대신 상태 칸을 둔다. <span class="g">①</span></li>
+ <li><span class="n">3</span>최근 경보, 고칠 것(지킴이 개선 요청), 반기 점검 증빙이 첫 화면에서 한 번에 닿는다. 고칠 것은 경보가 아니라 할 일이라 테두리만 조금 굵게 한다. <span class="g">①</span><span class="g">②</span></li>
+</ul>
+
+<div class="cap">O1-나. 경보 알림 — 근로자 앱으로 받는다 [App]</div>
+<div class="side">
+ <div class="phone">
+  <div class="pbar"><span>09:12</span><span></span></div>
+  <div class="phead">알림</div>
+  <div class="pbody">
+   <div class="small" style="text-align:center">오늘 09:12</div>
+   <div class="bubble"><b>안전 앱 · 지금</b><br><b>⚠ 이상 · 2번 프레스</b><br>A동 2라인 · 진동 외 1개 · 평소보다 2배<br><span class="link"><span class="n">4</span>열어서 보기 ›</span></div>
+  </div>
+ </div>
+ <div class="expl"><span class="n">4</span>공장주는 경보를 <b>근로자 앱에 로그인해서</b> 받는다 (2026-09-16 결정). 공장주용 앱을 따로 만들지 않고, 웹은 관리용으로 그대로 둔다.<br>
+ 알림을 누르면 <b>근로자와 같은 경보 화면</b>이 앱 안에서 열린다 (근로자 앱 시안 W2-가·W2-나). 조치 완료도 공장주가 누를 수 있고, 기록에는 누가 눌렀는지 남는다.<br>
+ 알림은 무엇이·어디서 한 줄만 담는다. 긴 설명은 앱 화면에서 본다.<br>
+ <b>문자·알림톡은 쓰지 않는다. 앱 설치를 필수로 한다</b> — 설치 여부로 알림 경로가 갈리지 않게 한다.<br>
+ 휴대폰에서 현황판을 보고 싶을 때는 "지금 현황"이 휴대폰 폭으로 열린다 (O1-라).</div>
+</div>
+
+<div class="cap">O1-다. 경보가 있을 때 (링크를 눌러 들어온 화면)</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span class="on">지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div class="verdict bad"><span class="ic">⚠</span><div><div class="v"><span class="n">5</span>경보 1건 — 2번 프레스 이상</div><div class="small" style="font-size:14px;color:#111">09:12부터 · 조치 안 됨 · 3분째</div></div></div>
+  <div class="split">
+   <div class="list">
+    <div class="lbl">기계 2대</div>
+    <div class="eq bad"><div class="nm"><b>⚠ 2번 프레스</b><span>이상</span></div></div>
+    <div class="eq"><div class="nm"><b>컴프레서</b><span>정상</span></div></div>
+    <div class="lbl" style="margin-top:6px">공장 전체</div>
+    <div class="eq"><div class="nm"><b>전기</b><span>정상</span></div></div>
+    <div class="eq"><div class="nm"><b>가스</b><span>정상</span></div></div>
+    <div class="eq"><div class="nm"><b>온·습도</b><span>정상</span></div></div>
+    <div class="eq"><div class="nm"><b>누수</b><span>물 닿음 없음</span></div></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:12px">
+    <div><div style="font-size:20px;font-weight:850">2번 프레스 · A동 2라인</div></div>
+    <div><div class="lbl"><span class="n">6</span>이상한 센서 2개 · 최근 1시간</div>
+     <div class="sensor"><span>진동</span><svg class="spark" style="height:34px" viewBox="0 0 300 34" preserveAspectRatio="none"><rect x="0" y="14" width="300" height="12" fill="#e4e4e4"/><polyline fill="none" stroke="#111" stroke-width="2" points="0,20 40,19 80,21 120,20 160,19 200,20 230,12 260,6 300,3"/></svg><span class="x">평소 2배</span></div>
+     <div class="sensor"><span>온도</span><svg class="spark" style="height:34px" viewBox="0 0 300 34" preserveAspectRatio="none"><rect x="0" y="14" width="300" height="12" fill="#e4e4e4"/><polyline fill="none" stroke="#111" stroke-width="2" points="0,20 40,21 80,20 120,19 160,20 200,21 240,15 270,10 300,8"/></svg><span class="x">평소 1.4배</span></div>
+     <div class="small">회색 띠 = 정상 범위</div></div>
+    <div><div class="lbl"><span class="n">7</span>지금까지 일어난 일</div>
+     <ul class="tl">
+      <li><span>09:12</span><span>진동 이상 시작 · 근로자에게 경보 보냄</span></li>
+      <li><span>09:13</span><span>온도 이상이 같은 경보에 더해짐</span></li>
+      <li><span></span><span class="wait">조치 완료를 기다리는 중</span></li>
+     </ul></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="btn ghost inl">작업 때문에 오른 건가요? 작업 예정 알리기</span><span class="btn ghost inl">센서 고장 같아요</span></div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">5</span>경보가 생기면 결론 줄이 굵은 테두리와 아이콘으로 바뀐다. 왼쪽 목록에서도 그 기계만 굵어진다. 목록은 O1-가처럼 기계 2대와 공장 전체로 나눈다 (2026-09-17 바로잡음 — 이 화면만 옛 "설비 6대"로 남아 있었다). <span class="g">②</span></li>
+ <li><span class="n">6</span>하나로 묶인 경보(기계 1대)의 센서 2개(진동·온도)를 한곳에 모았다. 센서마다 정상 범위 띠와 "평소 몇 배"를 보여 준다. <span class="g">②</span></li>
+ <li><span class="n">7</span>무슨 일이 언제 있었는지 시간 순서로 보여 준다. 조치 완료는 근로자 또는 공장주가 앱에서 누른다 (2026-09-16 결정). 이 화면에서는 기다리는 상태를 본다. <span class="g">①</span></li>
+</ul>
+
+<div class="cap">O1-라. 지금 현황 — 휴대폰에서 열었을 때 (O1-다와 같은 순간)</div>
+<div class="side">
+ <div class="phone tall">
+  <div class="pbar"><span>09:15</span><span></span></div>
+  <div class="phead" style="display:flex;justify-content:space-between;font-size:15px"><span>대성정밀 안전 현황</span><span><span class="n">8</span>☰ 메뉴</span></div>
+  <div class="pbody" style="background:#fff;gap:12px">
+   <div class="verdict bad" style="padding:10px;gap:8px"><span class="ic" style="font-size:24px">⚠</span><div><div style="font-size:19px;font-weight:850;line-height:1.3"><span class="n">9</span>경보 1건</div><div style="font-size:15px;font-weight:700">2번 프레스 이상</div><div class="small" style="color:#111">09:12부터 · 조치 안 됨</div></div></div>
+   <div><div class="lbl">이상한 센서 2개</div>
+    <div class="msensor"><span>진동</span><svg viewBox="0 0 120 26" preserveAspectRatio="none"><rect x="0" y="11" width="120" height="10" fill="#e4e4e4"/><polyline fill="none" stroke="#111" stroke-width="2" points="0,16 30,15 60,16 80,10 100,5 120,2"/></svg><b>2배</b></div>
+    <div class="msensor"><span>온도</span><svg viewBox="0 0 120 26" preserveAspectRatio="none"><rect x="0" y="11" width="120" height="10" fill="#e4e4e4"/><polyline fill="none" stroke="#111" stroke-width="2" points="0,16 30,17 60,16 85,12 105,8 120,7"/></svg><b>1.4배</b></div>
+   </div>
+   <div><div class="lbl">지금까지 일어난 일</div>
+    <ul class="tl" style="font-size:13px;line-height:1.7">
+     <li style="grid-template-columns:44px 1fr"><span>09:12</span><span>진동 이상 · 근로자에게 경보</span></li>
+     <li style="grid-template-columns:44px 1fr"><span>09:13</span><span>온도 이상 더해짐</span></li>
+     <li style="grid-template-columns:44px 1fr"><span></span><span class="wait">조치 완료 기다리는 중</span></li>
+    </ul></div>
+   <div class="fold" style="font-size:13px"><span class="n">10</span>나머지 5칸 정상 (기계 1 · 공장 전체 4) ▸</div>
+  </div>
+ </div>
+ <div class="expl">
+  <span class="n">8</span>위쪽 탭(지금 현황·기록·고칠 것·점검 증빙·안전 공지·근로자·의견)은 ☰ 메뉴 속으로 넣는다. 기록·증빙은 PC에서 보는 일이라 휴대폰에서는 따로 다듬지 않는다. <span class="g">①</span><br>
+  <span class="n">9</span>PC 화면의 왼쪽·오른쪽을 위에서 아래로 쌓는다. 순서는 결론 → 이상한 센서 → 일어난 일. 글씨 크기는 줄이지 않는다. <span class="g">④</span><br>
+  <span class="n">10</span>정상 설비는 한 줄로 접는다. 급할 때 볼 것만 남긴다. <span class="g">②</span>
+ </div>
+</div>
+<div class="cap">O1-마. "센서 고장 같아요"를 누르면 (앱 W2-마와 같은 신고)</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span class="on">지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="stage">
+ <div class="wbody faded" style="min-height:560px">
+  <div class="verdict bad"><span class="ic">⚠</span><div><div class="v">경보 1건 — 누수 이상</div></div></div>
+ </div>
+ <div class="dim2"></div>
+ <div class="dialog">
+  <div style="font-size:18px;font-weight:850"><span class="n">11</span>센서 고장 신고</div>
+  <div class="small">누수 센서 (WL-0018) · 냉각수 배관 밑 · 07:10부터 "물 닿음"이 계속</div>
+  <div class="small" style="color:#111"><span class="n">18</span>작업 때문에 값이 오른 거라면 신고 대신 <b>작업 예정 알리기 ›</b></div>
+  <div class="field"><span class="lbl"><span class="n">12</span>왜 고장 같나요?<span class="guess">가설</span></span><div class="wseg"><span class="on">바닥은 말라 있어요</span><span>물기가 없는데 계속 울려요</span><span>잘 모르겠어요</span></div></div>
+  <div class="field"><span class="lbl">사진 (안 올려도 돼요) — 운영자가 보고 판단해요</span><div style="display:flex;gap:10px;align-items:center"><span class="ph">📷</span><span class="small">바닥 사진 1장</span></div></div>
+  <div class="field"><span class="lbl">메모 (안 써도 돼요)</span><div class="input">배관 밑 확인함, 물기 없음</div></div>
+  <div class="warn"><span class="n">13</span>운영자가 확인하고 "센서 수리 중"으로 돌릴 때까지 <b>경보는 그대로</b>예요.</div>
+  <div class="btnrow"><span class="btn ghost inl">취소</span><span class="btn inl">운영자에게 보내기</span></div>
+ </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">11</span><b>고장 신고는 공장주가 하고, 경보를 닫는 것은 운영자다</b> (2026-09-17 결정). 현장에서 먼저 알아채는 것은 공장주지만, 진짜 이상을 고장으로 알고 끄는 일은 막아야 한다. 경보 화면(웹 O1-다, 앱 W2-마)에서 연다. <span class="g">②</span></li>
+ <li><span class="n">12</span>이유는 누름표로 고른다. 글은 선택이다. 사유 목록은 가설이다. <span class="g">①</span></li>
+ <li><span class="n">13</span>신고해도 경보가 바로 꺼지지 않는다는 것을 보내기 전에 알린다. <span class="g">②</span></li>
+</ul>
+
+<div class="cap">O1-바. 홈 — 값이 안 오는 센서와 수리 중인 센서가 있을 때</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span class="on">지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div class="verdict" style="border:2px solid var(--ink)"><span class="ic">?</span><div><div class="v"><span class="n">14</span>일부 센서 값 모름</div><div class="small">나머지는 정상 · 10:20 기준</div></div></div>
+  <div class="lbl">기계 2대</div>
+  <div class="grid3">
+   <div class="eq"><div class="nm"><b>2번 프레스</b><span>정상</span></div><div class="small">진동 · 온도</div></div>
+   <div class="eq"><div class="nm"><b>컴프레서</b><span>정상</span></div><div class="small">진동</div></div>
+  </div>
+  <div class="lbl">공장 전체</div>
+  <div class="grid3">
+   <div class="eq"><div class="nm"><b>전기</b><span>정상</span></div><div class="small">공장에 들어오는 전기 전체</div></div>
+   <div class="eq unk"><div class="nm"><b>가스</b><span><b>모름</b></span></div><div class="small" style="color:#111"><span class="n">15</span>09:40부터 값이 안 와요 · 운영자에게 알림 감 · 그동안 경보 못 울림</div></div>
+   <div class="eq"><div class="nm"><b>온·습도</b><span>정상</span></div><div class="small">실내</div></div>
+   <div class="eq unk"><div class="nm"><b>누수</b><span><b>수리 중</b></span></div><div class="small" style="color:#111"><span class="n">16</span>10:05 운영자가 돌림 · 고칠 때까지 경보 안 울림</div></div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">14</span>값이 안 오는 센서가 있으면 결론 줄이 "이상 없음"이 아니라 <b>"일부 센서 값 모름"</b>이 된다. 경보(굵은 실선·⚠)와 다르게 <b>점선 테두리와 ?</b>로 보인다 — 위험이 아니라 모르는 상태다. <span class="g">②</span></li>
+ <li><span class="n">15</span><b>끊김은 "모름"으로 쓰고, 공장주와 운영자에게 알린다. 근로자에게 경보는 보내지 않는다</b> (2026-09-17 결정). 몇 분 뒤부터 모름으로 볼지는 가설이다. <span class="g">②</span></li>
+ <li><span class="n">16</span>수리 중인 센서는 경보가 울리지 않는다는 것을 칸 안에 적는다. 수리 중에도 값을 계속 기록하는지는 가설이다. <span class="g">②</span></li>
+</ul>
+<div class="cap">O1-사. 작업 예정 알리기 — 쓰기</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span class="on">지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="font-size:20px;font-weight:850">← 작업 예정 알리기</div>
+  <div class="two">
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="field"><span class="lbl"><span class="n">19</span>평소와 다른 작업을 적어 주세요 — AI가 읽고 그 시간 경보 기준을 맞춰요</span><div class="input area">오늘 저녁 6시부터 10시까지 도장 작업이 있어서 전력이 50 부근까지 오를 예정</div></div>
+    <div class="btnrow" style="justify-content:flex-start"><span class="btn inl">AI에게 보내기</span><span class="small">보내면 바로 적용돼요</span></div>
+   </div>
+   <div class="panel"><div class="t"><span class="n">20</span>이렇게 쓰면 잘 알아들어요</div>
+    <div class="small" style="color:#111;line-height:1.8">· <b>언제</b> — 몇 시부터 몇 시까지 (없으면 보낸 때부터 2시간)<br>· <b>무슨 작업</b> — 도장, 세척, 정비…<br>· <b>어느 센서·기계</b> — 한 번에 하나씩<br>· <b>얼마까지</b> — 숫자가 있어야 기준을 올려 잡아요</div>
+    <div class="lbl" style="margin-top:6px">우리 공장 센서 이름</div>
+    <div class="small">전기 · 가스 · 온·습도 · 누수 · 2번 프레스(진동·온도) · 컴프레서(진동)</div>
+    <div class="lbl" style="margin-top:6px">예</div>
+    <div class="small">"내일 9시~12시 컴프레서 필터 교체, 진동 평소보다 커짐"<br>"9/20부터 2번 프레스 새 금형, 진동이 계속 조금 높을 것"</div></div>
+  </div>
+ </div>
+</div></div>
+<div class="cap">O1-아. AI가 알아들은 내용 · 적용 결과</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span class="on">지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:20px;font-weight:850">← 작업 예정 · 적용됨</span><span class="small">16:40 박대표가 보냄</span></div>
+  <div class="small" style="color:#111">"오늘 저녁 6시부터 10시까지 도장 작업이 있어서 전력이 50 부근까지 오를 예정"</div>
+  <div class="two">
+   <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="warn" style="font-weight:400;padding:6px 10px">🤖 <b><span class="n">21</span>AI가 이렇게 알아들었어요</b> · 틀릴 수 있어요</div>
+    <table class="dense"><tr><td>센서</td><td><b>전기</b> (공장 전체)</td></tr><tr><td>시간</td><td><b>오늘 18:00 ~ 22:00</b></td></tr><tr><td>작업</td><td>도장</td></tr><tr><td>오를 수준</td><td><b>50</b></td></tr><tr><td>평소에도 있던 일?</td><td>아니요 — 처음 보는 일</td></tr></table>
+    <div class="small">AI 근거: "메모에 도장 작업으로 전력이 50까지 오른다고 적혀 있음"</div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="lbl"><span class="n">22</span>그래서 이렇게 바뀌어요</div>
+    <svg viewBox="0 0 400 90" style="width:100%;height:90px;border:1px solid #bbb;background:#fff" preserveAspectRatio="none">
+      <polygon points="0,62 160,60 160,28 320,26 320,60 400,62 400,76 320,76 320,50 160,48 160,76 0,76" fill="#e4e4e4"/>
+      <polyline points="0,70 60,68 120,69 160,66 180,40 240,36 300,38 320,62 400,68" fill="none" stroke="#111" stroke-width="2" stroke-dasharray="4,2"/>
+      <line x1="160" y1="0" x2="160" y2="90" stroke="#555" stroke-dasharray="2,2"/><line x1="320" y1="0" x2="320" y2="90" stroke="#555" stroke-dasharray="2,2"/>
+      <text x="165" y="12" font-size="10">18:00</text><text x="325" y="12" font-size="10">22:00</text><text x="200" y="22" font-size="10" font-weight="700">범위를 50 부근으로</text>
+     </svg>
+    <div class="small" style="color:#111;line-height:1.7">· 18~22시 전기 기준을 <b>50 부근</b>으로 올려 잡아요 (지금 예상 약 38 → 1.3배)<br>· 18시·22시 앞뒤 몇 분은 경보를 잠시 보류해요<br>· 작업 중 범위 폭은 평소 폭으로 고정해요<br>· <b>사양서 안전 한계는 그대로</b> — 넘으면 작업 중에도 울려요</div>
+    <div class="btnrow" style="justify-content:flex-start"><span class="btn ghost inl">틀렸어요 · 고쳐 쓰기</span><span class="btn ghost inl">작업 취소<span class="guess">가설</span></span></div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<div class="cap">O1-자. 작업 예정 알림 목록</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span class="on">지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850">작업 예정 알림</span><span class="btn inl" style="margin-left:auto">📝 새로 알리기</span></div>
+  <table class="dense">
+   <tr><th>언제</th><th>보낸 글</th><th>AI가 알아들은 것</th><th><span class="n">23</span>결과</th><th></th></tr>
+   <tr class="expand"><td><b>오늘 18~22시</b></td><td>도장 작업, 전력 50 부근</td><td>전기 · 도장 · 50</td><td><b>예정 · 적용됨</b></td><td class="go">보기 ›</td></tr>
+   <tr><td>9/12 09~12시</td><td>컴프레서 필터 교체</td><td>컴프레서 진동 · 정비 · 수준 없음</td><td>끝남 · 보류·폭 고정만</td><td class="go">보기 ›</td></tr>
+   <tr><td>9/10</td><td>매주 수요일 오전 세척</td><td>2번 프레스 · 세척</td><td>바꾸지 않음 — <b>평소에도 있던 일</b></td><td class="go">보기 ›</td></tr>
+   <tr><td>9/08</td><td>추석 전 대청소</td><td>—</td><td><b>못 알아들음</b> — 어느 센서인지 없음</td><td class="go">보기 ›</td></tr>
+   <tr><td>9/03</td><td>전기·가스 둘 다 올라갈 듯, 60 정도</td><td>전기·가스 · 60</td><td><b>수준은 적용 안 됨</b> — 센서가 둘</td><td class="go">보기 ›</td></tr>
+  </table>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">17</span><b>작업 예정 알리기</b>는 TSFM 엔진의 현장 메모 기능을 사람이 쓰는 자리다 (2026-09-17 반영). 지금 현황 맨 위에 두고, 예정된 작업이 있으면 한 줄로 보인다. 앱(W2-사)과 같은 기능이다. <span class="g">①</span></li>
+ <li><span class="n">18</span>작업 때문에 값이 오른 경보를 "센서 고장"으로 신고하면 센서가 통째로 꺼져(수리 중) 진짜 이상을 놓친다. 그래서 고장 신고 창에서도 이 길을 먼저 안내한다 (원칙 전체 점검 A2). <span class="g">②</span></li>
+ <li><span class="n">19</span>자유롭게 쓴다. AI(LLM)는 이 글을 <b>한 번만</b> 읽고, 예보·판정은 AI 없이 계속 돈다 — AI가 멈추면 이 글만 버려진다. 보내면 바로 적용되므로 버튼 옆에 적는다. <span class="g">③</span></li>
+ <li><span class="n">20</span>엔진이 뽑는 칸(센서·시작·끝·작업·수준)을 쓰는 사람에게 미리 보여 준다. <b>수준은 센서 하나일 때만</b> 적용되고, <b>숫자가 있어야</b> 기준을 올려 잡는다. 센서 이름 목록은 운영자가 등록한 이름(M2-라)이며 AI도 이 이름으로 고른다. <span class="g">①</span><span class="g">③</span></li>
+ <li><span class="n">21</span><b>AI가 알아들은 내용을 칸마다 보여 주고 "틀릴 수 있어요"를 붙인다.</b> 실험에서 AI가 숫자를 읽고도 수준 칸을 비운 일이 있었다 — 그래서 사람이 확인할 수 있게 한다. 근거 문장도 함께 둔다. <span class="g">③</span></li>
+ <li><span class="n">22</span><b>무엇이 바뀌는지를 그림과 말로 보여 준다.</b> 엔진은 목표 수준을 그 시간 예상값과 나눈 <b>비율</b>만큼 범위 전체를 올린다(더하지 않고 곱해 모양을 지킨다). 시작·끝 무렵은 판정을 잠시 보류하고, 작업 중 폭은 평소 폭으로 고정한다. 평소에도 있던 일이면 보류·폭 고정은 걸지 않는다. <b>사양서 안전 한계는 바뀌지 않는다.</b> 틀렸으면 같은 시간으로 고쳐 쓰면 앞의 것을 덮는다. <b>작업 취소로 되돌리는 기능은 엔진에 아직 없다</b> — 엔진 보강이 필요하다 (가설 꼬리표). <span class="g">②</span><span class="g">③</span></li>
+ <li><span class="n">23</span>엔진은 "아무것도 안 바뀐" 경우를 셋으로 나눠 돌려준다 — <b>못 알아들음 · 평소에도 있던 일이라 안 바꿈 · 바꿀 내용이 없음</b>. 여기에 경고(숫자가 있는데 수준을 못 읽음, 센서가 둘이라 수준 적용 안 됨)를 더해 목록에 그대로 보여 준다. 조용히 사라지면 쓴 사람은 적용된 줄 안다. 오래 가는 변화("새 금형 이후 계속 높음")는 이 글이 붙어 있으면 엔진이 서서히 밀리는 값을 심사할 때 정상 사유로 보고 <b>기준을 다시 잡는다</b>. <span class="g">②</span><span class="g">③</span></li>
+</ul>
+</section>
+
+<!-- ================= 공장주: 센서 이상 기록 ================= -->
+<section>
+<h2>O2. 센서 이상 기록 — 기록·고칠 것 탭 [Web] [흐름도 A⑤]</h2>
+<p class="sub">공장주는 경보 기록과 그때의 센서 값을 본다("누가 무엇을 보나" 표). 한 줄이 경보 한 건이다 — 기계 1대 또는 공간 센서 1대.</p>
+<div class="cap">O2-가. 기록 목록</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span class="on">기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div class="tabs"><span class="on">센서 이상 기록</span><span>지킴이 점검 · 고칠 것</span></div>
+  <div style="display:flex;align-items:center;gap:12px"><div class="filters"><span>기간: 최근 3개월 ▾</span><span>무엇이: 전체 ▾</span></div><span class="small" style="margin-left:auto"><span class="n">24</span>3개월 7건 · 조치 완료 6 · <b style="color:#111">아무도 안 누름 1</b> · 수리로 닫힘 1</span></div>
+  <table class="dense">
+   <tr><th>시작</th><th>무엇이</th><th>이상한 값</th><th>조치 완료</th><th>끝남</th><th></th></tr>
+   <tr><td>9/17 07:10</td><td><b>누수 또는 단선</b></td><td>물 닿음 (계속)</td><td>박대표 · 10분 뒤</td><td><b>센서 수리로 닫힘</b><br><span class="small">운영자 · 10:05</span></td><td class="go">보기 ›</td></tr>
+   <tr><td>9/17 09:13</td><td><b>가스</b></td><td>평소 3배</td><td>박대표 · 4분 뒤</td><td>12분 뒤 정상</td><td class="go">보기 ›</td></tr>
+   <tr><td>9/17 09:12</td><td><b>전기</b></td><td>전류·고조파 · 평소 1.5배</td><td>김근로 · 6분 뒤</td><td>18분 뒤 정상</td><td class="go">보기 ›</td></tr>
+   <tr class="expand"><td>9/15 09:12</td><td><b>2번 프레스</b></td><td>진동·온도 · 평소 2배</td><td>김근로 · 3분 뒤<br><span class="small">다시 알림 1번</span></td><td>51분 뒤 정상</td><td class="go">보기 ›</td></tr>
+   <tr><td>9/02 10:05</td><td><b>누수 또는 단선</b></td><td>물 닿음</td><td>이현장 · 8분 뒤</td><td>20분 뒤 정상</td><td class="go">보기 ›</td></tr>
+   <tr><td>8/28 14:30</td><td><b>컴프레서</b></td><td>진동 · 평소 1.6배</td><td>박대표 · 5분 뒤</td><td>9분 뒤 정상</td><td class="go">보기 ›</td></tr>
+   <tr><td>8/21 03:40</td><td><b>컴프레서</b></td><td>진동 · 평소 1.3배</td><td><b><span class="n">25</span>아무도 안 누름</b></td><td><b>7분 뒤 정상 · 아무도 안 누르고 끝남</b></td><td class="go">보기 ›</td></tr>
+  </table>
+ </div>
+</div></div>
+<div class="cap">O2-나. 한 건 열기</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span class="on">기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div class="tabs"><span class="on">센서 이상 기록</span><span>지킴이 점검 · 고칠 것</span></div>
+  <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:20px;font-weight:850">← 9/15 2번 프레스 · A동 2라인</span><span class="lock"><span class="n">26</span>🔒 기록은 고칠 수 없음</span></div>
+  <div class="split">
+   <div class="list">
+    <div class="eq" style="color:#111"><div class="lbl">시작 → 끝남</div><b style="font-size:15px">09:12 → 10:03 (51분)</b></div>
+    <div class="eq" style="color:#111"><div class="lbl">조치 완료</div><b style="font-size:15px">김근로 · 09:15 (3분 뒤)</b></div>
+    <div class="eq" style="color:#111"><div class="lbl">다시 알림</div><b style="font-size:15px">1번 · 09:20</b></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:12px">
+    <div><div class="lbl"><span class="n">27</span>그때 센서 값 · 09:00~10:10</div>
+     <div class="sensor"><span>진동</span><svg class="spark" style="height:34px" viewBox="0 0 300 34" preserveAspectRatio="none"><rect x="0" y="14" width="300" height="12" fill="#e4e4e4"/><polyline fill="none" stroke="#111" stroke-width="2" points="0,20 40,19 50,6 80,4 120,5 160,7 200,9 230,12 250,19 300,20"/><line x1="58" y1="0" x2="58" y2="34" stroke="#111" stroke-dasharray="3,2"/></svg><span class="x">최고 2배</span></div>
+     <div class="sensor"><span>온도</span><svg class="spark" style="height:34px" viewBox="0 0 300 34" preserveAspectRatio="none"><rect x="0" y="14" width="300" height="12" fill="#e4e4e4"/><polyline fill="none" stroke="#111" stroke-width="2" points="0,20 45,20 60,10 100,8 140,9 180,11 220,15 250,19 300,20"/><line x1="58" y1="0" x2="58" y2="34" stroke="#111" stroke-dasharray="3,2"/></svg><span class="x">최고 1.4배</span></div>
+     <div class="small">회색 띠 = 정상 범위 · 오른쪽 = 평소 대비 최고 · 점선 = 조치 완료 누른 때</div></div>
+    <div><div class="lbl">일어난 일</div>
+     <ul class="tl">
+      <li><span>09:12</span><span>진동 이상 시작 · 근로자에게 경보 보냄</span></li>
+      <li><span>09:13</span><span>온도 이상이 같은 경보에 더해짐</span></li>
+      <li><span>09:15</span><span>김근로 조치 완료</span></li>
+      <li><span>09:20</span><span>아직 이상 · 다시 알림 → 김근로 "5분 뒤 다시 알려 주세요"(미룸)</span></li>
+      <li><span>10:03</span><span>센서 정상 · 경보 끝남</span></li>
+     </ul></div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">24</span>위에 기간과 요약을 둔다. 조치 완료가 몇 건이고 <b>아무도 조치 표시를 안 한 채 끝난 경보("아무도 안 누름", 기록 이름은 미확인 종료)</b>가 몇 건인지 먼저 보인다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">25</span>"아무도 안 누르고 끝남"(미확인 종료)은 굵게 쓴다. 화면에는 쉬운 말로 쓴다. 센서는 저절로 정상이 됐지만 사람이 확인한 기록이 없다 — 밤사이 울린 경보처럼 공장주가 챙겨야 할 것이다 (흐름도 A③ → A⑤ 점선). <span class="g">②</span></li>
+ <li><span class="n">26</span>센서 이상 기록도 고칠 수 없다. 누가 몇 분 뒤에 조치 완료를 눌렀는지, 다시 알림이 몇 번 갔는지가 그대로 남는다. <span class="g">①</span></li>
+ <li><span class="n">27</span>그때의 센서 값을 정상 범위 띠와 함께 다시 보여 주고, <b>조치 완료를 누른 때를 점선</b>으로 긋는다. 조치 뒤에도 값이 한동안 높았다는 것이 한눈에 보인다 — 조치 완료와 이상 종료가 다른 일이라는 것(W2-다)을 기록에서도 보여 준다. <span class="g">②</span></li>
+</ul>
+</section>
+
+<!-- ================= 공장주: 지킴이 점검 ================= -->
+<section>
+<h2>O3. 지킴이 점검 · 고칠 것 — 기록·고칠 것 탭 [Web] [흐름도 B⑥ → B⑦]</h2>
+<p class="sub">지킴이 점검 기록을 보고, 문제 항목을 고친 뒤 "고쳤어요"를 누른다. 재점검에서 안 고쳐진 항목은 여기로 되돌아온다 (2026-09-17 결정).<br>
+<b>탭 이름을 "기록"에서 "기록·고칠 것"으로 바꿨다</b> (원칙 점검 E39) — 공장주가 해야 할 일인 "고칠 것"이 "기록"이라는 이름 속에 숨지 않게 한다. 안의 작은 탭도 "지킴이 점검 · 고칠 것"이다.</p>
+<div class="cap">O3-가. 지킴이 점검 기록 · 고칠 것</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span class="on">기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div class="tabs"><span>센서 이상 기록</span><span class="on">지킴이 점검 · 고칠 것</span></div>
+  <div class="split">
+   <div class="list">
+    <div class="eq sel" style="color:#111"><b style="font-size:15px">8월 28일 점검</b><div class="small">12항목 · 문제 2개 · 고쳐짐 1 · 되돌아옴 1</div></div>
+    <div class="eq"><b style="font-size:15px;color:#555">5월 14일 점검</b><div class="small">10항목 · 문제 1개 · 고쳐짐 확인</div></div>
+    <div class="eq"><b style="font-size:15px;color:#555">2월 20일 점검</b><div class="small">11항목 · 문제 0개</div></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:20px;font-weight:850">8월 28일 지킴이 점검</span><span class="lock"><span class="n">28</span>🔒 점검 결과는 고칠 수 없음</span></div>
+    <div class="lbl"><span class="n">29</span>문제 있음 2개</div>
+    <div class="item back"><div style="display:flex;justify-content:space-between;align-items:center"><b>전선 피복이 벗겨진 곳이 없나?</b><span style="display:flex;gap:10px;align-items:center"><b>문제 있음</b><span class="ph">📷</span></span></div>
+     <div class="small">지킴이 메모: 바닥에 늘어진 전선 피복이 벗겨짐 · 9/5 "고쳤어요" 누름</div>
+     <div class="fixrow"><span class="state"><span class="n">32</span>⚠ 9/17 재점검에서 안 고쳐짐 · 사정: 부품·업체를 기다려요 <span class="ph" style="width:34px;height:24px">📷</span></span><span class="btn inl"><span class="n">31</span>다시 고쳤어요</span></div></div>
+    <div class="item"><div style="display:flex;justify-content:space-between;align-items:center"><b>분전반 앞에 물건이 쌓여 있지 않나?</b><span style="display:flex;gap:10px;align-items:center"><b>문제 있음</b><span class="ph">📷</span></span></div>
+     <div class="small">지킴이 메모: 분전반 앞에 상자 적재</div>
+     <div class="fixrow"><span class="small"><span class="n">30</span>9/5 "고쳤어요" · "상자 창고로 옮김"</span><span class="state">✓ 9/17 재점검에서 고쳐짐 확인</span></div></div>
+    <div class="fold">이상 없음 10개 ▸ 펼치기</div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">28</span>기록 옆에 자물쇠를 붙인다. 증빙으로 쓰는 기록이라 아무도 고칠 수 없다는 것을 보여 준다. <span class="g">①</span></li>
+ <li><span class="n">29</span>점검 결과는 "문제 있음 / 이상 없음"처럼 쉬운 말로 쓴다. 문제 있는 항목을 위에 두고 사진은 항목 옆에 붙인다. 이상 없는 항목은 접어 둔다. <span class="g">①</span></li>
+ <li><span class="n">30</span>공장주는 문제 항목을 고친 뒤 "고쳤어요"를 누른다(흐름도 B⑦, 누르면 O3-나). 누르면 지킴이 재점검 목록에 <b>자동으로</b> 오르고(운영자가 따로 배정하지 않는다, 2026-09-16 확정), 재점검 전까지는 취소할 수 있다. 이 동작의 이름은 <b>개선 완료 표시</b>다(화면에는 "고쳤어요"로만 쓴다, 2026-09-17) — 근로자가 센서 경보에 누르는 "조치 완료 표시"(A④)와 다른 일이므로 이름을 나눈다. 점검 결과는 잠겨 있고 조치 표시와 재점검 결과는 그 아래에 따로 쌓인다. <span class="g">①</span></li>
+ <li><span class="n">31</span>재점검에서 되돌아온 항목에는 "다시 고쳤어요"가 붙는다. 누르면 O3-나 창이 열리고, 표시하면 다시 지킴이 재점검 목록에 오른다 (2026-09-17 결정 — 고쳐질 때까지 반복). <span class="g">①</span></li>
+ <li><span class="n">32</span><b>되돌아온 항목은 굵은 테두리로 맨 위에 둔다.</b> 언제 재점검했고 무엇이 안 됐는지, 지킴이가 고른 사정과 그때 찍은 사진을 함께 보여 준다. 사정은 지킴이가 현장에서 들은 것을 누른 것이라, 공장주가 보고 틀리면 다음에 고쳐 말할 수 있다. <span class="g">①</span><span class="g">②</span></li>
+</ul>
+
+<div class="cap">O3-나. "고쳤어요"를 누르면 (되돌아온 항목의 "다시 고쳤어요"도 같은 창)</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span class="on">기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="stage">
+ <div class="wbody faded" style="min-height:430px">
+  <div class="tabs"><span>센서 이상 기록</span><span class="on">지킴이 점검 · 고칠 것</span></div>
+  <div class="item back"><b>전선 피복이 벗겨진 곳이 없나?</b></div>
+  <div class="item"><b>분전반 앞에 물건이 쌓여 있지 않나?</b></div>
+ </div>
+ <div class="dim2"></div>
+ <div class="dialog">
+  <div style="font-size:18px;font-weight:850">다시 고쳤어요</div>
+  <div class="small">전선 피복이 벗겨진 곳이 없나? · 8/28 문제 있음 → 9/17 재점검에서 안 고쳐짐 (부품·업체를 기다려요)</div>
+  <div class="field"><span class="lbl"><span class="n">33</span>어떻게 고쳤나요? (안 써도 돼요)</span><div class="input">부품 받아서 벗겨진 전선 교체함</div></div>
+  <div class="field"><span class="lbl">고친 뒤 사진 (안 올려도 돼요)</span><div style="display:flex;gap:10px;align-items:center"><span class="ph">📷</span><span class="btn ghost inl">사진 올리기</span></div></div>
+  <div class="warn"><span class="n">34</span>누르면 지킴이 재점검 목록에 올라요. 재점검 전까지는 취소할 수 있어요.</div>
+  <div class="btnrow"><span class="btn ghost inl">취소</span><span class="btn inl">고쳤어요 표시</span></div>
+ </div>
+ </div>
+</div></div>
+
+<div class="cap">O3-다. "고쳤어요"를 표시한 뒤 — 재점검 전에는 취소할 수 있다</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span class="on">기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div class="tabs"><span>센서 이상 기록</span><span class="on">지킴이 점검 · 고칠 것</span></div>
+  <div class="item"><div style="display:flex;justify-content:space-between;align-items:center"><b>전선 피복이 벗겨진 곳이 없나?</b><span style="display:flex;gap:10px;align-items:center"><b>문제 있음</b><span class="ph">📷</span></span></div>
+   <div class="small">8/28 문제 있음 → 9/5 "고쳤어요" → 9/17 재점검에서 안 고쳐짐 (부품·업체를 기다려요)</div>
+   <div class="fixrow"><span class="state"><span class="n">35</span>✓ 9/24 다시 고쳤어요 표시함 · "부품 받아서 벗겨진 전선 교체함" · 지킴이 재점검 기다림</span><span style="display:flex;align-items:center;gap:4px"><span class="n">36</span><span class="btn ghost inl">표시 취소</span></span></div></div>
+  <div class="small">김지킴 "내 할 일"에 재점검 1개로 올라가 있어요. 재점검 날짜는 김지킴이 정해요.</div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">33</span><b>어떻게 고쳤는지 한 줄과 사진을 남길 수 있다. 둘 다 선택이다</b> (2026-09-17 결정). 적으면 지킴이 재점검 화면(G6-가)에 그대로 보여, 지킴이가 무엇이 바뀌었어야 하는지 알고 간다. <span class="g">①</span></li>
+ <li><span class="n">34</span>누르기 전에 무슨 일이 생기는지 알린다 — 지킴이 재점검 목록에 오르고, 재점검 전까지는 취소할 수 있다 (2단계 "되돌리기는 기록이 굳기 전까지"). <span class="g">①</span></li>
+ <li><span class="n">35</span>표시한 뒤에는 그 줄이 <b>"고쳤어요 표시함 · 재점검 기다림"</b>으로 바뀌고, 적은 한 줄이 함께 보인다 (원칙 점검 E31 — 설명에만 있던 모습을 그렸다). 예시는 부품이 온 뒤인 9/24다. <span class="g">①</span></li>
+ <li><span class="n">36</span><b>"표시 취소"는 재점검 전까지만 보인다.</b> 잘못 눌렀거나 아직 덜 고쳤으면 되돌린다 — 누르면 지킴이 목록에서 그 재점검이 빠진다. 지킴이가 재점검 결과를 내면 이 버튼은 사라진다(없는 버튼을 흐리게 두지 않는다). <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ================= 공장주: 점검 증빙 ================= -->
+<section>
+<h2>O4. 점검 증빙 — 점검 증빙 탭 [Web]</h2>
+<p class="sub">반기마다 한 파일로 내려받는다. 개선 여부를 반기 1회 이상 점검하는 의무(중대재해처벌법 시행령 제4조)의 증빙이다.</p>
+<div class="cap">O4-가. 반기 고르고 내려받기</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span class="on">점검 증빙</span><span>안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div class="split">
+   <div class="list">
+    <div class="eq sel" style="color:#111"><b style="font-size:15px">2026년 하반기</b><div class="small">7월~12월 · 쌓이는 중</div></div>
+    <div class="eq"><b style="font-size:15px;color:#555">2026년 상반기</b><div class="small">1월~6월</div></div>
+    <div class="eq"><b style="font-size:15px;color:#555">2025년 하반기</b><div class="small">서비스 시작 전 — 없음</div></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:12px">
+    <div><span style="font-size:20px;font-weight:850"><span class="n">37</span>2026년 하반기 점검 증빙</span> <span class="small">7월 1일 ~ 오늘(9월 17일)</span></div>
+    <div class="card"><span class="lbl">담기는 것</span>
+     <div style="font-size:14px;line-height:1.9">· 센서 이상 기록 7건 · 조치 완료 6 · 아무도 안 누름 1 · 수리로 닫힘 1<br>· 지킴이 점검 1건 (8/28) · 문제 2개<br>· 개선 조치·재점검 이력 · 고쳐짐 1 · 되돌아옴 1<br>· <b><span class="n">38</span>안전 공지 3건과 읽음 기록</b><br>· <b><span class="n">39</span>근로자 의견 5건과 답·해결 기록</b></div></div>
+    <div style="display:flex;align-items:center;gap:12px"><span class="btn inl">증빙 내려받기 (PDF)</span><span class="small">파일에 내려받은 날짜가 찍혀요<span class="guess">가설</span></span></div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">37</span>반기 점검 증빙은 기간을 보여 주고 버튼 하나로 내려받는다. 무엇이 담기는지 미리 적어 둔다. <span class="g">①</span></li>
+ <li><span class="n">38</span><b>안전 공지와 읽음 기록도 증빙에 담는다</b> (2026-09-17). 위험성평가 결과를 근로자에게 알렸다는 증빙이기 때문이다. <span class="g">①</span></li>
+ <li><span class="n">39</span><b>근로자 의견과 답·해결 기록도 담는다</b> (2026-09-17). 종사자 의견을 듣고 조치했는지를 반기마다 점검하는 의무(중대재해처벌법 시행령 제4조)의 증빙이다. 이름을 뺀 의견은 증빙에도 이름 없이 들어간다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ================= 공장주: 안전 공지 ================= -->
+<section>
+<h2>O5. 안전 공지 — 안전 공지 탭 [Web]</h2>
+<p class="sub">공장주가 근로자에게 위험성평가 결과·작업 수칙을 알리는 곳이다. 근로자는 앱(W5)에서 읽고 "읽었어요"를 누른다. <b>올린 공지는 고칠 수 없고, 안 읽은 사람에게 다시 알릴 수 있다</b> (2026-09-17 결정).</p>
+<div class="cap">O5-가. 공지 목록</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span class="on">안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center"><span style="font-size:20px;font-weight:850">안전 공지</span><span class="btn inl" style="margin-left:auto">＋ 공지 쓰기</span></div>
+  <table class="dense">
+   <tr><th>올린 날</th><th>제목</th><th>위험성평가</th><th><span class="n">40</span>읽음</th><th></th></tr>
+   <tr class="expand"><td>9/16</td><td><b>2번 프레스 금형 바꿀 때 지킬 것</b></td><td>9월 결과</td><td><b>5 / 8명 · 안 읽음 3</b></td><td class="go">보기 ›</td></tr>
+   <tr><td>9/10</td><td>추석 연휴 전 전원 차단 순서</td><td>—</td><td>8 / 8명</td><td class="go">보기 ›</td></tr>
+   <tr><td>8/29</td><td>도장실 환기 팬 교체 완료</td><td>—</td><td>7 / 8명 · 안 읽음 1</td><td class="go">보기 ›</td></tr>
+  </table>
+  <div class="small">8명 = 이 공장에 등록된 근로자<span class="guess">가설</span></div>
+ </div>
+</div></div>
+<div class="cap">O5-나. 공지 쓰기</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span class="on">안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="font-size:20px;font-weight:850">← 공지 쓰기</div>
+  <div class="field"><span class="lbl">제목</span><div class="input">2번 프레스 금형 바꿀 때 지킬 것</div></div>
+  <div class="field"><span class="lbl">내용</span><div class="input area">9월 위험성평가에서 2번 프레스 금형 교체 작업의 끼임 위험이 높게 나왔습니다.<br>1. 금형을 바꾸기 전에 전원을 내리고 잠금장치를 겁니다. 2. 혼자 하지 않고 두 사람이 합니다.</div></div>
+  <div class="field"><span class="lbl"><span class="n">41</span>위험성평가 결과를 알리는 공지인가요?</span><div class="wseg"><span>아니요</span><span class="on">예 — 9월 위험성평가</span></div></div>
+  <div class="small"><span class="n">42</span>근로자 앱에 알림이 가요. 근로자는 자기 언어로 바꿔 볼 수 있어요 (자동 번역)<span class="guess">가설</span></div>
+  <div class="warn"><span class="n">43</span>올린 뒤에는 고칠 수 없어요. 바꾸려면 새 공지를 올려요.</div>
+  <div class="btnrow"><span class="btn ghost inl">취소</span><span class="btn inl">올리기</span></div>
+ </div>
+</div></div>
+<div class="cap">O5-다. 한 공지의 읽음 현황</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span class="on">안전 공지</span><span>근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:20px;font-weight:850">← 2번 프레스 금형 바꿀 때 지킬 것</span><span class="small">9/16 올림 · 9월 위험성평가</span><span class="lock">🔒 고칠 수 없음</span></div>
+  <div class="fold" style="text-align:left">내용 보기 ▸</div>
+  <div class="two">
+   <div class="panel"><div class="t"><span class="n">44</span>읽음 5명</div>
+    <div class="names"><span>김근로</span><span class="small">9/16 09:46</span><span>이현장</span><span class="small">9/16 10:02</span><span>정반장</span><span class="small">9/16 10:30</span><span>한용접</span><span class="small">9/16 13:15</span><span>Tran Thi B <span class="small">· 베트남어 AI 번역으로 읽음</span><br><b><span class="n">45</span>⚠ 번역이 이상하다고 함</b></span><span class="small">9/17 08:41</span></div></div>
+   <div class="panel" style="border:2px solid var(--ink)"><div class="t">안 읽음 3명</div>
+    <div class="names"><span>Nguyen Van A</span><span class="small">알림 받음</span><span>Sok Dara</span><span class="small">알림 받음</span><span>박신입</span><span class="small">앱 알림 꺼짐</span></div>
+    <span class="btn inl" style="align-self:flex-start"><span class="n">46</span>안 읽은 3명에게 다시 알리기</span>
+    <span class="small">마지막 다시 알림: 9/17 08:30</span></div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">40</span>목록에서 공지마다 몇 명이 읽었는지 보인다. 안 읽은 사람이 있는 공지는 굵게 쓴다. "몇 명 중"의 분모는 이 공장에 등록된 근로자다 — <b>근로자를 누가 어떻게 등록하는지는 아직 설계에 없다</b> (가설, 안 그린 화면). <span class="g">①</span></li>
+ <li><span class="n">41</span>위험성평가 결과를 알리는 공지인지 표시한다. 표시한 공지는 목록과 증빙에서 "○월 위험성평가"로 묶여 보인다. <span class="g">①</span></li>
+ <li><span class="n">42</span>외국인 근로자는 앱에서 자기 언어로 본다(W5-나). 자동 번역이면 틀릴 수 있어, 근로자 화면에는 "자동 번역"과 원문 보기를 둔다 (가설). <span class="g">③</span><span class="g">④</span></li>
+ <li><span class="n">43</span><b>올린 공지는 고칠 수 없다</b> (2026-09-17 결정). "읽었어요"는 이 글을 읽었다는 증빙이라, 글이 나중에 바뀌면 무엇을 읽었는지 흐려진다. 바꿀 것이 있으면 새 공지를 올린다. 올리기 전에 이것을 알린다. <span class="g">①</span></li>
+ <li><span class="n">44</span>읽은 사람은 이름과 읽은 시각을, 안 읽은 사람은 이름과 알림 상태를 보여 준다. <b>알림이 꺼진 근로자</b>는 다시 알려도 못 받으므로 따로 표시한다 — 공장주가 직접 챙길 사람이다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">45</span>번역으로 읽은 사람은 <b>어느 언어의 AI 번역으로 읽었는지</b>를 함께 적는다. 근로자가 "번역이 이상해요"(W5-다)를 누르면 그 사람 옆에 표시가 뜬다 — 공장주가 직접 설명하거나 새 공지를 올린다 (2026-09-17 결정). <span class="g">③</span></li>
+ <li><span class="n">46</span>안 읽은 사람에게만 다시 알린다 (2026-09-17 결정). 마지막으로 언제 다시 알렸는지 보여 줘 여러 번 누르지 않게 한다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ================= 공장주: 근로자 ================= -->
+<section>
+<h2>O6. 근로자 — 근로자 탭 [Web]</h2>
+<p class="sub"><b>근로자 명단은 공장주가 관리한다</b> (2026-09-17 결정). 공장주가 사람마다 초대를 만들면 근로자가 앱에서 QR·링크로 들어온다(W8). 그만둔 사람은 공장주가 뺀다. 이 명단이 경보를 받는 사람이자 안전 공지 읽음 현황(O5)의 분모다.</p>
+<div class="cap">O6-가. 근로자 명단</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span class="on">근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850">근로자 8명</span><span class="small"><span class="n">47</span>경보와 안전 공지를 받는 사람</span><span class="btn inl" style="margin-left:auto">＋ 근로자 초대</span></div>
+  <div class="warn" style="font-weight:400"><span class="n">48</span><b>박신입</b>의 앱 알림이 꺼져 있어요 — 경보가 울리지 않습니다. 직접 말해 주세요.</div>
+  <table class="dense">
+   <tr><th>이름</th><th>언어</th><th>앱 알림</th><th>들어온 날</th><th>일하는 곳<span class="guess">가설</span></th><th><span class="n">49</span></th></tr>
+   <tr><td><b>김근로</b></td><td>한국어</td><td>켜짐</td><td>2024-03</td><td>A동 2라인</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>이현장</b></td><td>한국어</td><td>켜짐</td><td>2022-11</td><td>A동</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>정반장</b></td><td>한국어</td><td>켜짐</td><td>2019-05</td><td>A동 2라인</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>한용접</b></td><td>한국어</td><td>켜짐</td><td>2025-01</td><td>B동</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>Tran Thi B</b></td><td>Tiếng Việt</td><td>켜짐</td><td>2025-08</td><td>B동</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>Nguyen Van A</b></td><td>Tiếng Việt</td><td>켜짐</td><td>2026-09-15</td><td>A동 2라인</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>Sok Dara</b></td><td>ភាសាខ្មែរ</td><td>켜짐</td><td>2026-06</td><td>B동</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>박신입</b></td><td>한국어</td><td><b>꺼짐 ⚠</b></td><td>2026-09-15</td><td>A동</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+  </table>
+  <div class="lbl">초대했지만 아직 안 들어온 사람 1명</div>
+  <table class="dense">
+   <tr><td><b>김용역</b></td><td>한국어</td><td>9/16 초대 · 9/23까지 유효</td><td><span class="btn ghost inl">다시 보내기</span> <span class="btn ghost inl">초대 취소</span></td></tr>
+  </table>
+  <div class="small">안 들어온 사람은 공지 읽음 현황의 인원(8명)에 넣지 않아요.</div>
+ </div>
+</div></div>
+<div class="cap">O6-나. 근로자 초대</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span class="on">근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="font-size:20px;font-weight:850">← 근로자 초대</div>
+  <div class="two">
+   <div style="display:flex;flex-direction:column;gap:12px">
+    <div class="field"><span class="lbl"><span class="n">51</span>이름</span><div class="input">김용역</div></div>
+    <div class="field"><span class="lbl">앱 화면 언어</span><div class="wseg"><span class="on">한국어</span><span>Tiếng Việt</span><span>ភាសាខ្មែរ</span><span>English</span><span>다른 언어 ▾</span></div></div>
+    <div class="field"><span class="lbl">일하는 곳 (안 골라도 돼요)<span class="guess">가설</span></span><div class="wseg"><span>A동</span><span>A동 2라인</span><span class="on">B동</span></div></div>
+    <div class="btnrow" style="justify-content:flex-start"><span class="btn inl">초대 만들기</span></div>
+   </div>
+   <div class="panel" style="align-items:center;border:2px solid var(--ink)">
+    <div class="t"><span class="n">52</span>김용역 님 초대</div>
+    <div style="width:150px;height:150px;border:2px solid var(--ink);display:grid;place-items:center;font-size:13px;color:var(--mid);background:repeating-linear-gradient(45deg,#fff 0 6px,#eee 6px 12px)">QR</div>
+    <div class="small">근로자 휴대폰으로 이 QR을 찍게 하세요</div>
+    <div style="display:flex;gap:8px"><span class="btn ghost inl">링크 복사</span><span class="btn ghost inl">QR 인쇄</span></div>
+    <div class="small"><span class="n">53</span>7일 동안 한 번만 쓸 수 있어요 · 9/23까지</div>
+   </div>
+  </div>
+ </div>
+</div></div>
+
+<div class="cap">O6-다. "빼기"를 누르면 — 확인 한 번</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span class="on">근로자</span><span>의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="stage">
+ <div class="wbody faded" style="min-height:330px">
+  <div style="font-size:20px;font-weight:850">근로자 8명</div>
+  <table class="dense"><tr><td><b>이현장</b></td><td>한국어</td><td>켜짐</td><td>2022-11</td><td>A동</td></tr><tr><td><b>정반장</b></td><td>한국어</td><td>켜짐</td><td>2019-05</td><td>A동 2라인</td></tr></table>
+ </div>
+ <div class="dim2"></div>
+ <div class="dialog c">
+  <div style="font-size:18px;font-weight:850"><span class="n">50</span>이현장 님을 명단에서 뺄까요?</div>
+  <div class="warn" style="font-weight:400">· 이제 <b>경보와 안전 공지를 받지 않아요</b><br>· 앱에 들어오지 못해요<br>· 남긴 기록(조치 완료·공지 읽음)은 이름 그대로 남아요</div>
+  <div class="small">다시 일하게 되면 새로 초대하면 돼요.</div>
+  <div class="btnrow"><span class="btn inl">빼지 않기</span><span class="btn ghost inl danger">빼기</span></div>
+ </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">47</span>명단 맨 위에 "이 사람들이 경보와 공지를 받는다"를 적는다. 명단이 곧 받는 사람이라는 것을 공장주가 알아야, 새로 온 사람을 초대하고 그만둔 사람을 뺀다. <span class="g">①</span></li>
+ <li><span class="n">48</span><b>앱 알림이 꺼진 사람을 맨 위에 알린다.</b> 앱 설치는 필수지만 휴대폰에서 알림을 막는 것은 앱이 못 막는다(W1-다). 공장주가 현장에서 직접 말하는 것이 가장 빠르다. <span class="g">②</span></li>
+ <li><span class="n">49</span>빼기는 줄 끝에 둔다. 뺀 사람은 앱에 들어오지 못하지만 <b>그 사람이 남긴 기록(조치 완료·공지 읽음)은 이름 그대로 남는다</b> — 기록은 아무도 고치지 않는다(2단계 원칙). <span class="g">①</span></li>
+ <li><span class="n">50</span><b>빼기는 누르면 한 번 묻는다</b> (원칙 점검 E34). 빼면 그 사람에게 경보가 더 가지 않으므로, 일하는 사람을 실수로 빼면 위험하다. 창에 <b>"경보를 받지 않아요"</b>를 첫 줄로 적는다. 창의 채운 버튼은 안전한 쪽("빼지 않기")이고, 빼기 버튼은 점선 테두리로 구분한다. 표의 빼기 버튼도 점선이다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">51</span>초대할 때 이름과 앱 언어를 적는다. 근로자는 들어올 때 확인만 하고(W8-나), 처음부터 자기 언어로 본다. "일하는 곳"은 구역을 나누기로 할 때만 쓰는 칸이다 (가설 — 경보의 "어디서"가 미정). <span class="g">①</span><span class="g">④</span></li>
+ <li><span class="n">52</span>초대는 사람마다 하나다. 사무실에서 휴대폰으로 바로 찍게 하거나, 링크를 메신저로 보내거나, 인쇄해 건넨다. 디지털이 익숙하지 않은 공장주도 "QR을 찍게 한다"로 끝나게 한다(3단계 공장주 특징). <span class="g">①</span></li>
+ <li><span class="n">53</span>초대는 한 번만, 7일까지 쓸 수 있다 (기간은 가설). 링크가 다른 사람에게 넘어가도 명단 밖 사람이 들어오지 못한다. 안 쓴 초대는 명단 아래 "아직 안 들어온 사람"에 남아 다시 보내거나 취소한다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ================= 공장주: 의견 ================= -->
+<section>
+<h2>O7. 근로자 의견 — 의견 탭 [Web]</h2>
+<p class="sub"><b>공장주는 근로자 의견을 서비스에서 받고 답한다</b> (2026-09-17 결정 — 종사자 의견 청취, 중대재해처벌법 시행령 제4조). 근로자는 앱(W6)에서 보낸다. 받은 의견과 답·해결은 반기 증빙(O4)에 들어간다.</p>
+<div class="cap">O7-가. 받은 의견</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span class="on">의견 <b>·1</b></span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850">근로자 의견</span><span class="small"><span class="n">54</span>안 읽음 1 · 답 기다림 1</span><div class="filters" style="margin-left:auto"><span>종류 전체 ▾</span><span>최근 6개월 ▾</span></div></div>
+  <table class="dense">
+   <tr><th>받은 날</th><th>종류</th><th>내용</th><th><span class="n">55</span>보낸 사람</th><th>상태</th><th></th></tr>
+   <tr class="expand"><td><b>9/17 12:10</b></td><td><b>⚠ 위험해 보여요</b></td><td><b>B동 통로에 기름이 자주 흘러 있어요</b> 📷</td><td>이름 없음</td><td><b>안 읽음</b></td><td class="go">보기 ›</td></tr>
+   <tr><td>9/12</td><td>바꾸면 좋겠어요</td><td>외국어 안내판이 있으면 좋겠어요</td><td>Sok Dara</td><td>읽음 · 답 안 함</td><td class="go">보기 ›</td></tr>
+   <tr><td>9/03</td><td>바꾸면 좋겠어요</td><td>휴게실 선풍기가 고장 났어요</td><td>김근로</td><td>✓ 해결함 9/05</td><td class="go">보기 ›</td></tr>
+   <tr><td>8/20</td><td>⚠ 위험해 보여요</td><td>컴프레서 옆 전선이 늘어져 있어요</td><td>이름 없음</td><td>✓ 해결함 8/21</td><td class="go">보기 ›</td></tr>
+   <tr><td>7/08</td><td>기타</td><td>여름 작업 시간 조정 부탁드립니다</td><td>정반장</td><td>답함</td><td class="go">보기 ›</td></tr>
+  </table>
+ </div>
+</div></div>
+<div class="cap">O7-나. 의견 하나 열기 · 답하기 · 해결함 표시</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span class="on">의견 <b>·1</b></span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:20px;font-weight:850">← B동 통로에 기름이 자주 흘러 있어요</span><span class="small">9/17 12:10 · 위험해 보여요 · 이름 없음</span></div>
+  <div class="two">
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="panel"><div class="small" style="color:#111;font-size:14px">B동 통로에 기름이 자주 흘러 있어요</div><div style="display:flex;gap:8px;align-items:center"><span class="ph">📷</span><span class="small">붙인 사진 1장</span></div></div>
+    <div class="lock"><span class="n">56</span>🔒 받은 의견은 고칠 수 없고 지울 수도 없어요</div>
+    <div class="small"><b>이름 없는 의견은 쓴 언어를 보여 주지 않아요</b> — 번역문만 보여요<span class="guess">가설</span></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="field"><span class="lbl"><span class="n">57</span>답하기 — 보낸 사람 앱에 알림이 가요</span><div class="input">내일 기름받이 달겠습니다. 알려 줘서 고마워요.</div></div>
+    <div class="btnrow" style="justify-content:flex-start"><span class="btn inl">답 보내기</span></div>
+    <div class="field"><span class="lbl"><span class="n">58</span>해결했으면 (한 줄·사진, 안 해도 돼요)</span><div class="input" style="color:#888">예: 9/18 기름받이 설치</div></div>
+    <div class="btnrow" style="justify-content:flex-start"><span class="btn ghost inl">해결함 표시</span></div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">54</span>안 읽은 의견과 답을 기다리는 의견을 위에 요약한다. 탭 이름 옆에도 안 읽은 수를 붙인다. "위험해 보여요"는 굵게 쓴다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">55</span><b>이름을 뺀 의견은 "이름 없음"으로만 보인다</b> (2026-09-17 결정). 누가 보냈는지 알아내는 길을 화면에 두지 않는다. <b>쓴 언어도 보이지 않는다</b> — 이 언어를 쓰는 사람이 한둘인 공장에서는 언어만으로 누군지 드러나기 때문이다(원칙 점검 B6). 이름 없는 외국어 의견은 한국어 번역만 보인다. <span class="g">①</span></li>
+ <li><span class="n">56</span>받은 의견은 고치거나 지울 수 없다. 의견을 들었다는 증빙이기 때문이다 — 기록은 아무도 고치지 않는다(2단계 원칙). <span class="g">①</span></li>
+ <li><span class="n">57</span>답은 보낸 사람의 앱(W6-나)에 알림으로 간다. 이름을 뺀 의견에도 답할 수 있다. <span class="g">①</span></li>
+ <li><span class="n">58</span>해결했으면 한 줄과 사진을 남긴다(선택). "고쳤어요"(O3-나)와 같은 모양이다. 해결 기록은 증빙에 들어가고 근로자 앱에 "해결함"으로 보인다. 경보의 "조치 완료"와 말을 나눈다 (2026-09-17). <span class="g">①</span></li>
+</ul>
+<div class="cap">O7-다. 다른 언어로 온 의견</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <div class="tabs"><span>지금 현황</span><span>기록·고칠 것</span><span>점검 증빙</span><span>안전 공지</span><span>근로자</span><span class="on">의견</span></div>
+  <span class="who">박대표 ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:20px;font-weight:850">← 외국어 안내판이 있으면 좋겠어요</span><span class="small">9/12 · 바꾸면 좋겠어요 · Sok Dara · 원문 ភាសាខ្មែរ</span></div>
+  <div class="two">
+   <div class="panel"><div class="warn" style="font-weight:400;padding:6px 10px">🤖 <b><span class="n">59</span>AI 자동 번역</b> · 틀릴 수 있어요</div>
+    <div style="font-size:15px">외국어 안내판이 있으면 좋겠어요. 기계 앞 경고 글을 읽을 수 없어요.</div>
+    <span class="btn ghost inl" style="align-self:flex-start">원문 보기</span></div>
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="field"><span class="lbl"><span class="n">60</span>답하기 — 한국어로 쓰면 보낸 사람 언어로 번역돼 가요</span><div class="input">다음 주에 캄보디아어 안내판을 붙이겠습니다.</div></div>
+    <div class="btnrow" style="justify-content:flex-start"><span class="btn inl">답 보내기</span></div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">59</span>근로자가 자기 언어로 쓴 의견은 <b>한국어 자동 번역과 함께</b> 온다 (2026-09-17 결정). 번역에는 늘 "AI 자동 번역 · 틀릴 수 있어요"와 원문 보기를 붙인다. <span class="g">③</span><span class="g">④</span></li>
+ <li><span class="n">60</span>공장주의 답도 보낸 사람의 언어로 번역돼 간다. 근로자 화면에도 같은 표시가 붙는다(W5-다와 같음). <span class="g">③</span></li>
+</ul>
+</section>
+
+<!-- ================= 공장주: 처음 로그인 ================= -->
+<section>
+<h2>O8. 처음 로그인 — 운영자 초대 받기 [Web]</h2>
+<p class="sub">운영자가 공장을 등록하며 보낸 초대(M2-나)로 공장주가 처음 들어오는 길이다. <b>공장주는 휴대폰 번호 인증으로 들어오고, 앱과 웹이 같은 계정이다</b> (2026-09-17 결정). 기본화면(O1)이 맨 위라는 원칙에 따라 처음 한 번만 보는 이 화면은 공장주 절 맨 뒤에 둔다.</p>
+<div class="cap">O8-가. 초대 링크를 열면 — 번호 인증</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <span class="who">처음 로그인</span></div>
+ <div class="wbody">
+  <div style="max-width:420px;margin:10px auto;display:flex;flex-direction:column;gap:12px">
+   <div style="font-size:20px;font-weight:850"><span class="n">61</span>화성 산업안전 서비스에 초대받았어요</div>
+   <div class="small">운영자(화성산업진흥원)가 <b style="color:#111">대성정밀</b>을 등록하며 보낸 초대예요.</div>
+   <div class="field"><span class="lbl">휴대폰 번호 — 초대받은 번호</span><div class="input">010-****-1234</div></div>
+   <span class="btn ghost inl" style="align-self:flex-start">인증번호 받기</span>
+   <div class="field"><span class="lbl">인증번호 6자리</span><div class="input" style="letter-spacing:6px">4 8 1 _ _ _</div></div>
+   <div class="small"><span class="n">62</span>비밀번호는 없어요. 다음부터 이 번호로 인증해서 들어와요 — <b style="color:#111">앱도 같은 번호</b>예요.</div>
+   <span class="btn inl">확인</span>
+  </div>
+ </div>
+</div></div>
+<div class="cap">O8-나. 우리 공장 정보 확인</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <span class="who">처음 로그인</span></div>
+ <div class="wbody">
+  <div style="font-size:20px;font-weight:850"><span class="n">63</span>우리 공장 정보가 맞나요?</div>
+  <div class="two">
+   <div class="panel"><div class="t">공장</div><div class="small" style="color:#111;font-size:14px;line-height:1.8">대성정밀 · 동탄 · 금속가공<br>기계 2대 (2번 프레스, 컴프레서)<br>센서 7개 · 9/01 설치</div></div>
+   <div class="panel"><div class="t">담당 지킴이</div><div class="small" style="color:#111;font-size:14px;line-height:1.8">김지킴 (전기 조)<br>방문하면 점검 기록이 여기에 올라와요</div></div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center"><span class="btn inl">맞아요</span><span class="btn ghost inl">틀린 곳이 있어요 — 운영자에게 알리기</span></div>
+ </div>
+</div></div>
+<div class="cap">O8-다. 앱 설치 안내 → 근로자 초대로</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>대성정밀 안전 현황</span></div>
+ <div class="top"><span class="brand">대성정밀 안전 현황</span>
+  <span class="who">처음 로그인</span></div>
+ <div class="wbody">
+  <div class="two">
+   <div style="display:flex;flex-direction:column;gap:12px">
+    <div style="font-size:20px;font-weight:850"><span class="n">64</span>경보는 휴대폰 앱으로만 와요</div>
+    <div class="small" style="color:#111;font-size:14px;line-height:1.7">기계나 공장에 이상이 생기면 앱이 소리와 진동으로 알려요.<br>문자는 오지 않아요. <b>앱을 설치하고 알림을 켜 주세요.</b></div>
+    <div class="warn">앱에서도 <b>같은 번호</b>로 로그인해요 (앱 첫 화면 아래 "공장주 로그인").</div>
+    <div class="lbl" style="margin-top:8px"><span class="n">65</span>다음 할 일</div>
+    <div style="display:flex;gap:10px"><span class="btn inl">근로자 초대하러 가기 (근로자 탭)</span><span class="btn ghost inl">나중에</span></div>
+   </div>
+   <div class="panel" style="align-items:center;border:2px solid var(--ink)">
+    <div class="t">휴대폰 카메라로 찍으세요</div>
+    <div style="width:140px;height:140px;border:2px solid var(--ink);display:grid;place-items:center;font-size:13px;color:var(--mid);background:repeating-linear-gradient(45deg,#fff 0 6px,#eee 6px 12px)">앱 설치 QR</div>
+    <div class="small">앱 설치 확인: <b>아직 안 됨</b><span class="guess">가설</span></div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">61</span>누가 왜 초대했는지를 먼저 쓴다. 모르는 링크로 보이면 공장주가 열지 않는다. <span class="g">①</span></li>
+ <li><span class="n">62</span><b>비밀번호를 두지 않는다</b> (2026-09-17 결정). 잊어버릴 일이 없고 찾기 화면도 필요 없다 — 나이 든 공장주에게 맞춘다(3단계). 운영자가 등록한 번호만 들어온다. <span class="g">①</span></li>
+ <li><span class="n">63</span>운영자가 등록한 공장·기계·센서·담당 지킴이를 보여 주고 맞는지 묻는다. 공장주는 고치지 못하고 운영자에게 알린다(등록은 운영자, 2026-09-17 결정). <span class="g">①</span></li>
+ <li><span class="n">64</span><b>경보는 앱으로만 온다는 것을 웹 첫 로그인에서 알린다</b> — 웹만 쓰고 앱을 안 깔면 경보를 못 받는다. 앱 설치를 확인해 보여 줄 수 있는지는 가설이다. <span class="g">②</span></li>
+ <li><span class="n">65</span>이어서 근로자 초대(O6)로 안내한다. 공장주가 들어와 근로자를 초대해야 경보를 받을 사람이 생긴다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ================= 운영자 ================= -->
+<section>
+<h2>M1. 현황판 — 운영자 기본화면 [Web]</h2>
+<p class="sub">운영자는 <b>전체 공장</b>을 본다. 한 화면에 정보가 많아도 되고, 문제 있는 곳이 위로 온다. (3단계 화면 원칙)<br>
+운영자 웹도 공장주 웹처럼 <b>맨 위가 기본화면이고, 그 아래는 위쪽 탭 순서대로</b> 선다 (2026-09-17 정리) — 현황판 · 공장 · 지킴이 배정 · 체크리스트 · 통계.</p>
+
+<div class="cap">M1-가. <b>홈</b> — 전체 현황판</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span class="on">현황판</span><span>공장</span><span>지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div class="filters"><b class="n">5</b><span>권역 전체 ▾</span><span>업종 전체 ▾</span><span>오늘 ▾</span></div>
+  <div class="kpis">
+   <div class="kpi bad"><div class="lbl"><span class="n">1</span>지금 경보</div><div class="k">3곳</div><div class="small">조치 안 됨 1곳<br><b style="color:#111">경보 꺼진 센서 1개 (수리 중)</b></div></div>
+   <div class="kpi"><div class="lbl">조치 뒤에도 이상</div><div class="k">1곳</div><div class="small">42분째</div></div>
+   <div class="kpi"><div class="lbl">이번 달 지킴이 점검</div><div class="k">612곳</div><div class="small">목표 667곳</div></div>
+   <div class="kpi"><div class="lbl"><span class="n">2</span>올해 점검분 개선율</div><div class="k">74%</div><div class="small">재점검 끝난 1,630개 중 고쳐짐 1,206개<br>아직 확인 못 함 312개</div></div>
+  </div>
+  <div class="lbl"><span class="n">3</span>살펴볼 곳 · 문제 큰 순</div>
+  <table class="dense">
+   <tr><th>공장</th><th>권역</th><th>무엇이</th><th>상태</th><th>경과</th><th></th></tr>
+   <tr><td><b>대성정밀</b></td><td>동탄</td><td>⚠ 2번 프레스 경보 (진동 외 1개)</td><td><b>조치 안 됨</b></td><td>18분</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>한빛화학</b></td><td>향남</td><td>⚠ 도장실 경보 (가스) · <b>2번 미뤄짐</b></td><td><b>조치 뒤에도 계속 이상</b></td><td>42분</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>대성정밀</b></td><td>동탄</td><td>🔧 누수 센서 <b>수리 중</b> · 메모: 설치 담당 9/18 방문</td><td><b>경보 꺼짐 — 고치면 되돌리기</b></td><td>오늘 10:05부터</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>대성정밀</b></td><td>동탄</td><td>? 가스 센서 값이 안 옴</td><td><b>모름</b></td><td>30분</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>동방금속</b></td><td>봉담</td><td>⚠ 컴프레서 경보 (진동)</td><td>조치 완료 · 끝남</td><td>2시간</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>한일산업</b></td><td>우정</td><td>재점검 · 문제 3개 중 1개 안 고쳐짐</td><td><b>개선 안 됨</b></td><td>어제</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>대원ENG</b></td><td>봉담</td><td>공장주 "고쳤어요" 2개</td><td><b>재점검 필요</b></td><td>5일</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>서일정공</b></td><td>우정</td><td>지킴이 점검 · 문제 3개</td><td>점검 기록 올라옴</td><td>오늘</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>금성전기</b></td><td>동탄</td><td>지킴이 점검 · 문제 1개</td><td>점검 기록 올라옴</td><td>오늘</td><td class="go">보기 ›</td></tr>
+  </table>
+  <div class="fold"><span class="n">4</span>이상 없는 공장 1,182곳 ▸ 펼치기</div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">1</span>맨 위 숫자는 네 개만 둔다. 지금 경보가 있을 때만 그 칸이 굵어진다. <span class="g">②</span></li>
+ <li><span class="n">2</span>개선율은 지킴이가 <b>문제로 찍은 항목 전부</b>를 대상으로 하되, 그중 <b>재점검이 끝난 것만</b> 세어 고쳐졌다고 확인한 비율이다 (흐름도 B⑧, 2026-09-16 결정). 문제로 찍으면 곧 개선 요청이므로 지킴이가 따로 요청 표시를 하지 않는다 — 성과 지표를 현장에서 조절할 수 없게 하려는 것이다. 아직 재점검을 안 한 항목은 빼고 "아직 확인 못 함"으로 나란히 적어, <b>안 고쳐진 것과 아직 안 가 본 것이 섞이지 않게</b> 한다. 기간은 점검한 달로 묶으므로 이름에 "점검분"을 붙인다. <span class="g">①</span></li>
+ <li><span class="n">3</span>문제 큰 순서: 조치 안 된 경보 → 미루기를 다 쓴 경보·조치했는데 아직 이상 → 센서 고장 신고·값이 안 오는 센서(2026-09-17) → <b>수리 중인 센서(경보 꺼짐 — 잊히지 않게 늘 목록에 남음, 2026-09-17)</b> → 조치된 경보 → 재점검에서 안 고쳐진 곳 → 공장주가 "고쳤어요"를 눌러 재점검이 필요한 곳 → 새로 올라온 점검 기록. 얼마나 지났는지 함께 쓴다. <span class="g">②</span></li>
+ <li><span class="n">4</span>이상 없는 공장은 접어 둔다. 평소 화면은 조용해야 한다. <span class="g">②</span></li>
+ <li><span class="n">5</span>권역·업종·기간으로 거른다. <span class="g">①</span></li>
+</ul>
+
+</section>
+
+<!-- ================= 운영자: 공장 ================= -->
+<section>
+<h2>M2. 공장 — 공장 탭 [Web]</h2>
+<p class="sub"><b>공장 등록과 기계·센서·구역 등록은 운영자가 한다</b> (2026-09-17 결정). 공장이 진흥원 사업으로 들어오고, 센서는 설치하는 쪽이 가장 정확히 알기 때문이다.</p>
+<div class="cap">M2-가. 공장 목록</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span class="on">공장</span><span>지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><div class="filters"><span>권역 전체 ▾</span><span>업종 전체 ▾</span><span>센서 ▾</span><span>담당 지킴이 ▾</span><span>🔍 공장 이름</span></div><span class="btn inl" style="margin-left:auto"><span class="n">6</span>＋ 공장 등록</span></div>
+  <div class="small">전체 1,189곳 · 센서 있음 3곳 · <b style="color:#111"><span class="n">7</span>담당 지킴이 없음 3곳</b> · 공장주 초대 대기 2곳</div>
+  <table class="dense">
+   <tr><th>공장</th><th>권역</th><th>업종</th><th>근로자</th><th>공장주</th><th><span class="n">8</span>센서</th><th>담당 지킴이</th><th>지킴이 점검</th><th></th></tr>
+   <tr><td><b>대성정밀</b></td><td>동탄</td><td>금속가공</td><td>8명</td><td>박대표 ✓</td><td>7개 · <b>수리 중 1 · 모름 1</b></td><td>김지킴</td><td>오늘 재점검 · 1개 되돌아감</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>한빛화학</b></td><td>향남</td><td>화학</td><td>18명</td><td>최대표 ✓</td><td>7개</td><td>김지킴</td><td>첫 점검 · 9/18 예정</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>동방금속</b></td><td>봉담</td><td>금속가공</td><td>12명</td><td>정대표 ✓</td><td>7개</td><td>김지킴</td><td>8/12 · 재점검 할 일</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>세진플라스틱</b></td><td>우정</td><td>사출</td><td>6명</td><td>한대표 ✓</td><td>없음</td><td>김지킴</td><td>9/05 재점검 끝남</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>태광기계</b></td><td>우정</td><td>기계</td><td>—</td><td><b>초대 대기</b></td><td>없음</td><td>김지킴</td><td>첫 점검 · 날짜 안 정함</td><td class="go">보기 ›</td></tr>
+   <tr class="expand"><td><b>신흥산업</b></td><td>향남</td><td>화학</td><td>—</td><td><b>초대 대기</b></td><td>없음</td><td><b>없음 — 배정하기 ›</b></td><td>—</td><td class="go">보기 ›</td></tr>
+  </table>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">6</span>공장 목록이 등록·관리의 시작점이다. 여기서 공장을 등록하고, 한 곳을 누르면 기록(M2-다)과 기계·센서(M2-라)가 열린다. <span class="g">①</span></li>
+ <li><span class="n">7</span>손이 가야 하는 곳을 요약 줄에 굵게 쓴다 — 담당 지킴이가 없는 공장, 공장주가 아직 들어오지 않은 공장. 행에서도 같은 칸이 굵다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">8</span>센서가 없는 공장이 대부분이다(실증은 1곳). 센서가 없어도 지킴이 점검 대상이므로 같은 목록에 둔다. <span class="g">①</span></li>
+</ul>
+<div class="cap">M2-나. 공장 등록</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span class="on">공장</span><span>지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="font-size:20px;font-weight:850">← 공장 등록</div>
+  <div class="two">
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="lbl">공장</div>
+    <div class="field"><span class="lbl">이름</span><div class="input">신흥산업</div></div>
+    <div class="field"><span class="lbl">권역</span><div class="wseg"><span>동탄</span><span class="on">향남</span><span>봉담</span><span>우정</span></div></div>
+    <div class="field"><span class="lbl"><span class="n">9</span>업종 — 기본 체크리스트가 여기서 정해져요</span><div class="input">화학 ▾</div></div>
+    <div class="field"><span class="lbl">주소 · 사업자번호<span class="guess">가설</span></span><div class="input">화성시 향남읍 … · 123-45-67890</div></div>
+    <div class="field"><span class="lbl">센서</span><div class="wseg"><span class="on">없음</span><span>설치 예정 — 등록 뒤 기계·센서(M2-라)로</span></div></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="lbl"><span class="n">10</span>공장주</div>
+    <div class="field"><span class="lbl">이름</span><div class="input">윤대표</div></div>
+    <div class="field"><span class="lbl">휴대폰</span><div class="input">010-****-****</div></div>
+    <div class="warn">등록하면 공장주에게 <b>초대 링크</b>를 보내요<span class="guess">가설</span>. 공장주가 들어와야 근로자를 초대할 수 있어요(O6).</div>
+    <div class="btnrow"><span class="btn ghost inl">취소</span><span class="btn inl">등록하고 초대 보내기</span></div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">9</span><b>업종이 기본 체크리스트 판을 정한다</b>(M4). 잘못 고르면 지킴이가 엉뚱한 항목을 받으므로 칸 이름에 그것을 적는다. 사업자번호 같은 등록 항목은 가설이다. <span class="g">①</span></li>
+ <li><span class="n">10</span>공장 등록과 <b>공장주 초대를 한 번에</b> 한다. 공장주가 들어와야 근로자 초대(O6)가 시작되고, 그래야 경보를 받을 사람이 생긴다. 초대를 문자로 보낼지는 가설이다 — 경보 알림에 문자를 쓰지 않는다는 결정(2026-09-16)과는 다른 일이다. <span class="g">①</span></li>
+</ul>
+<div class="cap">M2-다. 공장 한 곳의 기록 · 이력</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span class="on">공장</span><span>지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:20px;font-weight:850">← 대성정밀</span><span class="small">동탄 · 금속가공 · 근로자 8명 · 기계 2대 · 센서 7개</span><span style="margin-left:auto" class="btn ghost inl"><span class="n">11</span>기록 내보내기 (엑셀·PDF)</span></div>
+  <div class="tabs"><span class="on">전체 이력</span><span>센서 이상 기록</span><span>지킴이 점검 기록</span><span>기계·센서</span></div>
+  <div class="lock">🔒 기록은 고칠 수 없다. 보관·조회·내보내기만 한다.</div>
+  <table class="dense">
+   <tr><th>날짜</th><th>종류</th><th>내용</th><th>상태</th><th></th></tr>
+   <tr><td>9/17 16:40</td><td>작업 알림</td><td>박대표 "18~22시 도장, 전력 50 부근" → AI: 전기 · 50</td><td>예정 · 적용됨</td><td class="go">보기 ›</td></tr>
+   <tr><td>9/17 10:18</td><td>재점검</td><td>2개 중 1개 고쳐짐 · 1개 안 고쳐짐 (사정: 부품·업체 기다림)</td><td><b>공장주에게 다시 감</b></td><td class="go">보기 ›</td></tr>
+   <tr><td>9/15 09:12</td><td>센서 이상</td><td>2번 프레스 (진동·온도)</td><td>조치 완료 · 끝남</td><td class="go">보기 ›</td></tr>
+   <tr><td>9/05</td><td>개선 조치</td><td>8/28 문제 2개 모두 "고쳤어요" (공장주)</td><td>재점검 끝남</td><td class="go">보기 ›</td></tr>
+   <tr><td>9/02 10:05</td><td>센서 이상</td><td>누수 또는 단선</td><td>조치 완료 · 끝남</td><td class="go">보기 ›</td></tr>
+   <tr><td>8/28 14:30</td><td>센서 이상</td><td>컴프레서 (진동)</td><td>조치 완료 · 끝남</td><td class="go">보기 ›</td></tr>
+   <tr class="expand"><td><b>8/28</b></td><td><b>지킴이 점검</b></td><td><b>12항목 · 문제 2개</b></td><td>기록 완료</td><td>▾</td></tr>
+   <tr class="expand"><td colspan="5">
+    <div style="display:flex;flex-direction:column;gap:8px;padding:4px 0">
+     <div>문제 있음: 전선 피복 벗겨짐 📷 · 분전반 앞 적치 📷 &nbsp; <span class="small">이상 없음 10개 ▸</span></div>
+     <div class="cmp"><b><span class="n">12</span>초안과 비교 ▾</b> <span class="small">AI 품질 확인용 · 지킴이 평가에 쓰지 않음</span><br>
+      초안 11개 = 지난번 문제 1 · 업종별 기본 6 · AI 제안 4<br>
+      AI 제안 4개 중 <b>3개 고름</b> · 지킴이가 <b>2개 직접 추가</b><br>
+      고르지 않은 AI 제안: 비상구 표지 조명 (사고 사례 2건 ›)<br>
+      직접 추가: 집진기 필터 막힘 · 비상구 앞 적치</div>
+    </div></td></tr>
+   <tr><td>6/02</td><td>재점검</td><td>5/14 문제 1개 중 1개 고쳐짐</td><td>기록 완료</td><td class="go">보기 ›</td></tr>
+   <tr><td>5/14</td><td>지킴이 점검</td><td>10항목 · 문제 1개</td><td>기록 완료</td><td class="go">보기 ›</td></tr>
+  </table>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">11</span>운영자의 "이력 관리"는 보관·조회·내보내기다. 고치기 버튼은 없다. (2단계 원칙) <span class="g">①</span></li>
+ <li><span class="n">12</span>초안과 비교는 점검 기록 안에 접혀 있다. 평소에는 펼치지 않는다. (2단계 결정) 초안을 지난번 문제·업종별 기본·AI 제안으로 나눠 보여 주고, 고른 비율은 AI 제안만 센다. 지킴이가 고를 수 있는 것이 AI 제안뿐이기 때문이다 (2026-09-16 결정). <span class="g">③</span></li>
+</ul>
+
+<div class="cap">M2-라. 기계 · 센서 · 구역 등록</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span class="on">공장</span><span>지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850">← 대성정밀</span><span class="small">동탄 · 금속가공</span></div>
+  <div class="tabs"><span>전체 이력</span><span>센서 이상 기록</span><span>지킴이 점검 기록</span><span class="on">기계·센서</span></div>
+  <div class="two" style="grid-template-columns:1fr 1fr 1fr">
+   <div class="panel"><div class="t"><span class="n">13</span>1. 구역 (안 써도 돼요)<span class="guess">가설</span></div><div class="small">A동 · A동 2라인 · B동</div><span class="small">＋ 구역 더하기</span></div>
+   <div class="panel"><div class="t">2. 기계 — 현장에서 부르는 이름</div><div class="small">2번 프레스 (A동 2라인) · 컴프레서 (A동)</div><span class="small">＋ 기계 더하기</span></div>
+   <div class="panel"><div class="t">3. 센서 7개</div><div class="small">붙은 곳을 기계 또는 공간으로 고른다</div><span class="small">＋ 센서 더하기</span></div>
+  </div>
+  <table class="dense">
+   <tr><th>센서</th><th>장비 번호</th><th><span class="n">14</span>붙은 곳</th><th><span class="n">15</span>사양서 한계값 (있을 때만)<span class="guess">가설</span></th><th>설치일</th><th><span class="n">16</span>마지막 값 받은 때</th></tr>
+   <tr><td><b>진동 1</b></td><td>VB-0231</td><td>기계 · 2번 프레스</td><td>—</td><td>9/01</td><td>09:40</td></tr>
+   <tr><td><b>진동 2</b></td><td>VB-0232</td><td>기계 · 컴프레서</td><td>—</td><td>9/01</td><td>09:40</td></tr>
+   <tr><td><b>접촉온도</b></td><td>PT-0107</td><td>기계 · 2번 프레스</td><td>80 ℃</td><td>9/01</td><td>09:40</td></tr>
+   <tr><td><b>전력계</b></td><td>PM-0012</td><td>공장 전체 · 인입 배전반</td><td>—</td><td>9/01</td><td>09:40</td></tr>
+   <tr><td><b>가스</b></td><td>GS-0045</td><td>공간 · A동</td><td>종류 미정</td><td>9/01</td><td><b>09:40 · 모름 (30분째 안 옴)</b></td></tr>
+   <tr><td><b>온·습도</b></td><td>TH-0203</td><td>공간 · A동</td><td>—</td><td>9/01</td><td>09:39</td></tr>
+   <tr><td><b>누수</b></td><td>WL-0018</td><td>공간 · 냉각수 배관 밑 1m</td><td>값 없음 (켜짐·꺼짐)</td><td>9/01</td><td>09:40 · <b>수리 중</b> ›</td></tr>
+  </table>
+  <div class="warn" style="font-weight:400">센서를 다른 곳으로 옮기면 <b>그날부터</b> 새 자리로 기록돼요. 지난 센서 이상 기록은 옛 자리 그대로 남아요.</div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">13</span>등록은 <b>구역 → 기계 → 센서</b> 순서다. 기계 이름은 현장에서 부르는 이름으로 적는다 — 경보 첫 줄에 그대로 나간다(W2-가). 구역은 "어디서"를 구역으로 쓰기로 할 때만 쓴다 (가설, 현장 보고 정함). <span class="g">①</span></li>
+ <li><span class="n">14</span><b>붙은 곳은 기계 또는 공간 가운데 하나로 고른다.</b> 이것이 경보 단위(기계 1대 또는 공간 센서 1대, 2026-09-17 결정)를 정한다. 전력계는 "공장 전체"다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">15</span>사양서 한계값은 <b>있을 때만</b> 적는다. 엔진은 사람이 등록한 사양서 값이 있을 때만 그 선을 쓰고, 없으면 긋지 않는다. 값을 어디서 받아 오는지는 이 연구 밖이다 (가설). 누수는 값이 없다. <span class="g">②</span></li>
+ <li><span class="n">16</span>설치가 제대로 됐는지는 <b>마지막으로 값을 받은 때</b>로 본다. 값이 안 오면 이 칸이 <b>"모름"</b>이 되고 공장주·운영자에게 알림이 간다 (2026-09-17 결정). 고장으로 확인된 센서는 <b>"수리 중"</b>으로 표시되고, 누르면 M2-마가 열린다. 센서를 옮겨도 지난 기록은 옛 자리 그대로다 — 기록은 고치지 않는다. <span class="g">①</span></li>
+</ul>
+<div class="cap">M2-마. 고장 신고 확인 · 센서 수리 중으로 돌리기</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span class="on">공장</span><span>지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850">← 대성정밀 · 누수 센서</span><span class="small">WL-0018 · 냉각수 배관 밑 1m</span></div>
+  <div class="two" style="grid-template-columns:1.2fr 1fr">
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="panel"><div class="t"><span class="n">17</span>공장주 신고 · 09:50</div><div class="small" style="color:#111">박대표 · "바닥은 말라 있어요"<br>메모: 배관 밑 확인함, 물기 없음<br>📷 바닥 사진 1장</div></div>
+    <div class="panel"><div class="t"><span class="n">18</span>최근 값 · 오늘 06:00~</div>
+     <div style="display:grid;grid-template-columns:70px 1fr;gap:6px;align-items:center;font-size:13px"><span>물 닿음</span><div style="height:14px;background:linear-gradient(90deg,#fff 0 20%,#111 20% 100%);border:1px solid var(--line)"></div><span>정상</span><div style="height:14px;background:linear-gradient(90deg,#111 0 20%,#fff 20% 100%);border:1px solid var(--line)"></div></div>
+     <div class="small">07:10부터 "물 닿음"에서 바뀌지 않음 · 조치 완료 1번 · 다시 알림 3번</div>
+     <div class="warn" style="font-weight:400;padding:6px 10px"><span class="n">19</span><b>켜짐·꺼짐 센서</b>라 값이 멈춰 있는 것만으로는 고장이라 할 수 없어요 — 물이 계속 닿아 있어도 똑같이 보여요. 공장주 사진과 함께 판단하세요.</div></div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="small" style="color:#111"><span class="n">20</span>센서는 멀쩡하고 <b>작업 때문</b>이라면 수리 중으로 돌리지 말고 공장주에게 <b>작업 예정 알리기</b>를 안내하세요.</div>
+    <div class="field"><span class="lbl">이 센서의 지금 상태</span><div style="font-size:16px;font-weight:800">감시 중 — 경보가 울리는 중</div></div>
+    <div class="warn"><span class="n">21</span>수리 중으로 돌리면<br>· 이 센서의 <b>열린 경보가 닫혀요</b> (기록: "센서 수리로 닫힘")<br>· <b>되돌릴 때까지 새 경보가 울리지 않아요</b><br>· 근로자·공장주 화면에 "수리 중"이 떠요</div>
+    <div class="field"><span class="lbl">수리 메모 (안 써도 돼요)</span><div class="input">설치 담당 방문 예정 9/18</div></div>
+    <div class="btnrow" style="justify-content:flex-start"><span class="btn inl">수리 중으로 돌리기</span></div>
+    <div class="small"><span class="n">22</span>고친 뒤에는 이 자리에 <b>"수리 끝 · 감시로 되돌리기"</b>가 보여요.</div>
+   </div>
+  </div>
+ </div>
+</div></div>
+
+<div class="cap">M2-바. "수리 중으로 돌리기"를 누르면 — 확인 한 번</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span class="on">공장</span><span>지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="stage">
+ <div class="wbody faded" style="min-height:330px">
+  <div style="font-size:20px;font-weight:850">← 대성정밀 · 누수 센서</div>
+ </div>
+ <div class="dim2"></div>
+ <div class="dialog c">
+  <div style="font-size:18px;font-weight:850"><span class="n">23</span>대성정밀 누수 센서를 수리 중으로 돌릴까요?</div>
+  <div class="warn" style="font-weight:400">· 열린 경보 1건(07:10~)이 <b>닫혀요</b><br>· <b>되돌릴 때까지 이 센서는 경보가 울리지 않아요</b><br>· 박대표와 근로자 8명 화면에 "수리 중"이 떠요</div>
+  <div class="small">공장주 신고: "바닥은 말라 있어요" · 사진 1장 확인함</div>
+  <div class="btnrow"><span class="btn inl">돌리지 않기</span><span class="btn ghost inl danger">수리 중으로 돌리기</span></div>
+ </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">17</span>공장주 신고는 현황판 살펴볼 곳(M1-가)에 오르고, 누르면 이 화면이 열린다. 신고 사유와 메모를 먼저 보여 준다. <span class="g">①</span></li>
+ <li><span class="n">18</span><b>최근 값을 함께 보여 줘 고장인지 판단하게 한다.</b> 한 값에서 오래 멈춰 있고 조치·다시 알림이 반복됐으면 고장일 가능성이 높다. 판단은 사람이 한다. <span class="g">②</span><span class="g">③</span></li>
+ <li><span class="n">19</span><b>켜짐·꺼짐 센서(누수)는 "값이 멈춤 = 고장"이 아니다</b> (원칙 점검 B8). 숫자 센서라면 한 값에 오래 멈춘 것이 고장 신호지만, 누수 센서는 물이 계속 닿아 있어도 똑같다. 그래서 그 자리에 경고를 두고, 공장주 신고에 바닥 사진(선택)을 붙여 운영자가 함께 본다. 신고 사유도 센서 종류에 맞춘다(누수: "바닥은 말라 있어요 / 물기가 없는데 계속 울려요"). <span class="g">②</span><span class="g">③</span></li>
+ <li><span class="n">20</span><b>헛경보의 원인이 작업이면 센서를 끄지 않는다</b> (원칙 전체 점검 A2, 2026-09-17). 작업 예정 알리기(O1-사)로 그 시간 기준을 맞추면 센서는 계속 지켜본다. 오래 가는 변화도 글이 붙어 있으면 엔진이 심사해 기준을 다시 잡는다. <b>수리 중은 센서가 진짜 고장일 때만</b> 쓴다. <span class="g">②</span></li>
+ <li><span class="n">21</span><b>경보를 닫고 새 경보를 막는 것은 운영자만 한다</b> (2026-09-17 결정). 누르기 전에 무엇이 바뀌는지 세 줄로 알린다. 닫힌 경보는 지우지 않고 "센서 수리로 닫힘"으로 남긴다(O2-가) — 기록은 고치지 않는다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">22</span>수리 중은 <b>되돌릴 때까지</b> 계속된다. 잊고 두면 그 센서가 계속 침묵하므로, 수리 중인 센서는 현황판과 공장 목록에서 계속 보이게 한다. 며칠 넘게 수리 중이면 다시 알릴지는 가설이다. <span class="g">②</span></li>
+ <li><span class="n">23</span><b>누르면 한 번 더 묻는다</b> (원칙 점검 E34). 경보를 닫고 센서를 침묵시키는 가장 무거운 버튼이다. 창에는 공장·센서 이름과, 몇 명의 화면이 바뀌는지를 숫자로 적어 다른 공장·다른 센서를 잘못 고르지 않았는지 보게 한다. 채운 버튼은 안전한 쪽이다. <span class="g">①</span><span class="g">②</span></li>
+</ul>
+</section>
+
+<!-- ================= 운영자: 지킴이 배정 ================= -->
+<section>
+<h2>M3. 지킴이 배정 — 지킴이 배정 탭 [Web]</h2>
+<p class="sub"><b>담당 공장과 새 방문은 운영자가 배정하고, 방문 날짜는 지킴이가 적는다</b> (2026-09-17 결정). 재점검은 배정하지 않는다 — 공장주의 "고쳤어요"로 자동으로 오른다.</p>
+<div class="cap">M3-가. 이번 달 배정판</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span>공장</span><span class="on">지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850">9월 배정 ▾</span><div class="filters"><span>권역 전체 ▾</span><span>조 전체 ▾</span></div></div>
+  <div class="kpis">
+   <div class="kpi"><div class="lbl"><span class="n">24</span>9월 목표</div><div class="k">667곳</div></div>
+   <div class="kpi"><div class="lbl">배정함</div><div class="k">660곳</div><div class="small">목표보다 7곳 적음</div></div>
+   <div class="kpi bad"><div class="lbl">날짜 안 정함</div><div class="k">21곳</div><div class="small">지킴이가 적을 차례</div></div>
+   <div class="kpi"><div class="lbl">담당 지킴이 없는 공장</div><div class="k">3곳</div><div class="small">배정하기 ›</div></div>
+  </div>
+  <table class="dense">
+   <tr><th>지킴이</th><th>조 (분야)<span class="guess">가설</span></th><th>담당 공장</th><th>9월 갈 곳</th><th>날짜 정함</th><th>다녀옴</th><th><span class="n">25</span>재점검 할 일 (자동)</th><th></th></tr>
+   <tr class="expand"><td><b>김지킴</b></td><td>전기</td><td>12곳</td><td>2곳</td><td><b>1곳</b></td><td>0곳</td><td>2곳</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>이지킴</b></td><td>화재</td><td>14곳</td><td>9곳</td><td>9곳</td><td>7곳</td><td>1곳</td><td class="go">보기 ›</td></tr>
+   <tr><td><b>박지킴</b></td><td>유해물질</td><td>11곳</td><td>8곳</td><td><b>5곳</b></td><td>3곳</td><td>0곳</td><td class="go">보기 ›</td></tr>
+  </table>
+ </div>
+</div></div>
+<div class="cap">M3-나. 지킴이 한 명의 배정 고치기</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span>공장</span><span class="on">지킴이 배정</span><span>체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850"><span class="n">26</span>← 김지킴 · 전기 조</span><span class="small">담당 12곳 · 9월</span><span class="btn ghost inl" style="margin-left:auto">＋ 담당 공장 더하기</span></div>
+  <table class="dense">
+   <tr><th>담당 공장</th><th>지난 점검</th><th><span class="n">27</span>9월 갈 곳</th><th>지금</th><th></th></tr>
+   <tr><td><b>대성정밀</b></td><td>8/28 점검</td><td>—</td><td>오늘 재점검 끝 · 1개 공장주에게</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>한빛화학</b></td><td>첫 점검</td><td><span class="wseg"><span class="tg on">9월에 감</span></span></td><td>9/18 날짜 정함</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>태광기계</b></td><td>첫 점검</td><td><span class="wseg"><span class="tg on">9월에 감</span></span></td><td>날짜 안 정함</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>금성전기</b></td><td>8/20 점검</td><td><span class="wseg"><span class="tg">9월에 감</span></span></td><td>공장주 고침 기다림</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td><b>세진플라스틱</b></td><td>9/05 재점검 끝남</td><td><span class="wseg"><span class="tg">9월에 감</span></span></td><td>—</td><td><span class="btn ghost inl danger">빼기</span></td></tr>
+   <tr><td colspan="5" class="small">… 7곳 더</td></tr>
+  </table>
+  <div style="display:flex;align-items:center;gap:12px"><span class="small">저장하면 김지킴의 "내 할 일"(G2)에 오르고, 날짜는 김지킴이 적어요.</span><span class="btn inl" style="margin-left:auto">배정 저장</span></div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">24</span>맨 위에 달 목표와 배정·날짜 상태를 둔다. <b>날짜를 안 정한 곳</b>이 많으면 굵어진다 — 날짜는 지킴이가 적는 것이라 운영자는 누가 늦는지 보고 연락한다. 점검 목표 관리는 1단계 운영자 의무다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">25</span>재점검 할 일은 보기만 한다. 배정하지 않아도 지킴이 목록에 이미 올라 있다. 조(분야)는 지킴이 조가 우리 분야 구분과 맞는다는 가설 위에 있다(1단계 확인 필요). <span class="g">①</span></li>
+ <li><span class="n">26</span>이 화면은 <b>일을 나누는 곳</b>이다. 지킴이 이름이 나오지만 순위나 점수는 두지 않는다 — AI 품질을 지킴이 평가에 쓰지 않기로 한 것(2단계)과 같은 이유다. <span class="g">③</span></li>
+ <li><span class="n">27</span>담당 공장마다 "9월에 감"을 켜고 끈다. 켜진 칸은 채움만이 아니라 <b>☑ 글자</b>로도 보인다 (원칙 점검 E37). 담당에서 빼는 버튼은 점선으로 떼어 둔다. 지난 점검과 지금 상태(고침 기다림, 재점검 할 일)를 같이 보여 줘, 갈 필요가 없는 곳을 넣지 않게 한다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ================= 운영자: 체크리스트 ================= -->
+<section>
+<h2>M4. 기본 체크리스트 — 체크리스트 탭 [Web]</h2>
+<p class="sub"><b>기본 체크리스트는 운영자가 업종 × 분야 판으로 관리한다</b> (2026-09-17 결정). 지난 점검 기록은 그때 쓴 판을 가리킨다. 지킴이 앱의 "업종별 기본 체크리스트" 묶음(G4-나)이 여기서 나온다.</p>
+<div class="cap">M4-가. 판 목록</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span>공장</span><span>지킴이 배정</span><span class="on">체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850">기본 체크리스트</span><span class="small"><span class="n">28</span>한 칸 = 한 판 (업종 × 분야)</span><span class="btn ghost inl" style="margin-left:auto">＋ 업종 더하기</span></div>
+  <table class="dense">
+   <tr><th>업종 \ 분야</th><th>화재</th><th>전기</th><th>유해물질</th><th>이 업종 공장</th></tr>
+   <tr><td><b>금속가공</b></td><td>2판 · 10항목 · 5/20</td><td><b>3판</b> · 12항목 · 8/01</td><td>2판 · 10항목 · 5/20</td><td>214곳</td></tr>
+   <tr><td><b>화학</b></td><td>2판 · 10항목 · 5/20</td><td>2판 · 10항목 · 5/20</td><td>3판 · 15항목 · 6/10<br><b>4판 만드는 중</b></td><td>305곳</td></tr>
+   <tr><td><b>사출</b></td><td>2판 · 10항목 · 5/20</td><td>2판 · 10항목 · 5/20</td><td>2판 · 10항목 · 5/20</td><td>122곳</td></tr>
+   <tr><td><b>기계</b></td><td>2판 · 10항목 · 5/20</td><td>2판 · 10항목 · 5/20</td><td>2판 · 10항목 · 5/20</td><td>98곳</td></tr>
+  </table>
+  <div class="small"><span class="n">29</span>지킴이 앱에는 방문하는 공장의 업종 칸 가운데 <b>그 지킴이 조의 분야</b> 판이 내려가요<span class="guess">가설</span>.</div>
+ </div>
+</div></div>
+<div class="cap">M4-나. 한 판 고치기 · 새 판 올리기</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span>공장</span><span>지킴이 배정</span><span class="on">체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px;font-weight:850">← 금속가공 × 전기</span><span class="small">지금 쓰는 판: 3판 (8/01) · 이 판을 쓰는 공장 214곳</span></div>
+  <div class="two" style="grid-template-columns:1.5fr 1fr">
+   <div style="display:flex;flex-direction:column;gap:8px">
+    <div class="lbl"><span class="n">30</span>4판 만드는 중 — 바뀐 곳 3개</div>
+    <div class="item">· 분전반 앞에 물건이 쌓여 있지 않나?</div>
+    <div class="item back"><b>✎ 고침</b> · 누전차단기 시험 버튼이 작동하나? <b>→ 누전차단기를 한 달에 한 번 시험한 기록이 있나?</b></div>
+    <div class="item back"><b>＋ 새 항목</b> · 이동식 전선 릴에 과열 흔적이 없나?</div>
+    <div class="item back" style="text-decoration:line-through"><b>− 뺌</b> · 전기실 출입 표지가 붙어 있나?</div>
+    <div class="item">· 전선 피복이 벗겨진 곳이 없나?</div>
+    <div class="fold">나머지 8개 ▸ · ＋ 항목 더하기</div>
+   </div>
+   <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="warn"><span class="n">31</span>4판으로 올리면 <b>다음 점검부터</b> 214곳이 4판을 써요.<br>지난 점검 기록은 <b>3판을 그대로</b> 가리켜요. 올린 판은 고칠 수 없어요.</div>
+    <div class="btnrow"><span class="btn ghost inl">임시 저장</span><span class="btn inl">4판으로 올리기</span></div>
+    <div class="small">지난 판 보기: 1판 (2025-11) · 2판 (2026-03) · 3판 (2026-08)</div>
+   </div>
+  </div>
+ </div>
+</div></div>
+
+<div class="cap">M4-다. "4판으로 올리기"를 누르면 — 확인 한 번</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span>공장</span><span>지킴이 배정</span><span class="on">체크리스트</span><span>통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="stage">
+ <div class="wbody faded" style="min-height:330px">
+  <div style="font-size:20px;font-weight:850">← 금속가공 × 전기</div>
+ </div>
+ <div class="dim2"></div>
+ <div class="dialog c">
+  <div style="font-size:18px;font-weight:850"><span class="n">32</span>금속가공 × 전기 4판을 올릴까요?</div>
+  <div class="warn" style="font-weight:400">· <b>214곳</b>이 다음 점검부터 4판을 써요<br>· 바뀐 곳 3개: 고침 1 · 새 항목 1 · 뺌 1<br>· <b>올린 판은 고칠 수 없어요</b> — 고치려면 5판을 새로 만들어요</div>
+  <div class="small">이미 받아 둔 지킴이 휴대폰에는 다음 연결 때 내려가요.<span class="guess">가설</span></div>
+  <div class="btnrow"><span class="btn ghost inl">다시 보기</span><span class="btn inl">4판으로 올리기</span></div>
+ </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">28</span>표 한 칸이 판 하나다. 칸마다 지금 쓰는 판 번호, 항목 수, 올린 날을 쓴다. 만들고 있는 새 판이 있으면 굵게 표시한다. <span class="g">①</span></li>
+ <li><span class="n">29</span>지킴이에게는 방문 공장의 업종 줄에서 <b>자기 조 분야 칸</b>만 내려간다 (가설 — 조와 분야의 대응은 1단계 확인 필요). 그래서 시안의 항목 꼬리표가 "전기 분야 기본 항목"이다. <span class="g">①</span></li>
+ <li><span class="n">30</span>새 판을 만들 때는 바뀐 곳에 <b>고침 · 새 항목 · 뺌</b> 표시를 붙여, 올리기 전에 무엇이 달라지는지 한눈에 본다. <span class="g">①</span></li>
+ <li><span class="n">31</span><b>올린 판은 고칠 수 없고, 지난 점검 기록은 옛 판을 그대로 가리킨다</b> (2026-09-17 결정). 점검 기록이 공장주의 반기 증빙이므로 나중에 항목 문구가 바뀌어도 그때 무엇을 봤는지 남아야 한다. 올리기 전에 이것과 영향받는 공장 수를 알린다. <span class="g">①</span></li>
+ <li><span class="n">32</span><b>올리기를 누르면 한 번 묻는다</b> (원칙 점검 E34). 한 번에 214곳이 바뀌고 되돌릴 수 없으므로, 공장 수·바뀐 곳 수·고칠 수 없다는 것을 창에 다시 적는다. 이 창은 되돌리는 쪽이 "다시 보기"다. 이미 받아 둔 자료가 언제 바뀌는지는 가설이다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ================= 운영자: 통계 ================= -->
+<section>
+<h2>M5. 통계 · AI 품질 — 통계 탭 [Web]</h2>
+<p class="sub">공장·권역 비교와 AI 품질은 운영자만 본다.</p>
+<div class="cap">M5-가. 통계 · AI 품질</div>
+<div class="scroll"><div class="win">
+ <div class="wbar"><span><i></i><i></i><i></i></span><span>화성 산업안전 운영</span></div>
+ <div class="top"><span class="brand">화성 산업안전 운영</span>
+  <div class="tabs"><span>현황판</span><span>공장</span><span>지킴이 배정</span><span>체크리스트</span><span class="on">통계</span></div>
+  <span class="who">운영자 이OO ▾</span></div>
+ <div class="wbody">
+  <div class="filters"><span>이번 달 점검분 ▾</span><span>권역 전체 ▾</span><span>업종 전체 ▾</span><span style="margin-left:auto">내보내기</span></div>
+  <div class="two">
+   <div class="panel"><span class="t"><span class="n">33</span>권역 비교</span>
+    <table class="dense">
+     <tr><th>권역 ▾</th><th>공장</th><th>점검</th><th>경보</th><th>조치 완료율</th><th>개선율</th></tr>
+     <tr><td>동탄</td><td>412</td><td>198</td><td>21</td><td>95%</td><td>78%</td></tr>
+     <tr><td>향남</td><td>305</td><td>160</td><td>17</td><td>88%</td><td>71%</td></tr>
+     <tr><td>봉담</td><td>288</td><td>141</td><td>12</td><td>100%</td><td>69%</td></tr>
+     <tr><td>우정</td><td>184</td><td>113</td><td>9</td><td>89%</td><td>76%</td></tr>
+    </table>
+    <div class="small">조치 완료율 = 센서 경보 중 조치 완료 비율 · 개선율 = 점검 문제 중 재점검이 끝난 것만 세어 고쳐짐 확인 비율 (아직 확인 못 한 항목은 빼고 따로 센다)</div>
+   </div>
+   <div class="panel"><span class="t"><span class="n">34</span>AI 품질 · 체크리스트 초안</span>
+    <div class="small">이번 달 초안 612건 · AI 제안 중 지킴이가 고른 비율 <b style="color:#111">71%</b> (업종별 기본·지난번 문제 항목은 세지 않음)</div>
+    <div class="lbl"><span class="n">35</span>자주 빠지는 AI 제안 (AI가 틀리기 쉬운 곳)</div>
+    <table class="dense">
+     <tr><th>항목</th><th>제안</th><th>고름</th><th>고른 비율</th></tr>
+     <tr><td>배기 팬 이상 소음</td><td>300</td><td>45</td><td><div class="bar"><span style="width:15%"></span></div>15%</td></tr>
+     <tr><td>비상구 표지 조명</td><td>210</td><td>40</td><td><div class="bar"><span style="width:19%"></span></div>19%</td></tr>
+    </table>
+    <div class="lbl">직접 추가가 많은 항목 (AI가 놓치는 곳)</div>
+    <table class="dense">
+     <tr><th>항목</th><th>직접 추가</th></tr>
+     <tr><td>집진기 필터 막힘</td><td>38</td></tr>
+     <tr><td>비상구 앞 적치</td><td>27</td></tr>
+    </table>
+    <div class="small">지킴이 이름은 나오지 않는다. 항목 기준으로만 모은다.</div>
+   </div>
+  </div>
+ </div>
+</div></div>
+<ul class="notes">
+ <li><span class="n">33</span>공장·권역 비교는 운영자만 본다. 표 머리를 눌러 정렬한다. 기간은 <b>점검한 달</b> 기준이므로, 최근 달은 재점검이 아직 안 끝나 개선율이 낮게 보인다. 개선율을 볼 때는 몇 달 전 점검분을 고른다. <span class="g">①</span></li>
+ <li><span class="n">34</span>AI 품질은 <b>항목 기준</b>으로만 모으고 지킴이 이름을 보여 주지 않는다. 지킴이 평가가 아니라 AI를 고치는 데 쓴다. (2단계 결정) <span class="g">③</span></li>
+ <li><span class="n">35</span>자주 빠지는 항목은 AI가 틀리기 쉬운 곳이고, 직접 추가가 많은 항목은 AI가 놓치는 곳이다. 둘 다 AI를 고칠 곳을 알려 준다. <span class="g">③</span></li>
+</ul>
+</section>
+
+</body>
+</html>

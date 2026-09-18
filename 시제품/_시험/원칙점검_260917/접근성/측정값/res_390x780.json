@@ -1,0 +1,4567 @@
+{
+ "res": {
+  "w_welcome": {
+   "contrast": [
+    {
+     "t": "⚠",
+     "r": 1,
+     "fs": 40,
+     "fw": 400,
+     "fg": "rgba(0, 0, 0, 0)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.bd>div.center>div.applogo"
+    }
+   ],
+   "small": [],
+   "targets": [],
+   "names": [
+    {
+     "t": "English",
+     "w": 358,
+     "h": 56,
+     "tag": "button",
+     "el": "div.bd>div.langs>button.pick.on",
+     "focusable": true,
+     "x": 16,
+     "y": 339,
+     "issue": "고른 상태가 aria로 없음"
+    }
+   ],
+   "labels": [],
+   "headings": [],
+   "lang": "en",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "w_scan_sheet": {
+   "contrast": [
+    {
+     "t": "⚠",
+     "r": 1,
+     "fs": 40,
+     "fw": 400,
+     "fg": "rgba(0, 0, 0, 0)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.bd>div.center>div.applogo"
+    }
+   ],
+   "small": [],
+   "targets": [],
+   "names": [
+    {
+     "t": "English",
+     "w": 358,
+     "h": 56,
+     "tag": "button",
+     "el": "div.bd>div.langs>button.pick.on",
+     "focusable": true,
+     "x": 16,
+     "y": 339,
+     "issue": "고른 상태가 aria로 없음"
+    }
+   ],
+   "labels": [],
+   "headings": [],
+   "lang": "en",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [
+    {
+     "role": null,
+     "modal": null,
+     "label": null
+    }
+   ],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "w_join": {
+   "contrast": [
+    {
+     "t": "Factory",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.stat>div>div.lbl"
+    }
+   ],
+   "small": [
+    {
+     "t": "Factory",
+     "fs": 13,
+     "el": "div.stat>div>div.lbl"
+    },
+    {
+     "t": "Name",
+     "fs": 13,
+     "el": "div.stat>div>div.lbl"
+    },
+    {
+     "t": "Workplace",
+     "fs": 13,
+     "el": "div.stat>div>div.lbl"
+    }
+   ],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "en",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 13
+  },
+  "w_join_err": {
+   "contrast": [],
+   "small": [],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "en",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "w_notif_ask": {
+   "contrast": [],
+   "small": [],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "w_home": {
+   "contrast": [
+    {
+     "t": "안전 경보",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "값은 대표님과 운영자가 봐요. 이상이 생기면 이 휴대폰",
+     "r": 3.06,
+     "fs": 12.5,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.bd>div.sect>p.note"
+    },
+    {
+     "t": "9/16",
+     "r": 3.06,
+     "fs": 12,
+     "fw": 600,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.sect>button.frow>span.fd"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "r": 3.06,
+     "fs": 12,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.scr>div.bd>div.proto"
+    }
+   ],
+   "small": [
+    {
+     "t": "안전 경보",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "주간 근무 · A동 2라인",
+     "fs": 13,
+     "el": "div.today>div>span"
+    },
+    {
+     "t": "알림 켜짐",
+     "fs": 13,
+     "el": "div.bd>div.today>span.live"
+    },
+    {
+     "t": "2번 프레스",
+     "fs": 12,
+     "el": "div.mon>div.ms.ok>b"
+    },
+    {
+     "t": "감시 중",
+     "fs": 11,
+     "el": "div.mon>div.ms.ok>span"
+    },
+    {
+     "t": "가스",
+     "fs": 12,
+     "el": "div.mon>div.ms.ok>b"
+    },
+    {
+     "t": "감시 중",
+     "fs": 11,
+     "el": "div.mon>div.ms.ok>span"
+    },
+    {
+     "t": "전기",
+     "fs": 12,
+     "el": "div.mon>div.ms.ok>b"
+    },
+    {
+     "t": "감시 중",
+     "fs": 11,
+     "el": "div.mon>div.ms.ok>span"
+    },
+    {
+     "t": "누수",
+     "fs": 12,
+     "el": "div.mon>div.ms.ok>b"
+    },
+    {
+     "t": "감시 중",
+     "fs": 11,
+     "el": "div.mon>div.ms.ok>span"
+    },
+    {
+     "t": "온습도",
+     "fs": 12,
+     "el": "div.mon>div.ms.ok>b"
+    },
+    {
+     "t": "감시 중",
+     "fs": 11,
+     "el": "div.mon>div.ms.ok>span"
+    },
+    {
+     "t": "값은 대표님과 운영자가 봐요. 이상이 생기면 이 휴대폰",
+     "fs": 12.5,
+     "el": "div.bd>div.sect>p.note"
+    },
+    {
+     "t": "안 읽음 1",
+     "fs": 12,
+     "el": "button.tile>b>span.cnt"
+    },
+    {
+     "t": "안 읽음",
+     "fs": 12,
+     "el": "span.ftx>b>span.cnt"
+    },
+    {
+     "t": "2번 프레스 금형 바꿀 때 지킬 것",
+     "fs": 13,
+     "el": "button.frow>span.ftx>small"
+    },
+    {
+     "t": "9/16",
+     "fs": 12,
+     "el": "div.sect>button.frow>span.fd"
+    },
+    {
+     "t": "끝남",
+     "fs": 13,
+     "el": "button.frow>span.ftx>small"
+    },
+    {
+     "t": "9/15",
+     "fs": 12,
+     "el": "div.sect>button.frow>span.fd"
+    },
+    {
+     "t": "휴게실 선풍기가 고장 났어요",
+     "fs": 13,
+     "el": "button.frow>span.ftx>small"
+    },
+    {
+     "t": "9/05",
+     "fs": 12,
+     "el": "div.sect>button.frow>span.fd"
+    },
+    {
+     "t": "더운 날 작업할 때",
+     "fs": 13,
+     "el": "button.frow>span.ftx>small"
+    },
+    {
+     "t": "9/02",
+     "fs": 12,
+     "el": "div.sect>button.frow>span.fd"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "fs": 12,
+     "el": "div.scr>div.bd>div.proto"
+    }
+   ],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H2:센서 감시",
+    "H2:최근 소식"
+   ],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "w_alarm": {
+   "contrast": [
+    {
+     "t": "09:10 · 방금",
+     "r": 4.15,
+     "fs": 14,
+     "fw": 400,
+     "fg": "rgba(255, 255, 255, 0.9)",
+     "bg": "rgb(217,45,32)",
+     "grad": false,
+     "el": "div.alarm>div>div.small"
+    }
+   ],
+   "small": [
+    {
+     "t": "정상 범위",
+     "fs": 12,
+     "el": "div>div.range-l>span"
+    },
+    {
+     "t": "지금 ▲",
+     "fs": 12,
+     "el": "div>div.range-l>span"
+    }
+   ],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 12
+  },
+  "langFromAlarm": {
+   "hash": "#/settings",
+   "alarmShown": true,
+   "settingsShown": false
+  },
+  "w_done_undo": {
+   "contrast": [],
+   "small": [],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "undoGap": {
+   "undo": [
+    328,
+    50,
+    617
+   ],
+   "close": [
+    358,
+    50,
+    712
+   ],
+   "gap": 45
+  },
+  "undoAfter": false,
+  "w_remind": {
+   "contrast": [
+    {
+     "t": "조치 완료 뒤 5분",
+     "r": 4.15,
+     "fs": 14,
+     "fw": 400,
+     "fg": "rgba(255, 255, 255, 0.9)",
+     "bg": "rgb(217,45,32)",
+     "grad": false,
+     "el": "div.alarm>div>div.small"
+    }
+   ],
+   "small": [
+    {
+     "t": "정상 범위",
+     "fs": 12,
+     "el": "div>div.range-l>span"
+    },
+    {
+     "t": "지금 ▲",
+     "fs": 12,
+     "el": "div>div.range-l>span"
+    }
+   ],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 12
+  },
+  "w_two": {
+   "contrast": [
+    {
+     "t": "조치 안 됨 2",
+     "r": 3.79,
+     "fs": 14,
+     "fw": 600,
+     "fg": "rgb(219, 228, 247)",
+     "bg": "rgb(217,45,32)",
+     "grad": false,
+     "el": "div.bd>div.head.alarmhead>span.end.small"
+    }
+   ],
+   "small": [],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "w_history": {
+   "contrast": [
+    {
+     "t": "안전 경보",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "안전 경보",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H1:받은 경보"
+   ],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "w_notices": {
+   "contrast": [
+    {
+     "t": "안전 경보",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "안전 경보",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "안 읽음",
+     "fs": 12,
+     "el": "button.q.now>div.rowx>span.cnt"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H1:안전 공지"
+   ],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "w_notice_vi": {
+   "contrast": [
+    {
+     "t": "Cảnh báo an toàn",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "Cảnh báo an toàn",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "Bản dịch AI · có thể sai",
+     "fs": 13,
+     "el": "div.bd>div.aitag>span"
+    },
+    {
+     "t": "Xem bản gốc (tiếng Hàn)",
+     "fs": 13,
+     "el": "div.bd>div.aitag>button.link"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    },
+    {
+     "t": "Xem bản gốc (tiếng Hàn)",
+     "w": 190,
+     "h": 36,
+     "tag": "button",
+     "el": "div.bd>div.aitag>button.link",
+     "focusable": true,
+     "x": 28,
+     "y": 260
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "vi",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "langVi": {
+   "html": "vi",
+   "korean": [
+    "대성정밀 (Daesung Precision)",
+    "김근로 ›",
+    "9/16 · 박대표 · 9월 위험성평가"
+   ],
+   "langAttrs": 0
+  },
+  "w_voice": {
+   "contrast": [
+    {
+     "t": "안전 경보",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "안전 경보",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [
+    {
+     "t": "위험해 보여요",
+     "w": 132,
+     "h": 48,
+     "tag": "button",
+     "el": "div.bd>div.seg>button.on",
+     "focusable": true,
+     "x": 16,
+     "y": 406,
+     "issue": "고른 상태가 aria로 없음"
+    },
+    {
+     "t": "이름 빼기",
+     "w": 175,
+     "h": 48,
+     "tag": "button",
+     "el": "div.bd>div.seg>button.on",
+     "focusable": true,
+     "x": 199,
+     "y": 749,
+     "issue": "고른 상태가 aria로 없음"
+    }
+   ],
+   "labels": [
+    {
+     "id": "vText",
+     "ph": "예: B동 통로에 기름이 자주 흘러 있어요",
+     "el": "div.scr.enter>div.bd>textarea.input"
+    }
+   ],
+   "headings": [
+    "H1:의견 보내기"
+   ],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "voiceEmpty": {
+   "toast": "내용을 적어 주세요",
+   "toastRole": null,
+   "focus": "vText",
+   "invalid": null
+  },
+  "w_voice_dlg": {
+   "contrast": [
+    {
+     "t": "안전 경보",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "안전 경보",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [
+    {
+     "t": "위험해 보여요",
+     "w": 132,
+     "h": 48,
+     "tag": "button",
+     "el": "div.bd>div.seg>button.on",
+     "focusable": true,
+     "x": 16,
+     "y": 406,
+     "issue": "고른 상태가 aria로 없음"
+    },
+    {
+     "t": "이름 빼기",
+     "w": 175,
+     "h": 48,
+     "tag": "button",
+     "el": "div.bd>div.seg>button.on",
+     "focusable": true,
+     "x": 199,
+     "y": 749,
+     "issue": "고른 상태가 aria로 없음"
+    }
+   ],
+   "labels": [
+    {
+     "id": "vText",
+     "ph": "예: B동 통로에 기름이 자주 흘러 있어요",
+     "el": "div.scr>div.bd>textarea.input"
+    }
+   ],
+   "headings": [
+    "H1:의견 보내기"
+   ],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [
+    {
+     "role": null,
+     "modal": null,
+     "label": null
+    }
+   ],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "dlgFocus": {
+   "active": "BODY.",
+   "inDlg": false
+  },
+  "dlgEsc": true,
+  "w_voice_mine": {
+   "contrast": [
+    {
+     "t": "안전 경보",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "안전 경보",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "보냄",
+     "fs": 11,
+     "el": "div.q>div.steps>span.on"
+    },
+    {
+     "t": "대표님이 읽음",
+     "fs": 11,
+     "el": "div.q>div.steps>span.on"
+    },
+    {
+     "t": "답 옴",
+     "fs": 11,
+     "el": "div.q>div.steps>span.on"
+    },
+    {
+     "t": "해결함",
+     "fs": 11,
+     "el": "div.q>div.steps>span.on"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "w_settings": {
+   "contrast": [
+    {
+     "t": "안전 경보",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "🔔 켜짐 · 끌 수 없어요",
+     "r": 4.07,
+     "fs": 14,
+     "fw": 700,
+     "fg": "rgb(18, 135, 90)",
+     "bg": "rgb(232,246,239)",
+     "grad": false,
+     "el": "div.scr.enter>div.bd>div.bell"
+    }
+   ],
+   "small": [
+    {
+     "t": "안전 경보",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [
+    {
+     "t": "소리 + 진동",
+     "w": 175,
+     "h": 48,
+     "tag": "button",
+     "el": "div.bd>div.seg>button.on",
+     "focusable": true,
+     "x": 16,
+     "y": 402,
+     "issue": "고른 상태가 aria로 없음"
+    },
+    {
+     "t": "받기",
+     "w": 175,
+     "h": 48,
+     "tag": "button",
+     "el": "div.bd>div.seg>button.on",
+     "focusable": true,
+     "x": 16,
+     "y": 505,
+     "issue": "고른 상태가 aria로 없음"
+    },
+    {
+     "t": "한국어",
+     "w": 358,
+     "h": 48,
+     "tag": "button",
+     "el": "div.scr.enter>div.bd>button.pick.left.on",
+     "focusable": true,
+     "x": 16,
+     "y": 608,
+     "issue": "고른 상태가 aria로 없음"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:알림·언어"
+   ],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "w_me": {
+   "contrast": [
+    {
+     "t": "안전 경보",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "안전 경보",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "가설",
+     "fs": 11,
+     "el": "div.bd>div.small>span.hyp"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H1:내 정보"
+   ],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "focusW": [
+   {
+    "t": "김근로 ›",
+    "outline": "auto 1px rgb(16, 16, 16)",
+    "shadow": "none"
+   },
+   {
+    "t": "받은 경보",
+    "outline": "auto 1px rgb(16, 16, 16)",
+    "shadow": "rgba(23, 32, 51, 0.05) 0px 2px 10px 0px"
+   },
+   {
+    "t": "안전 공지안 읽음 1",
+    "outline": "auto 1px rgb(16, 16, 16)",
+    "shadow": "rgba(23, 32, 51, 0.05) 0px 2px 10px 0px"
+   },
+   {
+    "t": "의견 보내기",
+    "outline": "auto 1px rgb(16, 16, 16)",
+    "shadow": "rgba(23, 32, 51, 0.05) 0px 2px 10px 0px"
+   },
+   {
+    "t": "알림·언어",
+    "outline": "auto 1px rgb(16, 16, 16)",
+    "shadow": "rgba(23, 32, 51, 0.05) 0px 2px 10px 0px"
+   },
+   {
+    "t": "가스 경보 · 아무도 안 누",
+    "outline": "auto 1px rgb(16, 16, 16)",
+    "shadow": "none"
+   }
+  ],
+  "focusAfterPoll": {
+   "before": "2번 프레스 경보 · 내가 ",
+   "after": "BODY:홈\nA동 2라인\n대성정밀\n안"
+  },
+  "motion": {
+   "reduce": true,
+   "ms": [],
+   "live": [],
+   "bar5": "none"
+  },
+  "w_home_unknown_watch": {
+   "contrast": [],
+   "small": [],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "근로자 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "g_home": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "10:00",
+     "r": 3.06,
+     "fs": 12,
+     "fw": 600,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.sect>button.frow>span.fd"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "r": 3.06,
+     "fs": 12,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.scr.enter>div.bd>div.proto"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "전기 조 · 담당 12곳",
+     "fs": 13,
+     "el": "div.today>div>span"
+    },
+    {
+     "t": "체크리스트 받아 둠",
+     "fs": 13,
+     "el": "div.bd>div.today>span.live"
+    },
+    {
+     "t": "동탄 · 가기 전에 볼 것 보기",
+     "fs": 13,
+     "el": "button.frow>span.ftx>small"
+    },
+    {
+     "t": "10:00",
+     "fs": 12,
+     "el": "div.sect>button.frow>span.fd"
+    },
+    {
+     "t": "4곳",
+     "fs": 12,
+     "el": "button.tile>b>span.cnt"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "fs": 12,
+     "el": "div.scr.enter>div.bd>div.proto"
+    }
+   ],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H2:오늘 일정"
+   ],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_todo": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H1:내 할 일"
+   ],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_date_sheet": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "날짜",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.sheet>div.lbl"
+    },
+    {
+     "t": "저장",
+     "r": 2.23,
+     "fs": 18,
+     "fw": 800,
+     "fg": "rgb(255, 255, 255)",
+     "bg": "rgb(36,88,214)",
+     "grad": false,
+     "el": "div.sheet>div.row>button.btn",
+     "disabledOp": 0.4
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "날짜",
+     "fs": 13,
+     "el": "div.sheet>div.lbl"
+    },
+    {
+     "t": "시간",
+     "fs": 13,
+     "el": "div.sheet>div.lbl"
+    },
+    {
+     "t": "가설",
+     "fs": 11,
+     "el": "div.sheet>div.small>span.hyp"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [
+    {
+     "t": "오전",
+     "w": 175,
+     "h": 48,
+     "tag": "button",
+     "el": "div.sheet>div.seg>button.on",
+     "focusable": true,
+     "x": 16,
+     "y": 611,
+     "issue": "고른 상태가 aria로 없음"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:내 할 일"
+   ],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [
+    {
+     "role": null,
+     "modal": null,
+     "label": null
+    }
+   ],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_pre": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_re": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "다 봤어요 (0/2)",
+     "r": 2.23,
+     "fs": 18,
+     "fw": 800,
+     "fg": "rgb(255, 255, 255)",
+     "bg": "rgb(36,88,214)",
+     "grad": false,
+     "el": "div.scr.enter>div.ft>button.btn",
+     "disabledOp": 0.4
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_not_sheet": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "다 봤어요 (0/2)",
+     "r": 2.23,
+     "fs": 18,
+     "fw": 800,
+     "fg": "rgb(255, 255, 255)",
+     "bg": "rgb(36,88,214)",
+     "grad": false,
+     "el": "div.scr>div.ft>button.btn",
+     "disabledOp": 0.4
+    },
+    {
+     "t": "공장주에게 들은 사정 (안 골라도 돼요 · 다시 누르면",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.sheet>div.lbl"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "공장주에게 들은 사정 (안 골라도 돼요 · 다시 누르면",
+     "fs": 13,
+     "el": "div.sheet>div.lbl"
+    },
+    {
+     "t": "지금 모습 (안 찍어도 돼요)",
+     "fs": 13,
+     "el": "div.sheet>div.lbl"
+    },
+    {
+     "t": "없음",
+     "fs": 12,
+     "el": "div.sheet>div.row>div.thumb"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [
+    {
+     "role": null,
+     "modal": null,
+     "label": null
+    }
+   ],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_photo": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "사진 1",
+     "fs": 12,
+     "el": "div.bd>div.thumbs>div.thumb"
+    },
+    {
+     "t": "사진 2",
+     "fs": 12,
+     "el": "div.bd>div.thumbs>div.thumb"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_ai_wait": {
+   "contrast": [],
+   "small": [],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "g_pick": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "업종별 기본 체크리스트",
+     "fs": 13,
+     "el": "div.scr.enter>div.bd>div.grp"
+    },
+    {
+     "t": "고르지 않아도 전부 점검",
+     "fs": 12,
+     "el": "div.bd>div.grp>span.must"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "AI 제안 ·  · 틀릴 수 있음",
+     "fs": 13,
+     "el": "div.scr.enter>div.bd>div.grp"
+    },
+    {
+     "t": "사진 속 것만 봐요",
+     "fs": 13,
+     "el": "div.bd>div.grp>b"
+    },
+    {
+     "t": "AI 제안 3개 중 0개 고름",
+     "fs": 12,
+     "el": "div.bd>div.grp>span.must"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    },
+    {
+     "t": "사진: 전선 · 비슷한 사고: 피복이 벗겨진 이동 ",
+     "w": 276,
+     "h": 42,
+     "tag": "button",
+     "el": "div.item>div>button.link.small",
+     "focusable": true,
+     "x": 85,
+     "y": 781
+    },
+    {
+     "t": "사진: 히터 · 약품 통 · 비슷한 사고: 용제 통",
+     "w": 276,
+     "h": 42,
+     "tag": "button",
+     "el": "div.item>div>button.link.small",
+     "focusable": true,
+     "x": 85,
+     "y": 879
+    },
+    {
+     "t": "사진: 멀티탭 · 비슷한 사고: 이어 꽂은 멀티탭이",
+     "w": 276,
+     "h": 42,
+     "tag": "button",
+     "el": "div.item>div>button.link.small",
+     "focusable": true,
+     "x": 85,
+     "y": 978
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_why": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "AI가 본 자리 · 사진 1",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.sheet>div.lbl"
+    },
+    {
+     "t": "전선",
+     "r": 4.05,
+     "fs": 12,
+     "fw": 800,
+     "fg": "rgb(110, 68, 216)",
+     "bg": "rgb(209,209,235)",
+     "grad": true,
+     "el": "div.sheet>div.photo>span.box"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    },
+    {
+     "t": "업종별 기본 체크리스트",
+     "fs": 13,
+     "el": "div.scr>div.bd>div.grp"
+    },
+    {
+     "t": "고르지 않아도 전부 점검",
+     "fs": 12,
+     "el": "div.bd>div.grp>span.must"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "✓",
+     "fs": 12,
+     "el": "div.bd>div.item>div.bul"
+    },
+    {
+     "t": "화학 × 전기 기본 항목",
+     "fs": 13,
+     "el": "div.item>div>div.why"
+    },
+    {
+     "t": "AI 제안 ·  · 틀릴 수 있음",
+     "fs": 13,
+     "el": "div.scr>div.bd>div.grp"
+    },
+    {
+     "t": "사진 속 것만 봐요",
+     "fs": 13,
+     "el": "div.bd>div.grp>b"
+    },
+    {
+     "t": "AI 제안 3개 중 0개 고름",
+     "fs": 12,
+     "el": "div.bd>div.grp>span.must"
+    },
+    {
+     "t": "AI가 본 자리 · 사진 1",
+     "fs": 13,
+     "el": "div.sheet>div.lbl"
+    },
+    {
+     "t": "전선",
+     "fs": 12,
+     "el": "div.sheet>div.photo>span.box"
+    },
+    {
+     "t": "비슷한 사고 사례 (설명용 예시)",
+     "fs": 13,
+     "el": "div.sheet>div.lbl"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    },
+    {
+     "t": "사진: 전선 · 비슷한 사고: 피복이 벗겨진 이동 ",
+     "w": 276,
+     "h": 42,
+     "tag": "button",
+     "el": "div.item>div>button.link.small",
+     "focusable": true,
+     "x": 85,
+     "y": 369
+    },
+    {
+     "t": "사진: 히터 · 약품 통 · 비슷한 사고: 용제 통",
+     "w": 276,
+     "h": 42,
+     "tag": "button",
+     "el": "div.item>div>button.link.small",
+     "focusable": true,
+     "x": 85,
+     "y": 467
+    },
+    {
+     "t": "사진: 멀티탭 · 비슷한 사고: 이어 꽂은 멀티탭이",
+     "w": 276,
+     "h": 42,
+     "tag": "button",
+     "el": "div.item>div>button.link.small",
+     "focusable": true,
+     "x": 85,
+     "y": 566
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [
+    {
+     "role": null,
+     "modal": null,
+     "label": null
+    }
+   ],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_ans": {
+   "contrast": [],
+   "small": [],
+   "targets": [],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 14
+  },
+  "ansGap": {
+   "ok": [
+    358,
+    64
+   ],
+   "bad": [
+    358,
+    64
+   ],
+   "gap": 8
+  },
+  "g_bad_sheet": {
+   "contrast": [
+    {
+     "t": "지금 모습 (안 찍어도 돼요)",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.sheet>div.lbl"
+    }
+   ],
+   "small": [
+    {
+     "t": "지금 모습 (안 찍어도 돼요)",
+     "fs": 13,
+     "el": "div.sheet>div.lbl"
+    },
+    {
+     "t": "없음",
+     "fs": 12,
+     "el": "div.sheet>div.row>div.thumb"
+    },
+    {
+     "t": "메모 (안 써도 돼요)",
+     "fs": 13,
+     "el": "div.sheet>div.lbl"
+    }
+   ],
+   "targets": [],
+   "names": [],
+   "labels": [
+    {
+     "id": "memoIn",
+     "ph": "예: 바닥에 늘어진 전선 피복이 벗겨짐",
+     "el": "div.sheet>textarea.input"
+    }
+   ],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [
+    {
+     "role": null,
+     "modal": null,
+     "label": null
+    }
+   ],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 12
+  },
+  "g_sum": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "g_records": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "div.appbar>div.ttl>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "홈",
+     "w": 32,
+     "h": 44,
+     "tag": "button",
+     "el": "div.apptop>div.head>button.hm",
+     "focusable": true,
+     "x": 50,
+     "y": 1
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H1:내 점검 기록"
+   ],
+   "lang": "ko",
+   "title": "지킴이 앱 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "o_now_alarm": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "감시 중",
+     "r": 4.07,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(18, 135, 90)",
+     "bg": "rgb(232,246,239)",
+     "grad": false,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "r": 3.06,
+     "fs": 12,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.hero2>div.hmain>div.proto"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "A동 2라인",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "이상",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.red"
+    },
+    {
+     "t": "센서 고장 같아요",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>button.more.sm"
+    },
+    {
+     "t": "우리 공장",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "우리 공장",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "냉각수 배관 밑",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "B동 도장 부스 옆",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "fs": 12,
+     "el": "div.hero2>div.hmain>div.proto"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    },
+    {
+     "t": "센서 고장 같아요",
+     "w": 119,
+     "h": 36,
+     "tag": "button",
+     "el": "div.kcard>div.srow2>button.more.sm",
+     "focusable": true,
+     "x": 37,
+     "y": 1914
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H1:우리 공장 지금 현황"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "o_fault_dlg": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "감시 중",
+     "r": 4.07,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(18, 135, 90)",
+     "bg": "rgb(232,246,239)",
+     "grad": false,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "r": 3.06,
+     "fs": 12,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.hero2>div.hmain>div.proto"
+    },
+    {
+     "t": "어떤가요? (하나 고르기)",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 700,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.dlg.wide>div.lbl"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "A동 2라인",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "이상",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.red"
+    },
+    {
+     "t": "센서 고장 같아요",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>button.more.sm"
+    },
+    {
+     "t": "우리 공장",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "우리 공장",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "냉각수 배관 밑",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "B동 도장 부스 옆",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "fs": 12,
+     "el": "div.hero2>div.hmain>div.proto"
+    },
+    {
+     "t": "어떤가요? (하나 고르기)",
+     "fs": 13,
+     "el": "div.dlg.wide>div.lbl"
+    },
+    {
+     "t": "메모 (안 써도 돼요)",
+     "fs": 13,
+     "el": "div.dlg.wide>div.lbl"
+    },
+    {
+     "t": "사진 없음",
+     "fs": 13,
+     "el": "div.dlg.wide>div.row>span.thumb"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    },
+    {
+     "t": "센서 고장 같아요",
+     "w": 119,
+     "h": 36,
+     "tag": "button",
+     "el": "div.kcard>div.srow2>button.more.sm",
+     "focusable": true,
+     "x": 37,
+     "y": 1914
+    },
+    {
+     "t": "기계는 멀쩡한데 값만 이상해요",
+     "w": 223,
+     "h": 40,
+     "tag": "span",
+     "el": "div.dlg.wide>div.wseg>span",
+     "focusable": false,
+     "x": 36,
+     "y": 250
+    },
+    {
+     "t": "소리·냄새·열 같은 이상이 없어요",
+     "w": 234,
+     "h": 40,
+     "tag": "span",
+     "el": "div.dlg.wide>div.wseg>span",
+     "focusable": false,
+     "x": 36,
+     "y": 298
+    }
+   ],
+   "names": [
+    {
+     "t": "기계는 멀쩡한데 값만 이상해요",
+     "w": 223,
+     "h": 40,
+     "tag": "span",
+     "el": "div.dlg.wide>div.wseg>span",
+     "focusable": false,
+     "x": 36,
+     "y": 250,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "소리·냄새·열 같은 이상이 없어요",
+     "w": 234,
+     "h": 40,
+     "tag": "span",
+     "el": "div.dlg.wide>div.wseg>span",
+     "focusable": false,
+     "x": 36,
+     "y": 298,
+     "issue": "키보드로 못 감(포커스 불가)"
+    }
+   ],
+   "labels": [
+    {
+     "id": "faultMemo",
+     "ph": "예: 배관 밑 확인함, 물기 없음",
+     "el": "div.dlg.wide>input.input"
+    }
+   ],
+   "headings": [
+    "H1:우리 공장 지금 현황"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [
+    {
+     "role": null,
+     "modal": null,
+     "label": null
+    }
+   ],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "faultDlgFocus": "BODY.",
+  "o_insp": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "문제 있음 2개",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 700,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.split>div.detail>div.lbl"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "문제 있음 2개",
+     "fs": 13,
+     "el": "div.split>div.detail>div.lbl"
+    },
+    {
+     "t": "📷",
+     "fs": 13,
+     "el": "div.rowx>span.ans>span.ph"
+    },
+    {
+     "t": "📷",
+     "fs": 13,
+     "el": "div.rowx>span.ans>span.ph"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [
+    {
+     "t": "지킴이 점검 · 고칠 것",
+     "w": 190,
+     "h": 52,
+     "tag": "button",
+     "el": "div.in>nav.wtabs.sub>button.on",
+     "focusable": true,
+     "x": 159,
+     "y": 332,
+     "issue": "고른 상태가 aria로 없음"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:기록 · 고칠 것"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "o_sensor_rec": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [
+    {
+     "t": "센서 이상 기록",
+     "w": 143,
+     "h": 52,
+     "tag": "button",
+     "el": "div.in>nav.wtabs.sub>button.on",
+     "focusable": true,
+     "x": 16,
+     "y": 332,
+     "issue": "고른 상태가 aria로 없음"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:기록 · 고칠 것"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "tables": [
+   {
+    "caption": false,
+    "thead": false,
+    "scope": [
+     null,
+     null,
+     null,
+     null
+    ],
+    "emptyTh": 0
+   }
+  ],
+  "o_memo": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "이렇게 쓰면 잘 알아들어요",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 700,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "이렇게 쓰면 잘 알아들어요",
+     "fs": 13,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    },
+    {
+     "t": "끝남",
+     "fs": 13,
+     "el": "tr>td>span.pill.gray"
+    },
+    {
+     "t": "바꾸지 않음",
+     "fs": 13,
+     "el": "tr>td>span.pill.gray"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [],
+   "labels": [
+    {
+     "id": "memoText",
+     "ph": "예: 오늘 저녁 6시부터 10시까지 도장 작업이 있어서 전력이 50 부근까지 오를 예정",
+     "el": "div.kgrid>div.kcard>textarea.input"
+    }
+   ],
+   "headings": [
+    "H1:작업 예정 알리기"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "o_notice_list": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [
+    {
+     "t": "9/16 2번 프레스 금형 바꿀 때 지킬 것 9월 ",
+     "w": 560,
+     "h": 73,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 470,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "9/02 더운 날 작업할 때 — 3 / 8명 번역으",
+     "w": 560,
+     "h": 94,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 543,
+     "issue": "키보드로 못 감(포커스 불가)"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:안전 공지"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "o_notice_new": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "제목",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 700,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "제목",
+     "fs": 13,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    },
+    {
+     "t": "내용",
+     "fs": 13,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    },
+    {
+     "t": "위험성평가와 연결",
+     "fs": 13,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    },
+    {
+     "t": "예 — 9월 위험성평가",
+     "w": 184,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span.on",
+     "focusable": false,
+     "x": 37,
+     "y": 717
+    },
+    {
+     "t": "아니요",
+     "w": 71,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 229,
+     "y": 717
+    }
+   ],
+   "names": [
+    {
+     "t": "예 — 9월 위험성평가",
+     "w": 184,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span.on",
+     "focusable": false,
+     "x": 37,
+     "y": 717,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "예 — 9월 위험성평가",
+     "w": 184,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span.on",
+     "focusable": false,
+     "x": 37,
+     "y": 717,
+     "issue": "고른 상태가 aria로 없음"
+    },
+    {
+     "t": "아니요",
+     "w": 71,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 229,
+     "y": 717,
+     "issue": "키보드로 못 감(포커스 불가)"
+    }
+   ],
+   "labels": [
+    {
+     "id": "ndTitle",
+     "ph": "예: 지게차 다닐 때 통로 비우기",
+     "el": "div.kgrid>div.kcard>input.input"
+    },
+    {
+     "id": "ndBody",
+     "ph": "짧은 문장으로 나눠 쓰면 번역이 덜 틀려요",
+     "el": "div.kgrid>div.kcard>textarea.input"
+    }
+   ],
+   "headings": [
+    "H1:안전 공지"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "o_workers_invite": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "이름",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 700,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    },
+    {
+     "t": "켜짐",
+     "r": 4.07,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(18, 135, 90)",
+     "bg": "rgb(232,246,239)",
+     "grad": false,
+     "el": "tr>td>span.pill.green"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "이름",
+     "fs": 13,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    },
+    {
+     "t": "앱 화면 언어",
+     "fs": 13,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    },
+    {
+     "t": "일하는 곳 (안 골라도 돼요)",
+     "fs": 13,
+     "el": "div.kgrid>div.kcard>div.lbl"
+    },
+    {
+     "t": "켜짐",
+     "fs": 13,
+     "el": "tr>td>span.pill.green"
+    },
+    {
+     "t": "빼기",
+     "fs": 13,
+     "el": "tr>td>button.more.sm.danger"
+    },
+    {
+     "t": "켜짐",
+     "fs": 13,
+     "el": "tr>td>span.pill.green"
+    },
+    {
+     "t": "빼기",
+     "fs": 13,
+     "el": "tr>td>button.more.sm.danger"
+    },
+    {
+     "t": "켜짐",
+     "fs": 13,
+     "el": "tr>td>span.pill.green"
+    },
+    {
+     "t": "빼기",
+     "fs": 13,
+     "el": "tr>td>button.more.sm.danger"
+    },
+    {
+     "t": "켜짐",
+     "fs": 13,
+     "el": "tr>td>span.pill.green"
+    },
+    {
+     "t": "빼기",
+     "fs": 13,
+     "el": "tr>td>button.more.sm.danger"
+    },
+    {
+     "t": "켜짐",
+     "fs": 13,
+     "el": "tr>td>span.pill.green"
+    },
+    {
+     "t": "빼기",
+     "fs": 13,
+     "el": "tr>td>button.more.sm.danger"
+    },
+    {
+     "t": "켜짐",
+     "fs": 13,
+     "el": "tr>td>span.pill.green"
+    },
+    {
+     "t": "빼기",
+     "fs": 13,
+     "el": "tr>td>button.more.sm.danger"
+    },
+    {
+     "t": "켜짐",
+     "fs": 13,
+     "el": "tr>td>span.pill.green"
+    },
+    {
+     "t": "빼기",
+     "fs": 13,
+     "el": "tr>td>button.more.sm.danger"
+    },
+    {
+     "t": "꺼짐",
+     "fs": 13,
+     "el": "tr>td>span.pill.red"
+    },
+    {
+     "t": "빼기",
+     "fs": 13,
+     "el": "tr>td>button.more.sm.danger"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    },
+    {
+     "t": "한국어",
+     "w": 89,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span.on",
+     "focusable": false,
+     "x": 37,
+     "y": 724
+    },
+    {
+     "t": "Tiếng Việt",
+     "w": 114,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 134,
+     "y": 724
+    },
+    {
+     "t": "English",
+     "w": 90,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 257,
+     "y": 724
+    },
+    {
+     "t": "A동",
+     "w": 55,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 37,
+     "y": 807
+    },
+    {
+     "t": "A동 2라인",
+     "w": 98,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 100,
+     "y": 807
+    },
+    {
+     "t": "B동",
+     "w": 55,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 206,
+     "y": 807
+    },
+    {
+     "t": "빼기",
+     "w": 43,
+     "h": 40,
+     "tag": "button",
+     "el": "tr>td>button.more.sm.danger",
+     "focusable": true,
+     "x": 518,
+     "y": 1222
+    },
+    {
+     "t": "빼기",
+     "w": 43,
+     "h": 40,
+     "tag": "button",
+     "el": "tr>td>button.more.sm.danger",
+     "focusable": true,
+     "x": 518,
+     "y": 1304
+    },
+    {
+     "t": "빼기",
+     "w": 43,
+     "h": 40,
+     "tag": "button",
+     "el": "tr>td>button.more.sm.danger",
+     "focusable": true,
+     "x": 518,
+     "y": 1387
+    },
+    {
+     "t": "빼기",
+     "w": 43,
+     "h": 40,
+     "tag": "button",
+     "el": "tr>td>button.more.sm.danger",
+     "focusable": true,
+     "x": 518,
+     "y": 1469
+    },
+    {
+     "t": "빼기",
+     "w": 43,
+     "h": 40,
+     "tag": "button",
+     "el": "tr>td>button.more.sm.danger",
+     "focusable": true,
+     "x": 518,
+     "y": 1540
+    },
+    {
+     "t": "빼기",
+     "w": 43,
+     "h": 40,
+     "tag": "button",
+     "el": "tr>td>button.more.sm.danger",
+     "focusable": true,
+     "x": 518,
+     "y": 1623
+    },
+    {
+     "t": "빼기",
+     "w": 43,
+     "h": 40,
+     "tag": "button",
+     "el": "tr>td>button.more.sm.danger",
+     "focusable": true,
+     "x": 518,
+     "y": 1705
+    },
+    {
+     "t": "빼기",
+     "w": 43,
+     "h": 40,
+     "tag": "button",
+     "el": "tr>td>button.more.sm.danger",
+     "focusable": true,
+     "x": 518,
+     "y": 1776
+    }
+   ],
+   "names": [
+    {
+     "t": "한국어",
+     "w": 89,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span.on",
+     "focusable": false,
+     "x": 37,
+     "y": 724,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "한국어",
+     "w": 89,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span.on",
+     "focusable": false,
+     "x": 37,
+     "y": 724,
+     "issue": "고른 상태가 aria로 없음"
+    },
+    {
+     "t": "Tiếng Việt",
+     "w": 114,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 134,
+     "y": 724,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "English",
+     "w": 90,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 257,
+     "y": 724,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "A동",
+     "w": 55,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 37,
+     "y": 807,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "A동 2라인",
+     "w": 98,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 100,
+     "y": 807,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "B동",
+     "w": 55,
+     "h": 40,
+     "tag": "span",
+     "el": "div.kcard>div.wseg>span",
+     "focusable": false,
+     "x": 206,
+     "y": 807,
+     "issue": "키보드로 못 감(포커스 불가)"
+    }
+   ],
+   "labels": [
+    {
+     "id": "invName",
+     "ph": "예: 김용역",
+     "el": "div.kgrid>div.kcard>input.input"
+    }
+   ],
+   "headings": [
+    "H1:근로자"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "o_voice_list": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "안 읽음",
+     "r": 4.23,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(184, 92, 0)",
+     "bg": "rgb(255,244,229)",
+     "grad": false,
+     "el": "tr.click>td>span.pill.amber"
+    },
+    {
+     "t": "해결함",
+     "r": 4.07,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(18, 135, 90)",
+     "bg": "rgb(232,246,239)",
+     "grad": false,
+     "el": "tr.click>td>span.pill.green"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "위험해 보여요",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.red"
+    },
+    {
+     "t": "안 읽음",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.amber"
+    },
+    {
+     "t": "바꾸면 좋겠어요",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.blue"
+    },
+    {
+     "t": "해결함",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.green"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [
+    {
+     "t": "9/16 위험해 보여요 B동 통로에 기름이 자주 흘",
+     "w": 560,
+     "h": 115,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 506,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "9/03 바꾸면 좋겠어요 휴게실 선풍기가 고장 났어",
+     "w": 560,
+     "h": 94,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 621,
+     "issue": "키보드로 못 감(포커스 불가)"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:받은 의견"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "o_voice_one": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    }
+   ],
+   "small": [
+    {
+     "t": "박대표 대표 · 대성정밀",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H1:받은 의견"
+   ],
+   "lang": "ko",
+   "title": "공장주 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "webTabOrder": [
+   "로그아웃",
+   "⚙ 조작판",
+   "☰ 메뉴",
+   "⌂",
+   "공지 쓰기",
+   "올린 날\t제목\t위험성평",
+   "박대표 대표 · 대성정",
+   "로그아웃",
+   "⚙ 조작판",
+   "☰ 메뉴",
+   "⌂",
+   "공지 쓰기",
+   "올린 날\t제목\t위험성평",
+   "박대표 대표 · 대성정",
+   "로그아웃",
+   "⚙ 조작판",
+   "☰ 메뉴",
+   "⌂",
+   "공지 쓰기",
+   "올린 날\t제목\t위험성평",
+   "박대표 대표 · 대성정",
+   "로그아웃",
+   "⚙ 조작판",
+   "☰ 메뉴",
+   "⌂",
+   "공지 쓰기",
+   "올린 날\t제목\t위험성평",
+   "박대표 대표 · 대성정",
+   "로그아웃",
+   "⚙ 조작판"
+  ],
+  "focusWeb": "auto 1px",
+  "loginErr": {
+   "msg": "아이디 또는 비밀번호가 맞지 않아요",
+   "idKept": "",
+   "pwInvalid": null,
+   "described": null
+  },
+  "o_login_err": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "아이디",
+     "r": 3.06,
+     "fs": 13,
+     "fw": 700,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "div.lcard>form>label.lbl"
+    }
+   ],
+   "small": [
+    {
+     "t": "처음 화면",
+     "fs": 13,
+     "el": "div.util>div.in>a.ulink"
+    },
+    {
+     "t": "산업안전지킴이",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "아이디",
+     "fs": 13,
+     "el": "div.lcard>form>label.lbl"
+    },
+    {
+     "t": "비밀번호",
+     "fs": 13,
+     "el": "div.lcard>form>label.lbl"
+    }
+   ],
+   "targets": [
+    {
+     "t": "처음 화면",
+     "w": 55,
+     "h": 36,
+     "tag": "a",
+     "el": "div.util>div.in>a.ulink",
+     "focusable": true,
+     "x": 319,
+     "y": 4
+    },
+    {
+     "t": "daesung",
+     "w": 63,
+     "h": 32,
+     "tag": "button",
+     "el": "div.lcard>div.hint>button.link",
+     "focusable": true,
+     "x": 61,
+     "y": 624
+    },
+    {
+     "t": "hanbit",
+     "w": 55,
+     "h": 32,
+     "tag": "button",
+     "el": "div.lcard>div.hint>button.link",
+     "focusable": true,
+     "x": 61,
+     "y": 656
+    },
+    {
+     "t": "admin",
+     "w": 46,
+     "h": 32,
+     "tag": "button",
+     "el": "div.lcard>div.hint>button.link",
+     "focusable": true,
+     "x": 61,
+     "y": 688
+    }
+   ],
+   "names": [
+    {
+     "t": "",
+     "w": 296,
+     "h": 45,
+     "tag": "input",
+     "el": "div.lcard>form>input.input",
+     "focusable": true,
+     "x": 47,
+     "y": 330,
+     "issue": "이름 없음"
+    },
+    {
+     "t": "",
+     "w": 296,
+     "h": 45,
+     "tag": "input",
+     "el": "div.lcard>form>input.input",
+     "focusable": true,
+     "x": 47,
+     "y": 410,
+     "issue": "이름 없음"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:공장주 · 운영자 로그인"
+   ],
+   "lang": "ko",
+   "title": "공장주·운영자 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [
+    "err"
+   ],
+   "dialogs": [],
+   "main": false,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "m_board": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이 운영센터",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "날짜 안 정함",
+     "r": 4.23,
+     "fs": 12,
+     "fw": 800,
+     "fg": "rgb(184, 92, 0)",
+     "bg": "rgb(255,244,229)",
+     "grad": false,
+     "el": "div.kcard>button.wrow>span.tagp"
+    },
+    {
+     "t": "이상 없음",
+     "r": 4.07,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(18, 135, 90)",
+     "bg": "rgb(232,246,239)",
+     "grad": false,
+     "el": "tr.click>td>span.pill.green"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "r": 3.06,
+     "fs": 12,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "main.wbody>div.in>div.proto"
+    }
+   ],
+   "small": [
+    {
+     "t": "이운영 · 운영자",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이 운영센터",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "날짜 안 정함",
+     "fs": 12,
+     "el": "div.kcard>button.wrow>span.tagp"
+    },
+    {
+     "t": "경보 1건",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.red"
+    },
+    {
+     "t": "이상 없음",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.green"
+    },
+    {
+     "t": "이상 없음",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.green"
+    },
+    {
+     "t": "시제품 · 가상 데이터",
+     "fs": 12,
+     "el": "main.wbody>div.in>div.proto"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [
+    {
+     "t": "대성정밀 동탄 · 금속가공 5대 경보 1건 — 기다",
+     "w": 560,
+     "h": 175,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 1684,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "한빛화학 향남 · 화학 5대 이상 없음 — — 📅",
+     "w": 560,
+     "h": 133,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 1859,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "동방금속 봉담 · 금속가공 5대 이상 없음 — 기다",
+     "w": 560,
+     "h": 175,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 1992,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "태광기계 우정 · 기계 없음 · 점검만 — — — ",
+     "w": 560,
+     "h": 157,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 2167,
+     "issue": "키보드로 못 감(포커스 불가)"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:담당 공장 현황판"
+   ],
+   "lang": "ko",
+   "title": "운영자 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "m_factories": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이 운영센터",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "이상 없음",
+     "r": 4.07,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(18, 135, 90)",
+     "bg": "rgb(232,246,239)",
+     "grad": false,
+     "el": "tr.click>td>span.pill.green"
+    }
+   ],
+   "small": [
+    {
+     "t": "이운영 · 운영자",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이 운영센터",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "경보 1건",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.red"
+    },
+    {
+     "t": "이상 없음",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.green"
+    },
+    {
+     "t": "이상 없음",
+     "fs": 13,
+     "el": "tr.click>td>span.pill.green"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [
+    {
+     "t": "대성정밀 동탄 · 금속가공 5대 경보 1건 — 기다",
+     "w": 560,
+     "h": 175,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 526,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "한빛화학 향남 · 화학 5대 이상 없음 — — 📅",
+     "w": 560,
+     "h": 133,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 701,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "동방금속 봉담 · 금속가공 5대 이상 없음 — 기다",
+     "w": 560,
+     "h": 175,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 834,
+     "issue": "키보드로 못 감(포커스 불가)"
+    },
+    {
+     "t": "태광기계 우정 · 기계 없음 · 점검만 — — — ",
+     "w": 560,
+     "h": 157,
+     "tag": "tr",
+     "el": "table>tbody>tr.click",
+     "focusable": false,
+     "x": 17,
+     "y": 1009,
+     "issue": "키보드로 못 감(포커스 불가)"
+    }
+   ],
+   "labels": [],
+   "headings": [
+    "H1:공장"
+   ],
+   "lang": "ko",
+   "title": "운영자 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  },
+  "opRowsKeyboard": [
+   {
+    "tab": -1,
+    "role": null,
+    "innerBtn": false
+   },
+   {
+    "tab": -1,
+    "role": null,
+    "innerBtn": false
+   },
+   {
+    "tab": -1,
+    "role": null,
+    "innerBtn": false
+   },
+   {
+    "tab": -1,
+    "role": null,
+    "innerBtn": false
+   }
+  ],
+  "m_factory": {
+   "contrast": [
+    {
+     "t": "산업안전지킴이 운영센터",
+     "r": 3.06,
+     "fs": 11,
+     "fw": 400,
+     "fg": "rgb(138, 148, 166)",
+     "bg": "rgb(255,255,255)",
+     "grad": false,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "감시 중",
+     "r": 4.07,
+     "fs": 13,
+     "fw": 800,
+     "fg": "rgb(18, 135, 90)",
+     "bg": "rgb(232,246,239)",
+     "grad": false,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    }
+   ],
+   "small": [
+    {
+     "t": "이운영 · 운영자",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "09:16 기준",
+     "fs": 13,
+     "el": "div.util>div.in>span"
+    },
+    {
+     "t": "로그아웃",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "⚙ 조작판",
+     "fs": 13,
+     "el": "div.util>div.in>button.ulink"
+    },
+    {
+     "t": "산업안전지킴이 운영센터",
+     "fs": 11,
+     "el": "span.brand>span>small"
+    },
+    {
+     "t": "A동 2라인",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "경보 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.red"
+    },
+    {
+     "t": "우리 공장",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "우리 공장",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "냉각수 배관 밑",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    },
+    {
+     "t": "B동 도장 부스 옆",
+     "fs": 13,
+     "el": "div.srow2>div.stx>small"
+    },
+    {
+     "t": "감시 중",
+     "fs": 13,
+     "el": "div.kcard>div.srow2>span.pill.green"
+    }
+   ],
+   "targets": [
+    {
+     "t": "로그아웃",
+     "w": 52,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 245,
+     "y": 4
+    },
+    {
+     "t": "⚙ 조작판",
+     "w": 56,
+     "h": 36,
+     "tag": "button",
+     "el": "div.util>div.in>button.ulink",
+     "focusable": true,
+     "x": 318,
+     "y": 4
+    }
+   ],
+   "names": [],
+   "labels": [],
+   "headings": [
+    "H1:공장"
+   ],
+   "lang": "ko",
+   "title": "운영자 웹 시제품",
+   "hscroll": {
+    "doc": 390,
+    "vw": 390
+   },
+   "live": [],
+   "dialogs": [],
+   "main": true,
+   "skip": false,
+   "clip": [],
+   "fontMin": 11
+  }
+ },
+ "errs": []
+}

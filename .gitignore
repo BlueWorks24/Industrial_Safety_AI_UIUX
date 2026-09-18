@@ -1,0 +1,9 @@
+# 시제품 서버가 만드는 것 (SQLite 상태 — 사람마다 다르다)
+시제품/data/
+
+# 파이썬·노드가 남기는 것
+__pycache__/
+*.pyc
+node_modules/
+
+.DS_Store

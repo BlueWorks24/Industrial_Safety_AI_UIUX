@@ -1,0 +1,20 @@
+const { chromium } = require('playwright');
+const OUT = process.argv[2]; const B = 'http://127.0.0.1:8772/';
+(async () => {
+  const browser = await chromium.launch({ executablePath: process.env.HOME + '/.cache/ms-playwright/chromium-1228/chrome-linux/chrome', args: ['--no-sandbox'] });
+  const W = await (await browser.newContext({ viewport: { width: 390, height: 780 } })).newPage();
+  const txt = async (p) => (await p.evaluate(() => document.querySelector('#app').innerText)).replace(/\n+/g, ' | ');
+  await W.goto(B + 'worker.html'); await W.waitForFunction(() => typeof DB !== 'undefined' && DB.s);
+  await W.evaluate(async () => { localStorage.clear(); sessionStorage.clear(); await DB.reset();
+    await fetch('api/invite/accept', { method: 'POST', body: JSON.stringify({ code: 'DS-KIM' }) }); localStorage.setItem('w.notif', 'on'); });
+  await W.reload(); await W.waitForFunction(() => typeof DB !== 'undefined' && DB.s);
+  await W.evaluate(() => DB.act((s) => SIM.raise(s, 'leak'))); await W.waitForTimeout(500);
+  const id = await W.evaluate(() => DB.s.alarms[0].id);
+  await W.evaluate((id) => DB.act((s) => SIM.ack(s, id, '이현장')), id);
+  await W.goto(B + 'worker.html#/alarm/' + id); await W.waitForTimeout(500);
+  console.log('before:', await txt(W));
+  await W.evaluate(() => DB.act((s) => SIM.repair(s, 'leak', '이운영', ''))); await W.waitForTimeout(800);
+  console.log('after:', await txt(W));
+  await W.screenshot({ path: OUT + '/s5b_w_repair_ended.png', fullPage: true });
+  await browser.close();
+})();

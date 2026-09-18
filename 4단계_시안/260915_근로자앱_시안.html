@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>근로자 앱 시안</title>
+<style>
+:root{--ink:#111;--mid:#555;--soft:#888;--line:#bbb;--fill:#e4e4e4;--fill2:#f2f2f2;--bg:#fafafa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;padding:24px 16px 48px}
+h1{font-size:22px;margin:0 0 6px}
+.lead{color:var(--mid);margin:0 0 28px;font-size:14px;line-height:1.6}
+section{margin-bottom:48px}
+h2{font-size:18px;border-bottom:2px solid var(--ink);padding-bottom:6px;margin:0 0 8px}
+.sub{font-size:13px;color:var(--mid);margin:0 0 16px;line-height:1.6}
+.frames{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.frame{width:280px}
+.cap{font-size:13px;font-weight:700;margin-bottom:8px}
+.phone{border:2px solid var(--ink);border-radius:22px;height:580px;background:#fff;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.bar{height:24px;border-bottom:1px solid var(--line);font-size:10px;color:var(--soft);display:flex;justify-content:space-between;align-items:center;padding:0 14px;flex:none}
+.body{flex:1;padding:12px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+.foot{padding:10px 12px 14px;border-top:1px solid var(--line);flex:none}
+.btn{display:block;width:100%;border:2px solid var(--ink);border-radius:10px;padding:15px 0;text-align:center;font-weight:800;font-size:17px;background:var(--ink);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink);font-size:14px;padding:11px 0}
+.btn.sm{padding:8px 0;font-size:13px;border-radius:7px;min-height:34px}
+.n{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:700;margin-right:4px;vertical-align:1px}
+.btn .n{background:#fff;color:#111}
+.tag{display:inline-block;border:1px solid var(--ink);border-radius:4px;padding:0 5px;font-size:11px;font-weight:700}
+.lbl{font-size:11px;color:var(--mid);font-weight:700}
+.big{font-size:22px;font-weight:850;line-height:1.25}
+.mid{font-size:15px;font-weight:700}
+.small{font-size:12px;color:var(--mid);line-height:1.45}
+.alarm{border:3px solid var(--ink);border-radius:10px;padding:10px;display:flex;align-items:center;gap:8px}
+.alarm .icon{font-size:28px;line-height:1}
+.lang{margin-left:auto;border:1.5px solid var(--ink);border-radius:17px;padding:0 10px;min-height:34px;display:inline-flex;align-items:center;font-size:12px;font-weight:700;white-space:nowrap}
+.range{position:relative;height:16px;background:var(--fill2);border:1px solid var(--line);border-radius:4px;margin:4px 0 2px}
+.range.thin{height:10px}
+.range .ok{position:absolute;left:10%;width:40%;top:0;bottom:0;background:var(--fill);border-left:1px dashed var(--mid);border-right:1px dashed var(--mid)}
+.range .now{position:absolute;top:-4px;bottom:-4px;width:4px;background:var(--ink)}
+.range-l{display:flex;justify-content:space-between;font-size:10px;color:var(--mid)}
+.done{border:2px solid var(--ink);border-radius:50%;width:64px;height:64px;display:grid;place-items:center;font-size:34px;margin:28px auto 6px}
+.center{text-align:center}
+.undo{margin-top:auto;border:1px solid var(--ink);border-radius:8px;padding:10px;display:flex;align-items:center;gap:8px;font-size:13px}
+.undo b{margin-left:auto;border:1px solid var(--ink);border-radius:6px;padding:6px 12px}
+.lock{background:var(--fill2)}
+.clock{font-size:44px;font-weight:300;text-align:center;margin:18px 0 2px}
+.date{font-size:12px;text-align:center;color:var(--mid);margin-bottom:12px}
+.noti{background:#fff;border:1.5px solid var(--ink);border-radius:12px;padding:9px 10px;font-size:13px}
+.noti .top{display:flex;justify-content:space-between;font-size:10px;color:var(--mid);margin-bottom:2px}
+.noti b{font-size:14px}
+.buzz{font-size:11px;font-weight:700;text-align:center;color:var(--mid)}
+.acard{border:2px solid var(--ink);border-radius:10px;padding:8px}
+.acard .row{display:flex;justify-content:space-between;align-items:baseline}
+.srow{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:6px;font-size:13px;font-weight:700}
+.srow .x{text-align:right;font-size:12px}
+.photo{background:var(--fill);border:1px solid var(--line);border-radius:8px;height:120px;display:grid;place-items:center;color:var(--mid);font-size:12px;position:relative}
+.photo.sm{height:78px}
+.photo .box{position:absolute;border:2px dashed var(--ink);font-size:10px;font-weight:700;padding:1px 3px;background:#fff}
+.steps{list-style:none;margin:0;padding:0;font-size:14px;line-height:2}
+.steps .now{font-weight:800}
+.steps .wait{color:var(--soft)}
+.head{display:flex;align-items:center;gap:6px;min-height:34px}
+.ai{border:1px solid var(--ink);border-radius:6px;padding:6px 8px;font-size:12px;font-weight:700;background:var(--fill2)}
+.item{border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;gap:8px}
+.item.sel{border:2px solid var(--ink)}
+.chk{flex:none;width:26px;height:26px;border:2px solid var(--ink);border-radius:5px;display:grid;place-items:center;font-weight:900;font-size:16px}
+.item.sel .chk{background:var(--ink);color:#fff}
+.item .t{font-size:13px;font-weight:700;line-height:1.35}
+.item .why{font-size:11px;color:var(--mid);margin-top:3px}
+.grp{font-size:11px;font-weight:800;color:var(--mid);margin-top:2px}
+.add{border:1px dashed var(--mid);border-radius:8px;padding:8px;text-align:center;font-size:13px;color:var(--mid)}
+.dim{position:absolute;inset:24px 0 0 0;background:rgba(0,0,0,.35)}
+.sheet{position:absolute;left:0;right:0;bottom:0;height:78%;background:#fff;border-top:2px solid var(--ink);border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+.grip{width:40px;height:4px;background:var(--line);border-radius:2px;margin:8px auto 2px}
+.case{border:1px solid var(--line);border-radius:8px;padding:8px;font-size:12px;line-height:1.45}
+.case b{display:block;font-size:12px}
+.note{font-size:10px;color:var(--soft)}
+.notes{font-size:13px;line-height:1.6;margin:14px 0 0;padding:0;list-style:none;max-width:900px}
+.notes li{margin-bottom:6px}
+.notes .g{display:inline-block;border:1px solid var(--ink);border-radius:4px;padding:0 4px;font-size:11px;margin-left:4px}
+.plan{font-size:15px;font-weight:800;margin:0 0 10px}
+.pair{display:flex;flex-wrap:wrap;gap:24px 48px;margin-bottom:8px}
+.tblwrap{overflow-x:auto;margin-top:16px;max-width:900px}
+table{border-collapse:collapse;font-size:13px;background:#fff;min-width:560px;width:100%}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;line-height:1.5}
+th{background:var(--fill2)}
+.role{display:inline-block;border:1px solid var(--ink);border-radius:4px;padding:0 5px;font-size:10px;font-weight:800;margin-left:5px}
+.todo{border:2px solid var(--ink);border-radius:9px;padding:9px}
+.warnbar{border:3px solid var(--ink);border-radius:9px;padding:9px;display:flex;gap:8px;align-items:flex-start}
+.warnbar .ic{font-size:22px;line-height:1}
+.quiet{color:var(--mid);font-size:12px;line-height:1.5;border-top:1px solid var(--line);padding-top:8px;margin-top:auto}
+.bell{border:1px solid var(--line);border-radius:8px;padding:7px 9px;display:flex;align-items:center;gap:7px;font-size:12px}
+.states{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
+.st{border:1px solid var(--line);border-radius:8px;padding:10px 4px;text-align:center;font-size:14px;font-weight:700;color:var(--soft)}
+.st.on{border:3px solid var(--ink);background:var(--ink);color:#fff}
+.hyp{display:inline-block;border:1px dashed var(--ink);border-radius:4px;padding:0 4px;font-size:10px;font-weight:700;margin-left:4px;vertical-align:2px;color:var(--ink)}
+.st .hyp{border-color:#fff;color:#fff}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border:2px solid var(--ink);border-radius:12px;height:92px;padding:9px 10px;display:flex;flex-direction:column;justify-content:space-between;background:#fff}
+.tile .ic{font-size:22px;line-height:1}
+.tile b{font-size:15px;line-height:1.25}
+.cnt{display:inline-block;white-space:nowrap;flex:none;background:#fff;color:var(--ink);border:1.5px solid var(--ink);border-radius:4px;padding:0 6px;font-size:11px;font-weight:800;margin-left:4px;vertical-align:2px}
+.stat{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px}
+.stat .ck{flex:none;width:44px;height:44px;border:2px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-size:24px}
+.stat.alert{border:3px solid var(--ink)}
+.stat.alert .ck{border:none;font-size:30px}
+.q{border:1px solid var(--line);border-radius:8px;padding:8px}
+.q.now{border:2px solid var(--ink)}
+.q .t{font-size:13px;font-weight:700;line-height:1.35}
+.q .row{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.seg{display:flex;gap:6px}
+.seg span{flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 0;text-align:center;font-size:13px;font-weight:700;color:var(--mid)}
+.seg span.on{border:2px solid var(--ink);background:var(--ink);color:#fff}
+.seg span.on::before{content:"✓";margin-right:4px}
+.opt{border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;font-size:13px;font-weight:700}
+.opt.on{border:2px solid var(--ink)}
+.search{border:1px solid var(--mid);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--soft)}
+.para{font-size:13px;line-height:1.6}
+.two{display:flex;flex-direction:column;gap:6px}
+.dlg{position:absolute;left:14px;right:14px;top:50%;transform:translateY(-50%);background:#fff;border:2px solid var(--ink);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.undo2{margin-top:auto;border:2px solid var(--ink);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.undo2 .tm{display:flex;align-items:baseline;gap:6px}
+.undo2 .sec{font-size:30px;font-weight:850;line-height:1}
+.undo2 .bar5{height:8px;border:1px solid var(--ink);border-radius:4px;background:linear-gradient(90deg,var(--ink) 60%,#fff 60%)}
+</style>
+</head>
+<body>
+
+<h1>근로자 앱 시안</h1>
+<p class="lead">서비스 구성: 근로자 앱 · 지킴이 앱 · 공장주·운영자 웹 중 <b>근로자 앱</b>.<br>
+이 앱은 <b>근로자와 공장주가 같이 쓴다</b> (2026-09-16 결정). 공장주도 이 앱에 로그인해 경보를 받고, 아래 화면을 그대로 본다 — 조치 완료도 누를 수 있고 기록에는 누가 눌렀는지 남는다. 앱 이름은 나중에 정한다.<br>
+흑백 스케치다. 색·글꼴이 아니라 <b>무엇이 어디에 있고 무엇을 누르는지</b>를 본다.<br>
+<b>맨 위가 기본화면이고, 그 아래는 홈 메뉴 순서대로 기능별로 선다</b> (2026-09-17 정리). 화면 번호는 앱 머리글자 + 차례다 — W 근로자 앱 · G 지킴이 앱 · O 공장주 웹 · M 운영자 웹.<br>
+화면 속 설비 이름·사고 사례·항목은 모두 설명용 예시다. 동그라미 숫자는 아래 설명과 짝이다.<br>
+<b>누를 곳은 실제 휴대폰에서 44pt 이상</b>으로 만든다 (원칙 점검 E36). 이 스케치는 폭 280px이라 34px 이상으로 그렸다. 누름표에서 고른 칸은 채움과 함께 ✓ 글자를 붙인다(E37).<br>
+원칙 묶음: ① 쓰기 편한가 · ② 경보가 잘 전달되나 · ③ AI를 적당히 믿게 하나 · ④ 현장에서 쓸 수 있나</p>
+
+<!-- ============ W1 기본화면 ============ -->
+<section>
+<h2>W1. 기본화면 — 지금 상태 + 메뉴</h2>
+<p class="sub">앱을 열면 보이는 기본화면이다. <b>위에는 지금 상태, 아래에는 메뉴 큰 칸</b> (2026-09-17 결정). 경보가 올 때는 이 화면을 거치지 않고 경보 화면(W2-가)이 바로 뜬다.<br>
+<b>공장주도 이 앱에 로그인해 같은 경보를 받으므로</b> (2026-09-16 결정), 로그인한 역할에 따라 홈이 조금 다르다. 메뉴 칸을 누르면 W4~W7이 열린다. 내 정보는 머리글의 이름(›)을 눌러 연다 (2026-09-17). 경보 화면은 W2·W3이다.<br>
+다른 묶음의 홈은 O1-가(공장주 웹) · M1-가(운영자 웹) · G1-가(지킴이 앱)다.</p>
+<div class="frames" style="margin-top:16px">
+ <div class="frame">
+  <div class="cap">W1-가. 홈 — 근로자로 로그인</div>
+  <div class="phone">
+   <div class="bar"><span>09:40</span><span>대성정밀</span></div>
+   <div class="body" style="gap:10px">
+    <div class="head"><span class="small">대성정밀 · A동 2라인</span><span class="small" style="margin-left:auto">김근로 ›</span></div>
+    <div class="stat"><span class="ck">✓</span><div><div class="big" style="font-size:20px">지금 이상 없음</div><div class="small">09:40 기준</div></div></div>
+    <div class="bell"><span class="n">1</span>🔔 알림 켜짐 · 소리와 진동</div>
+    <div class="lbl" style="margin-top:6px"><span class="n">2</span>메뉴</div>
+    <div class="tiles">
+     <div class="tile"><span class="ic">⚠</span><b>받은 경보</b></div>
+     <div class="tile"><span class="ic">📢</span><b>안전 공지<span class="cnt">새 1</span></b></div>
+     <div class="tile"><span class="ic">✍</span><b>의견 보내기</b></div>
+     <div class="tile"><span class="ic">🔔</span><b>알림·언어</b></div>
+    </div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W1-나. 홈 — 공장주로 로그인 (같은 앱)</div>
+  <div class="phone">
+   <div class="bar"><span>18:40</span><span>대성정밀</span></div>
+   <div class="body" style="gap:10px">
+    <div class="head"><span class="small">대성정밀</span><span class="small" style="margin-left:auto">박대표<span class="role">공장주</span> ›</span></div>
+    <div class="stat"><span class="ck">✓</span><div><div class="big" style="font-size:20px">지금 이상 없음</div><div class="small">18:40 기준</div></div></div>
+    <div class="bell">🔔 알림 켜짐 · 소리와 진동</div>
+    <div class="bell" style="font-weight:700">📝 작업 예정 알리기 ›</div>
+    <div class="todo"><div class="lbl"><span class="n">3</span>고칠 것 1개 · 재점검에서 되돌아옴</div>
+     <div class="small">PC의 우리 공장 현황판에서 표시해요 ›</div></div>
+    <div class="tiles">
+     <div class="tile"><span class="ic">⚠</span><b>받은 경보</b></div>
+     <div class="tile"><span class="ic">📢</span><b>안전 공지</b></div>
+     <div class="tile"><span class="ic">✍</span><b>의견 보내기</b></div>
+     <div class="tile"><span class="ic">🔔</span><b>알림·언어</b></div>
+    </div>
+    <div class="small"><span class="n">4</span>경보가 오면 근로자와 <b>똑같은 화면</b>이 떠요.</div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W1-다. 홈 — 알림이 꺼져 있을 때</div>
+  <div class="phone">
+   <div class="bar"><span>09:40</span><span>대성정밀</span></div>
+   <div class="body" style="gap:10px">
+    <div class="head"><span class="small">대성정밀 · A동 2라인</span><span class="small" style="margin-left:auto">김근로 ›</span></div>
+    <div class="warnbar"><span class="ic">⚠</span><div><div class="mid"><span class="n">5</span>알림이 꺼져 있어요</div>
+     <div class="small">이대로면 경보가 와도 <b>울리지 않습니다.</b></div></div></div>
+    <div class="btn">알림 켜기</div>
+    <div class="stat" style="opacity:.35"><span class="ck">✓</span><div><div class="mid">지금 이상 없음</div><div class="small">09:40 기준</div></div></div>
+    <div class="tiles">
+     <div class="tile"><span class="ic">⚠</span><b>받은 경보</b></div>
+     <div class="tile"><span class="ic">📢</span><b>안전 공지<span class="cnt">새 1</span></b></div>
+     <div class="tile"><span class="ic">✍</span><b>의견 보내기</b></div>
+     <div class="tile"><span class="ic">🔔</span><b>알림·언어</b></div>
+    </div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W1-라. 홈 — 미뤄 둔 경보가 있을 때</div>
+  <div class="phone">
+   <div class="bar"><span>09:20</span><span>대성정밀</span></div>
+   <div class="body" style="gap:10px">
+    <div class="head"><span class="small">대성정밀 · A동 2라인</span><span class="small" style="margin-left:auto">김근로 ›</span></div>
+    <div class="stat alert"><span class="ck">⚠</span><div><div class="big" style="font-size:20px"><span class="n">6</span>경보 1건<br>아직 이상</div><div class="small">2번 프레스 · 09:25 다시 알림</div></div></div>
+    <div class="btn">경보 보기</div>
+    <div class="bell">🔔 알림 켜짐 · 소리와 진동</div>
+    <div class="tiles">
+     <div class="tile"><span class="ic">⚠</span><b>받은 경보</b></div>
+     <div class="tile"><span class="ic">📢</span><b>안전 공지<span class="cnt">새 1</span></b></div>
+     <div class="tile"><span class="ic">✍</span><b>의견 보내기</b></div>
+     <div class="tile"><span class="ic">🔔</span><b>알림·언어</b></div>
+    </div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W1-마. 홈 — 일부 센서를 확인할 수 없을 때</div>
+  <div class="phone">
+   <div class="bar"><span>10:20</span><span>대성정밀</span></div>
+   <div class="body" style="gap:10px">
+    <div class="head"><span class="small">대성정밀 · A동 2라인</span><span class="small" style="margin-left:auto">김근로 ›</span></div>
+    <div class="stat" style="border:2px solid var(--ink)"><span class="ck">?</span><div><div class="big" style="font-size:19px"><span class="n">7</span>일부 센서<br>값 모름</div><div class="small">나머지는 이상 없음 · 10:20</div></div></div>
+    <div class="q"><div class="t">가스 — 모름 (값이 안 와요)</div><div class="small">09:40부터 · 대표님과 운영자에게 알렸어요 · 그동안 이 센서는 경보가 못 울려요</div></div>
+    <div class="q"><div class="t">누수 — 센서 수리 중</div><div class="small"><span class="n">8</span>고칠 때까지 이 센서는 경보가 울리지 않아요</div></div>
+    <div class="bell">🔔 알림 켜짐 · 소리와 진동</div>
+    <div class="tiles">
+     <div class="tile" style="height:74px"><span class="ic">⚠</span><b>받은 경보</b></div>
+     <div class="tile" style="height:74px"><span class="ic">📢</span><b>안전 공지</b></div>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W1-바. 홈 — 인터넷에 연결되지 않았을 때</div>
+  <div class="phone">
+   <div class="bar"><span>09:40</span><span>📵</span></div>
+   <div class="body" style="gap:10px">
+    <div class="head"><span class="small">대성정밀 · A동 2라인</span><span class="small" style="margin-left:auto">김근로 ›</span></div>
+    <div class="warnbar"><span class="ic">📵</span><div><div class="mid"><span class="n">9</span>인터넷에 연결되지 않았어요</div>
+     <div class="small">지금은 경보가 <b>오지 못할 수 있어요.</b><br>와이파이나 데이터를 확인해 주세요.</div></div></div>
+    <div class="stat" style="opacity:.35"><span class="ck">?</span><div><div class="mid">마지막으로 확인한 때</div><div class="small">09:31 · 그때는 이상 없음</div></div></div>
+    <div class="tiles">
+     <div class="tile"><span class="ic">⚠</span><b>받은 경보</b></div>
+     <div class="tile"><span class="ic">📢</span><b>안전 공지</b></div>
+     <div class="tile"><span class="ic">✍</span><b>의견 보내기</b></div>
+     <div class="tile"><span class="ic">🔔</span><b>알림·언어</b></div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+<ul class="notes">
+ <li><span class="n">1</span>알림이 켜져 있는지를 홈에 늘 보여 준다. 앱 설치가 필수인데(2026-09-16 결정) 설치만 하고 알림을 막아 두면 경보가 통째로 사라진다. 이 한 줄이 그것을 막는다. <span class="g">②</span></li>
+ <li><span class="n">2</span><b>메뉴는 큰 칸 네 개</b>로 둔다 (2026-09-17 결정). 칸은 받은 경보 · 안전 공지 · 의견 보내기 · 알림·언어다 — 의견 보내기를 넣으면서(2026-09-17) 자주 쓰지 않는 내 정보는 머리글 이름으로 옮겼다(지킴이 앱 G1과 같음). 장갑 낀 손으로도 누를 수 있고, 네 개라 한 화면에 다 들어간다. 아래 탭 막대는 칸이 작고 경보 화면의 큰 "조치 완료" 버튼과 자리를 다퉈 쓰지 않는다. 메뉴가 생겨도 <b>근로자는 센서 값을 보지 않는다</b>("누가 무엇을 보나" 표) — 받은 경보 기록에도 값은 없다. 안 읽은 공지는 색이 아니라 "새 1" 글자로 표시한다. <span class="g">①</span><span class="g">④</span></li>
+ <li><span class="n">3</span>공장주에게만 "고칠 것"이 보인다. 지킴이 개선 요청은 공장주의 일이기 때문이다. 다만 <b>앱에서 고치지는 않는다</b> — 개선 완료 표시는 웹에서 한다(O3-가). 휴대폰에서 할 일과 PC에서 할 일을 섞지 않는다. <span class="g">①</span></li>
+ <li><span class="n">4</span>경보가 오면 근로자와 공장주가 같은 화면을 본다. 누가 눌렀는지는 기록에 남는다(2026-09-16 결정). 공장주는 안전 공지를 올리는 사람이라 앱에서는 "새" 표시가 붙지 않는다 (가설 — 올리는 곳은 웹). <span class="g">①</span></li>
+ <li><span class="n">5</span>알림이 꺼져 있으면 "이상 없음"보다 이것을 먼저 보여 준다. 지금 위험이 없다는 말보다, 위험이 생겨도 못 듣는다는 사실이 더 급하다. "이상 없음"은 흐리게 눌러 둔다. 메뉴는 그대로 쓸 수 있다. <span class="g">②</span></li>
+ <li><span class="n">6</span><b>경보 화면에는 닫기·홈 가기가 없다</b> (2026-09-17 결정, 원칙 점검 E40). 조치 완료를 누르거나, 다시 알림에서 "5분 뒤 다시 알려 주세요"를 눌러야 경보 화면을 벗어난다. 휴대폰의 홈 버튼으로 나가는 것은 앱이 막지 못하므로, 조치 안 된 경보가 있는 동안 앱을 열면 홈이 아니라 경보 화면이 바로 열린다. 그래서 <b>경보가 걸린 채 홈에 오는 것은 미뤄 둔 경보뿐</b>이다 — 상태 자리가 경보로 바뀌고, 다시 알릴 시각을 적고, 버튼으로 바로 돌아간다. <span class="g">②</span></li>
+ <li><span class="n">7</span><b>값이 안 들어오는 센서가 있으면 "지금 이상 없음"이라고 말하지 않는다</b> (2026-09-17 결정). 모르는 것을 괜찮다고 보여 주면 가장 위험하다. 다만 근로자에게 경보는 보내지 않는다 — 근로자가 조치할 수 있는 위험이 아니라 장비 문제이고, 공장주와 운영자에게는 알림이 간다. 몇 분 동안 값이 안 오면 끊김으로 보는지는 가설이다. <span class="g">②</span></li>
+ <li><span class="n">8</span>"센서 수리 중"은 운영자가 고장을 확인하고 돌린 상태다(M2-마). 그동안 그 센서는 경보를 울리지 않으므로, <b>울리지 않는다는 사실을 홈에 적어 둔다.</b> 메뉴 칸은 아래로 밀려 일부만 보인다. <span class="g">②</span></li>
+ <li><span class="n">9</span><b>인터넷이 끊기면 "지금 이상 없음"이라고 말하지 않는다</b> (원칙 점검 B3). 연결이 없으면 경보가 오지 못하므로, 알림이 꺼졌을 때(W1-다)처럼 맨 위에 크게 알린다. 마지막으로 확인한 때만 흐리게 남긴다. 상태가 겹치면 <b>알림 꺼짐·인터넷 끊김 → 경보 → 값 모름·수리 중 → 이상 없음</b> 순서로 위에 선다. <span class="g">②</span></li>
+</ul>
+</section>
+
+<!-- ============ W2 경보 — 기계 ============ -->
+<section>
+<h2>W2. 경보 — 기계 [흐름도 A③ 경보 → A④ 조치]</h2>
+<p class="sub">경보에는 무엇이·어디서·얼마나만 담는다. 해야 할 일(조치 안내)은 기능에 없어 넣지 않는다.</p>
+<div class="frames">
+
+ <div class="frame">
+  <div class="cap">W2-가. 경보 도착 (진동 + 전체 화면)</div>
+  <div class="phone">
+   <div class="bar"><span>09:12</span><span>진동 ···</span></div>
+   <div class="body" style="gap:14px">
+    <div class="alarm"><span class="icon">⚠</span><div><div class="big">이상</div><div class="small">09:12 · 방금</div></div><span class="lang">🌐 한국어 <span class="n" style="margin:0 0 0 2px">13</span></span></div>
+    <div><div class="lbl"><span class="n">10</span>무엇이</div><div class="big">2번 프레스 · 진동</div></div>
+    <div><div class="lbl">어디서</div><div class="big">A동 2라인</div></div>
+    <div><div class="lbl"><span class="n">11</span>얼마나</div><div class="big">평소보다 2배 커요</div>
+     <div class="range"><div class="ok"></div><div class="now" style="left:88%"></div></div>
+     <div class="range-l"><span></span><span>정상 범위</span><span></span><span>지금 ▲</span></div></div>
+   </div>
+   <div class="foot"><div class="btn"><span class="n">12</span>조치 완료</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W2-나. 조치 완료를 누른 뒤</div>
+  <div class="phone">
+   <div class="bar"><span>09:15</span><span></span></div>
+   <div class="body">
+    <div class="done">✓</div>
+    <div class="center big">조치 완료를<br>보냈어요</div>
+    <div class="center small">09:15 · 대표님과 운영자에게 전달됐어요</div>
+    <div class="center small" style="color:#111;margin-top:6px"><span class="n">26</span>경보는 센서가 정상이 되어야 끝나요.<br>5분 뒤 다시 봐요.</div>
+    <div class="undo2"><div class="tm"><span class="n">14</span><span class="mid">잘못 눌렀나요?</span><span class="sec" style="margin-left:auto">3</span><span class="small">초 남음</span></div><div class="bar5"></div><div class="btn ghost" style="padding:9px 0">취소</div></div>
+   </div>
+   <div class="foot"><div class="btn ghost">닫기</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W2-다. 조치 후에도 이상이 계속될 때</div>
+  <div class="phone">
+   <div class="bar"><span>09:20</span><span>진동 ···</span></div>
+   <div class="body" style="gap:14px">
+    <div class="alarm"><span class="icon">⚠</span><div><div class="big">아직 이상</div><div class="small">조치 완료 뒤 5분</div></div></div>
+    <div><div class="lbl">무엇이</div><div class="big">2번 프레스 · 진동 · 온도</div></div>
+    <div><div class="lbl">어디서</div><div class="big">A동 2라인</div></div>
+    <div><div class="lbl"><span class="n">15</span>얼마나</div><div class="big">아직 평소보다<br>1.8배 커요</div>
+     <div class="range"><div class="ok"></div><div class="now" style="left:80%"></div></div></div>
+    
+   </div>
+   <div class="foot"><div class="btn"><span class="n">16</span>다시 조치했어요</div><div class="btn ghost" style="margin-top:6px;font-size:13px">5분 뒤 다시 알려 주세요</div><div class="small center" style="margin-top:4px">이번에 미루면 1번 남아요 · 모두 함께 세요</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W2-라. 미루기를 다 쓴 뒤의 다시 알림</div>
+  <div class="phone">
+   <div class="bar"><span>09:30</span><span>진동 ···</span></div>
+   <div class="body" style="gap:12px">
+    <div class="alarm"><span class="icon">⚠</span><div><div class="big">아직 이상</div><div class="small">조치 완료 뒤 15분 · 2번 미뤘어요</div></div></div>
+    <div><div class="lbl">무엇이</div><div class="big">2번 프레스 · 진동 · 온도</div></div>
+    <div><div class="lbl">얼마나</div><div class="big">아직 평소보다<br>1.7배 커요</div>
+     <div class="range"><div class="ok"></div><div class="now" style="left:78%"></div></div></div>
+    <div class="warnbar"><span class="ic">📣</span><div class="small"><span class="n">17</span><b>대표님과 운영자에게도 알렸어요.</b><br>다시 살펴보고 조치해 주세요.</div></div>
+   </div>
+   <div class="foot"><div class="btn"><span class="n">18</span>다시 조치했어요</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W2-마. 공장주로 로그인해 경보를 열면</div>
+  <div class="phone">
+   <div class="bar"><span>09:31</span><span>진동 ···</span></div>
+   <div class="body" style="gap:12px">
+    <div class="alarm"><span class="icon">⚠</span><div><div class="big">아직 이상</div><div class="small">김근로 조치 완료 · 2번 미뤄짐</div></div></div>
+    <div><div class="lbl">무엇이</div><div class="big">2번 프레스 · 진동 · 온도</div></div>
+    <div><div class="lbl">얼마나</div><div class="big">아직 평소보다<br>1.7배 커요</div>
+     <div class="range"><div class="ok"></div><div class="now" style="left:78%"></div></div></div>
+    <div class="small" style="margin-top:auto">작업 때문에 오른 건가요? <b>작업 예정 알리기 ›</b></div>
+    <div class="small">기계는 멀쩡한데 값만 이상한가요?</div>
+    <div style="display:flex;align-items:center;gap:6px;"><span class="n">19</span><div class="btn ghost sm" style="flex:1">센서 고장 같아요 — 운영자에게 알리기</div></div>
+   </div>
+   <div class="foot"><div class="btn">다시 조치했어요</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W2-바. 다른 사람이 조치 완료를 누른 뒤</div>
+  <div class="phone">
+   <div class="bar"><span>09:16</span><span>대성정밀</span></div>
+   <div class="body" style="gap:12px">
+    <div class="alarm" style="border-width:2px"><span class="icon">⚠</span><div><div class="big">이상 · 조치됨</div><div class="small">09:12 시작</div></div></div>
+    <div><div class="lbl">무엇이 · 어디서</div><div class="big">2번 프레스</div><div class="mid">A동 2라인</div></div>
+    <div class="stat"><span class="ck">✓</span><div><div class="mid"><span class="n">20</span>김근로 09:15 조치 완료</div><div class="small">센서가 정상이 되는지 지켜보는 중</div></div></div>
+    <div class="small"><span class="n">21</span>아직 이상이면 5분 뒤 <b>모두에게</b> 다시 알려요.</div>
+   </div>
+   <div class="foot"><div class="btn ghost">닫기</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W2-사. 공장주 — 작업 예정 알리기 (앱)</div>
+  <div class="phone">
+   <div class="bar"><span>16:40</span><span>대성정밀</span></div>
+   <div class="body" style="gap:8px">
+    <div class="head"><span class="mid">← 작업 예정 알리기</span></div>
+    <div class="small"><span class="n">22</span>평소와 다른 작업이 있으면 적어 주세요. <b>AI가 읽고</b> 그 시간 경보 기준을 맞춰요.</div>
+    <div class="opt" style="font-weight:400;min-height:92px;align-items:flex-start;line-height:1.5">오늘 저녁 6시부터 10시까지 도장 작업이 있어서 전력이 50 부근까지 오를 예정</div>
+    <div class="lbl"><span class="n">23</span>이렇게 쓰면 잘 알아들어요</div>
+    <div class="small">· <b>언제</b> (몇 시부터 몇 시까지)<br>· <b>무슨 작업</b><br>· <b>어느 기계·센서</b> (전기·가스·2번 프레스…)<br>· <b>얼마까지</b> 오를지 (숫자가 있으면 좋아요)</div>
+    <div class="btn ghost sm">🎤 말로 쓰기<span class="hyp">가설</span></div>
+   </div>
+   <div class="foot"><div class="btn">AI에게 보내기</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W2-아. 공장주 — AI가 알아들은 내용</div>
+  <div class="phone">
+   <div class="bar"><span>16:40</span><span>대성정밀</span></div>
+   <div class="body" style="gap:8px">
+    <div class="head"><span class="mid">← 작업 예정</span><span class="small" style="margin-left:auto">✓ 적용됨</span></div>
+    <div class="warnbar" style="padding:6px 8px"><span class="ic" style="font-size:16px">🤖</span><div class="small"><span class="n">24</span><b>AI가 이렇게 알아들었어요</b> · 틀릴 수 있어요</div></div>
+    <div class="q"><div class="small">센서</div><div class="t">전기 (공장 전체)</div></div>
+    <div class="q"><div class="small">시간</div><div class="t">오늘 18:00 ~ 22:00</div></div>
+    <div class="q"><div class="small">작업 · 오를 수준</div><div class="t">도장 · 전력 50 부근</div></div>
+    <div class="lbl"><span class="n">25</span>그래서 이렇게 바뀌어요</div>
+    <div class="small" style="color:#111">· 그 시간 전기 기준을 <b>50 부근</b>으로 올려 잡아요<br>· 시작·끝 무렵 몇 분은 경보를 잠시 보류해요<br>· 사양서 안전 한계는 그대로예요</div>
+    <div class="two" style="margin-top:auto"><div class="btn ghost sm">틀렸어요 · 고쳐 쓰기</div><div class="btn ghost sm">작업 취소<span class="hyp">가설</span></div></div>
+   </div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W2-자. 조치 완료를 못 보냈을 때</div>
+  <div class="phone">
+   <div class="bar"><span>09:15</span><span>📵 연결 안 됨</span></div>
+   <div class="body">
+    <div class="done" style="border-style:dashed">⏳</div>
+    <div class="center big">아직 못 보냈어요</div>
+    <div class="center small" style="color:#111;margin-top:6px"><span class="n">27</span>인터넷에 연결되지 않았어요.<br><b>휴대폰에 저장했고, 연결되면 자동으로 보내요.</b></div>
+    <div class="warnbar" style="margin-top:12px"><span class="ic">📣</span><div class="small">급하면 <b>대표님께 말로</b> 알려 주세요.</div></div>
+   </div>
+   <div class="foot"><div class="btn">다시 보내기</div></div>
+  </div>
+ </div>
+</div>
+<ul class="notes">
+ <li><span class="n">10</span>설비 이름은 센서 이름(<code>Accelerometer1RMS</code>)이 아니라 현장에서 부르는 이름으로 쓴다. <span class="g">①</span> 설비 이름은 누군가 등록해야 한다.</li>
+ <li><span class="n">11</span>숫자 대신 "평소보다 몇 배"와 정상 범위 막대를 쓴다. 정상인지 아닌지 한눈에 보인다. <span class="g">②</span></li>
+ <li><span class="n">12</span>버튼은 하나만, 화면 너비 전체로, 엄지가 닿는 아래쪽에 둔다. 장갑 낀 손으로도 누를 수 있다. <b>닫기·뒤로는 두지 않는다</b> (2026-09-17 결정) — 안 누르고 넘어가는 경보를 줄이기 위해서다(W1-라 설명). <span class="g">②</span><span class="g">④</span></li>
+ <li><span class="n">13</span>언어 버튼으로 모국어로 바꾼다. 한 번 고르면 기억한다. <b>경보 문구는 AI가 그때그때 번역하지 않고 미리 번역해 둔 문구를 쓴다</b> — 경보는 틀리면 안 되고, 기계 이름·센서 이름·"평소보다 몇 배"처럼 틀이 정해져 있다 (2026-09-17). 공지·의견만 자동 번역이다. <span class="g">④</span></li>
+ <li><span class="n">14</span>확인 창을 한 번 더 띄우지 않고, 5초 동안 취소할 수 있게 한다. 빠르면서도 되돌릴 수 있다. <b>남은 시간은 큰 숫자와 줄어드는 막대로, 취소는 큰 버튼으로</b> 둔다 (원칙 점검 E35) — 작은 "5초" 글씨는 급한 손으로 못 누른다. <span class="g">①</span><span class="g">④</span></li>
+ <li><span class="n">15</span>"조치 완료를 눌렀다"와 "이상이 끝났다"는 다른 상태다. 센서가 계속 이상이면 다시 알린다. <span class="g">②</span></li>
+ <li><span class="n">16</span><b>다시 알림에는 "다시 조치했어요"와 미루기를 함께 둔다</b> (2026-09-17 결정). 다시 손을 쓴 사람이 미루기를 눌러야 하는 일이 없게 하고, 기록에도 "다시 조치"로 남긴다. 미루기 버튼은 무엇을 하는지 글자로 쓴다("5분 뒤 다시 알려 주세요") — "확인했어요"는 끝났다는 뜻으로 읽혔다. <b>미루기 횟수는 경보 하나에 2번</b>이고(횟수는 가설), 누가 누르든 함께 줄어든다 — 사람마다 세면 여럿이 돌아가며 한도를 무너뜨린다. <span class="g">②</span></li>
+ <li><span class="n">17</span>미루기를 다 쓰면 <b>공장주와 운영자에게도 알린다</b> (2026-09-17 결정). 근로자 혼자 풀지 못하는 상황을 위로 올린다. 누구에게 알렸는지 근로자 화면에도 적는다. <span class="g">②</span></li>
+ <li><span class="n">18</span>그다음부터는 "확인했어요"가 없고 <b>"다시 조치했어요"만</b> 남는다. 미루는 길을 막고, 다시 손을 쓰게 한다. 누르면 W2-나처럼 기록되고 5분 뒤 다시 본다. <span class="g">②</span></li>
+ <li><span class="n">19</span><b>센서 고장 신고는 공장주만 보인다</b> (2026-09-17 결정). 근로자는 조치만 한다. 공장주가 누르면 운영자에게 가고, 운영자가 확인해 "센서 수리 중"으로 돌려야 경보가 닫힌다(M2-마) — 진짜 이상을 한 사람이 고장으로 알고 끄는 일을 막는다. 웹에서도 같은 신고를 한다(O1-마). <span class="g">②</span></li>
+ <li><span class="n">20</span><b>한 사람이 조치 완료를 누르면 같은 경보를 받은 모두의 화면이 같이 바뀐다</b> (2026-09-17 결정). 누가 언제 눌렀는지가 보이고 조치 완료 버튼은 사라진다 — 여럿이 달려가거나 서로 미루지 않게 한다. <span class="g">②</span></li>
+ <li><span class="n">21</span>센서가 아직 이상이면 <b>다시 알림은 모두에게</b> 간다 (2026-09-17 결정). 누른 사람 한 명에게만 보내면 그 사람이 자리를 비웠을 때 아무도 모른다. <span class="g">②</span></li>
+ <li><span class="n">22</span><b>작업 예정 알리기(현장 메모)</b>는 엔진에 이미 있는 기능이다 — 사람이 쓴 문장을 AI(LLM)가 한 번 읽어 "어느 센서 · 언제 · 무슨 작업 · 얼마까지"로 바꾸고, 엔진이 그 시간의 기준을 맞춘다 (TSFM 엔진 `submit_memo`, 2026-09-17 반영). 공장주가 앱과 웹(O1-사)에서 쓴다. 근로자는 쓰지 않는다 — 센서 값을 보지 않기 때문이다. <span class="g">③</span></li>
+ <li><span class="n">23</span>엔진이 읽는 네 가지(언제·무슨 작업·어느 센서·얼마까지)를 쓰는 사람에게 미리 알려 준다. <b>숫자가 있어야 범위를 올려 잡을 수 있고</b>, 시간이 없으면 엔진은 보낸 때부터 2시간으로 본다. 센서 이름은 현장 이름(전기·2번 프레스)으로 써도 된다 — 엔진이 등록된 이름(M2-라)을 함께 보고 고른다. <span class="g">①</span><span class="g">③</span></li>
+ <li><span class="n">24</span><b>AI가 알아들은 내용을 그대로 보여 준다</b> — 센서·시간·작업·수준. 엔진은 받자마자 적용하므로 이것은 "적용된 내용"이다. 틀렸으면 "고쳐 쓰기"로 같은 시간에 새로 쓰면 앞의 것을 덮는다. <b>작업이 취소됐을 때 되돌리는 기능은 엔진에 아직 없다</b> (엔진 보강 필요 — 가설 꼬리표). <span class="g">③</span></li>
+ <li><span class="n">25</span>무엇이 바뀌는지를 사람 말로 적는다: 목표 수준만큼 그 시간 기준을 <b>비율로</b> 올려 잡고, 시작·끝 무렵은 판정을 잠시 보류하며, 작업 중에는 범위 폭을 평소 폭으로 고정한다. <b>사양서 안전 한계는 메모로 바뀌지 않는다</b> — 그래서 그 선을 넘으면 작업 중이라도 경보가 울린다. <span class="g">②</span><span class="g">③</span></li>
+ <li><span class="n">26</span>조치 완료를 눌러도 경보가 바로 끝나지 않는다는 것을 그 자리에서 알린다. 5분 뒤의 다시 알림을 고장으로 여기지 않게 한다. <span class="g">②</span></li>
+ <li><span class="n">27</span><b>못 보낸 상태를 따로 보여 준다</b> (원칙 점검 B4). 공장 구석은 전파가 약하다. "보냈어요"만 있으면 못 보냈는데도 끝난 줄 알고, 조치 기록도 빠진다. 휴대폰에 저장했다가 연결되면 자동으로 보내고(가설), 급하면 말로 알리게 한다. <span class="g">①</span><span class="g">②</span></li>
+</ul>
+</section>
+
+<!-- ============ W3 경보 — 공간 센서 ============ -->
+<section>
+<h2>W3. 경보 — 공간 센서 (전력·가스·온습도·누수) [흐름도 A③ → A④]</h2>
+<p class="sub"><b>경보 1건 = 센서 한 대</b> (2026-09-17 결정). 전력·가스·온습도·누수는 기계가 아니라 공간에 붙으므로 기계 이름 대신 센서 이름이 "무엇이" 자리에 온다. 틀은 W2와 같다.<br>
+<span class="hyp">가설</span> 꼬리표는 짐작으로 그린 자리다. "어디서"를 공장 한 덩어리로 쓸지 구역 이름으로 쓸지는 현장을 보고 정한다 — 어느 쪽이든 글자 한 줄만 바뀐다.</p>
+<div class="frames">
+ <div class="frame">
+  <div class="cap">W3-가. 가스 경보</div>
+  <div class="phone">
+   <div class="bar"><span>09:13</span><span>진동 ···</span></div>
+   <div class="body" style="gap:14px">
+    <div class="alarm"><span class="icon">⚠</span><div><div class="big">이상</div><div class="small">09:13 · 방금</div></div><span class="lang">🌐 한국어</span></div>
+    <div><div class="lbl"><span class="n">28</span>무엇이</div><div class="big">가스</div><div class="small">공기 중 가스 농도</div></div>
+    <div><div class="lbl"><span class="n">29</span>어디서</div><div class="big">우리 공장<span class="hyp">가설</span></div></div>
+    <div><div class="lbl">얼마나</div><div class="big">평소보다 3배 높아요</div>
+     <div class="range"><div class="ok"></div><div class="now" style="left:94%"></div></div>
+     <div class="range-l"><span></span><span>정상 범위</span><span></span><span>지금 ▲</span></div></div>
+   </div>
+   <div class="foot"><div class="btn">조치 완료</div></div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W3-나. 전기 경보 — 값 여러 개를 한 줄로</div>
+  <div class="phone">
+   <div class="bar"><span>09:12</span><span>진동 ···</span></div>
+   <div class="body" style="gap:14px">
+    <div class="alarm"><span class="icon">⚠</span><div><div class="big">이상</div><div class="small">09:12 · 방금</div></div><span class="lang">🌐 한국어</span></div>
+    <div><div class="lbl">무엇이</div><div class="big">전기</div><div class="small">공장에 들어오는 전기 전체</div></div>
+    <div><div class="lbl">어디서</div><div class="big">우리 공장<span class="hyp">가설</span></div></div>
+    <div><div class="lbl"><span class="n">30</span>얼마나</div><div class="big">평소보다 1.5배 많아요</div>
+     <div class="range"><div class="ok"></div><div class="now" style="left:72%"></div></div>
+     <div class="small">벗어난 값: 전류 · 고조파</div></div>
+   </div>
+   <div class="foot"><div class="btn">조치 완료</div></div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W3-다. 누수 경보 — 숫자가 없는 센서</div>
+  <div class="phone">
+   <div class="bar"><span>10:05</span><span>진동 ···</span></div>
+   <div class="body" style="gap:14px">
+    <div class="alarm"><span class="icon">⚠</span><div><div class="big">이상</div><div class="small">10:05 · 방금</div></div><span class="lang">🌐 한국어</span></div>
+    <div><div class="lbl">무엇이</div><div class="big">누수 또는 단선<span class="hyp">가설</span></div></div>
+    <div><div class="lbl">어디서</div><div class="big">냉각수 배관 밑</div><div class="small">누수 선 1m가 깔린 자리</div></div>
+    <div><div class="lbl"><span class="n">31</span>지금 상태</div>
+     <div class="states"><div class="st">정상</div><div class="st on">💧 물 닿음</div></div></div>
+   </div>
+   <div class="foot"><div class="btn">조치 완료</div></div>
+  </div>
+ </div>
+</div>
+<p class="plan" style="margin-top:28px">W3-라. 두 경보가 겹칠 때 — 09:12 전기, 09:13 가스</p>
+<div class="frames">
+ <div class="frame">
+  <div class="cap">잠금 화면 — 알림 2개, 진동 2번</div>
+  <div class="phone lock">
+   <div class="bar"><span></span><span>진동 ··· ×2</span></div>
+   <div class="body">
+    <div class="clock">09:13</div>
+    <div class="date">9월 17일 목요일</div>
+    <div class="noti"><div class="top"><span>안전 경보</span><span>09:13</span></div><b>⚠ 이상 · 가스</b><div class="small">우리 공장 · 평소보다 3배</div></div>
+    <div class="noti"><div class="top"><span>안전 경보</span><span>09:12</span></div><b>⚠ 이상 · 전기</b><div class="small">우리 공장 · 평소보다 1.5배</div></div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">앱을 열면 — 경보 2건, 조치 완료 따로</div>
+  <div class="phone">
+   <div class="bar"><span>09:13</span><span></span></div>
+   <div class="body">
+    <div class="head"><span class="big">경보 2건</span><span class="small" style="margin-left:auto">조치 안 됨 2</span></div>
+    <div class="small"><span class="n">32</span>최신이 위<span class="hyp">가설</span></div>
+    <div class="acard"><div class="row"><span class="mid">⚠ 가스</span><span class="small">09:13</span></div><div class="small">우리 공장 · 평소보다 3배</div><div class="btn sm" style="margin-top:6px">조치 완료</div></div>
+    <div class="acard"><div class="row"><span class="mid">⚠ 전기</span><span class="small">09:12</span></div><div class="small">우리 공장 · 평소보다 1.5배</div><div class="btn sm" style="margin-top:6px">조치 완료</div></div>
+    <div class="quiet"><span class="n">33</span>카드를 누르면 W3-가·W3-나 화면이 열린다.</div>
+   </div>
+  </div>
+ </div>
+</div>
+<ul class="notes">
+ <li><span class="n">28</span>기계 이름이 없으므로 <b>센서 이름을 현장 말로</b> 쓴다 (가스·전기·온도·습도·누수). 어떤 가스인지(가연성가스인지 CO인지)는 현장조사에서 정해지고, 정해지면 이 작은 글씨가 바뀐다. <span class="g">①</span></li>
+ <li><span class="n">29</span>"어디서"는 <b>가설</b>이다. 공장이 좁으면 "우리 공장"으로 충분하고, 넓으면 "도장실"처럼 갈 곳을 알려 줘야 한다. 누수만은 선이 깔린 자리가 정해져 있어 처음부터 그 자리를 쓴다. <span class="g">②</span></li>
+ <li><span class="n">30</span>전력계는 값을 여러 개 낸다. 근로자에게는 <b>가장 많이 벗어난 값 하나</b>를 "평소보다 몇 배"로 보여 주고, 어느 값이 벗어났는지는 작은 글씨로만 둔다. "고조파"는 몰라도 된다. <span class="g">①</span><span class="g">②</span></li>
+ <li><span class="n">31</span>누수는 숫자가 없어 정상 범위 막대를 그릴 수 없다. <b>상태 칸 두 개</b>를 두고 지금 상태를 칠한다. 칠한 칸에도 글자와 그림을 넣어 흑백에서도 구분된다. 누수와 단선을 따로 받을 수 있다고 확인되면 "단선"이 따로 상태 칸이 된다. <span class="g">②</span><span class="g">④</span></li>
+ <li><span class="n">32</span><b>공장 전체를 경보 한 건으로 묶지 않는다</b> (2026-09-17 결정). 묶으면 09:13 가스가 09:12 전기 경보의 "갱신" 한 줄로 들어가, 바로 피해야 할 일이 덜 급한 일에 묻힌다. 조치 완료 버튼도 하나가 되어 전기만 조치한 사람이 가스까지 조치한 것으로 기록된다. 카드 순서를 위험 종류로 정할지는 서버 규칙이라 나중에 정한다. <span class="g">②</span></li>
+ <li><span class="n">33</span>카드마다 조치 완료가 따로 있다. 무엇에 대한 조치인지 기록이 분명해진다. 공간 센서는 4대라 겹쳐도 많아야 카드 4장이다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ============ W4 받은 경보 ============ -->
+<section>
+<h2>W4. 받은 경보 — 메뉴</h2>
+<p class="sub">홈(W1)의 <b>받은 경보</b> 칸을 누르면 여는 화면이다 (2026-09-17 결정).</p>
+<div class="frames">
+ <div class="frame">
+  <div class="cap">W4-가. 받은 경보 기록</div>
+  <div class="phone">
+   <div class="bar"><span>09:45</span><span>대성정밀</span></div>
+   <div class="body" style="gap:7px">
+    <div class="head"><span class="mid">← 받은 경보</span><span class="small" style="margin-left:auto">최근 30일</span></div>
+    <div class="q"><div class="row"><span class="t">⚠ 가스</span><span class="small">9/17 09:13</span></div><div class="small"><span class="n">34</span>조치 완료 · 박대표 · 끝남</div></div>
+    <div class="q"><div class="row"><span class="t">⚠ 전기</span><span class="small">9/17 09:12</span></div><div class="small">조치 완료 · 김근로(나) · 끝남</div></div>
+    <div class="q"><div class="row"><span class="t">⚠ 누수 또는 단선</span><span class="small">9/17 07:10</span></div><div class="small">조치 완료 · 박대표 · <b>수리로 닫힘</b></div></div>
+    <div class="q"><div class="row"><span class="t">⚠ 2번 프레스</span><span class="small">9/15 09:12</span></div><div class="small">조치 완료 · 김근로(나) · 끝남</div></div>
+    <div class="q"><div class="row"><span class="t">⚠ 누수 또는 단선</span><span class="small">9/02 10:05</span></div><div class="small">조치 완료 · 이현장 · 끝남</div></div>
+    <div class="add">2건 더 (8/28 · 8/21 컴프레서 — 아무도 안 누름) ›</div>
+    <div class="small" style="margin-top:auto"><span class="n">35</span>누르면 그때의 경보 화면을 다시 봐요. 조치 완료는 더 누를 수 없어요.</div>
+   </div>
+  </div>
+ </div>
+</div>
+<ul class="notes">
+ <li><span class="n">34</span>받은 경보 기록에는 <b>언제·무엇이·누가 조치했나·끝났나</b>만 둔다. "평소보다 몇 배" 같은 센서 값은 넣지 않는다 — 근로자는 센서 이상 기록을 보지 않는다는 원칙("누가 무엇을 보나" 표)을 지키고, 이 목록을 "자기가 받은 경보"라는 새 행으로 따로 적는다. 누가 눌렀는지가 보이면 다른 사람이 이미 조치한 경보를 두 번 챙기지 않는다. <span class="g">①</span></li>
+ <li><span class="n">35</span>지난 경보는 다시 볼 수만 있다. 기록은 굳었으므로 조치 완료를 새로 누르거나 취소할 수 없다 (2단계 "기록은 아무도 고치지 않는다"). <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ============ W5 안전 공지 ============ -->
+<section>
+<h2>W5. 안전 공지 — 메뉴</h2>
+<p class="sub">홈의 <b>안전 공지</b> 칸. 안전 공지는 흐름도 A·B에 없는 기능이다. 위험성평가 결과를 근로자에게 알리는 의무(위험성평가 지침, 1단계 "흐름도에 아직 없는 의무")에 자리를 준 것이다 (2026-09-17 결정).</p>
+<div class="frames">
+ <div class="frame">
+  <div class="cap">W5-가. 안전 공지 목록</div>
+  <div class="phone">
+   <div class="bar"><span>09:45</span><span>대성정밀</span></div>
+   <div class="body" style="gap:7px">
+    <div class="head"><span class="mid">← 안전 공지</span></div>
+    <div class="lbl"><span class="n">36</span>안 읽음 1</div>
+    <div class="q now"><div class="row"><span class="t">2번 프레스 금형 바꿀 때 지킬 것</span><span class="cnt">새</span></div><div class="small">9/16 · 박대표 · 9월 위험성평가</div></div>
+    <div class="lbl" style="margin-top:6px">읽음</div>
+    <div class="q"><div class="row"><span class="t">추석 연휴 전 전원 차단 순서</span></div><div class="small">9/10 · 박대표 · 9/10에 읽음</div></div>
+    <div class="q"><div class="row"><span class="t">도장실 환기 팬 교체 완료</span></div><div class="small">8/29 · 박대표 · 8/29에 읽음</div></div>
+    <div class="small" style="margin-top:auto">공지는 대표님이 PC에서 올려요.<span class="hyp">가설</span></div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W5-나. 공지 읽기</div>
+  <div class="phone">
+   <div class="bar"><span>09:46</span><span>대성정밀</span></div>
+   <div class="body" style="gap:10px">
+    <div class="head"><span class="mid">←</span><span class="lang">🌐 한국어 <span class="n" style="margin:0 0 0 2px">37</span></span></div>
+    <div class="mid" style="font-size:18px;line-height:1.35">2번 프레스 금형 바꿀 때 지킬 것</div>
+    <div class="small">9/16 · 박대표(공장주) · 9월 위험성평가</div>
+    <div class="para">9월 위험성평가에서 2번 프레스 금형 교체 작업의 <b>끼임</b> 위험이 높게 나왔습니다.<br><br>
+    1. 금형을 바꾸기 전에 전원을 내리고 잠금장치를 겁니다.<br>
+    2. 혼자 하지 않고 두 사람이 합니다.<br>
+    3. 끝나면 잠금장치를 푼 사람이 이름을 적습니다.</div>
+   </div>
+   <div class="foot"><div class="btn"><span class="n">38</span>읽었어요</div><div class="small center" style="margin-top:6px">누가 언제 읽었는지 공장주에게 보여요</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W5-다. 공지를 다른 언어로 볼 때</div>
+  <div class="phone">
+   <div class="bar"><span>09:46</span><span>Đại Thành</span></div>
+   <div class="body" style="gap:10px">
+    <div class="head"><span class="mid">←</span><span class="lang">🌐 Tiếng Việt</span></div>
+    <div class="warnbar" style="padding:6px 8px"><span class="ic" style="font-size:16px">🤖</span><div class="small"><span class="n">39</span><b>AI tự động dịch</b> · có thể sai<br>(AI 자동 번역 · 틀릴 수 있어요)</div></div>
+    <div class="mid" style="font-size:17px;line-height:1.35">Những điều cần tuân thủ khi thay khuôn máy dập số 2</div>
+    <div class="small">16/9 · 박대표 · Đánh giá rủi ro tháng 9</div>
+    <div class="para">Đánh giá rủi ro tháng 9: nguy cơ <b>kẹp tay</b> cao khi thay khuôn máy dập số 2.<br>1. Tắt nguồn và khóa trước khi thay khuôn.</div>
+    <div style="display:flex;align-items:center;gap:6px"><span class="n">40</span><div class="btn ghost sm" style="flex:1">Xem bản gốc (한국어 원문 보기)</div></div>
+   </div>
+   <div class="foot"><div class="btn">Tôi đã đọc <span class="small" style="color:#fff">(읽었어요)</span></div><div style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px"><span class="n">41</span><div class="btn ghost" style="flex:1">Bản dịch có vẻ sai (번역이 이상해요)</div></div></div>
+  </div>
+ </div>
+</div>
+<ul class="notes">
+ <li><span class="n">36</span>안 읽은 공지를 위에 따로 묶는다. 목록 순서만으로 두면 새 공지가 오래된 것 사이에 묻힌다. <span class="g">①</span></li>
+ <li><span class="n">37</span>공지도 모국어로 볼 수 있어야 한다. 공장주가 쓴 글은 <b>AI가 자동 번역</b>한다 (2026-09-17 결정, W5-다). <span class="g">③</span><span class="g">④</span></li>
+ <li><span class="n">38</span><b>"읽었어요"를 누르게 한다</b> (2026-09-17 결정). 누가 언제 읽었는지가 기록에 남아 공장주의 "위험성평가 결과 공유" 증빙이 된다. 경보의 조치 완료와 달리 되돌릴 일이 없어 취소는 두지 않는다. <span class="g">①</span></li>
+ <li><span class="n">39</span><b>번역문에는 늘 "AI 자동 번역 · 틀릴 수 있어요"를 붙인다</b> (2026-09-17 결정). 그 언어와 한국어를 함께 쓴다 — 표시 자체를 못 읽으면 소용없다. AI가 만든 것이라는 사실을 숨기지 않는다(사람-AI 원칙). <span class="g">③</span><span class="g">④</span></li>
+ <li><span class="n">40</span>원문 보기를 둔다. 한국어를 조금 아는 근로자나 옆 동료가 원문과 맞춰 볼 수 있다. "읽었어요"를 번역문으로 눌러도 기록에는 <b>어느 언어로 읽었는지</b>가 함께 남는다 (가설). <span class="g">③</span></li>
+ <li><span class="n">41</span><b>번역이 이상하면 한 번 눌러 알린다</b> (2026-09-17 결정). 이유는 적지 않는다 — 외국어로 설명하기 어렵다. 누르면 공장주 읽음 현황(O5-다)에 표시되고, 공장주가 직접 설명하거나 새 공지를 올린다. 원문 보기만으로는 한국어를 못 읽는 사람이 틀린 절차를 알아챌 수 없다. <span class="g">③</span></li>
+</ul>
+</section>
+
+<!-- ============ W6 의견 보내기 ============ -->
+<section>
+<h2>W6. 의견 보내기 — 메뉴</h2>
+<p class="sub">홈의 <b>의견 보내기</b> 칸. 공장주가 종사자 의견을 듣는 의무(중대재해처벌법 시행령 제4조)에 자리를 준 것이다 (2026-09-17 결정). 급하지 않은 일을 위한 통로다 — <b>급박한 위험은 앱이 아니라 대피하고 말로 알린다.</b> 공장주는 웹(O7)에서 읽고 답한다.</p>
+<div class="frames">
+ <div class="frame">
+  <div class="cap">W6-가. 의견 쓰기</div>
+  <div class="phone">
+   <div class="bar"><span>12:10</span><span>대성정밀</span></div>
+   <div class="body" style="gap:6px">
+    <div class="head"><span class="mid">← 의견 보내기</span><span class="small" style="margin-left:auto">내가 보낸 의견 ›</span></div>
+    <div class="warnbar" style="padding:6px 8px"><span class="ic" style="font-size:16px">🚨</span><div class="small"><span class="n">42</span>지금 위험하면 <b>먼저 피하고</b> 말로 알려 주세요.</div></div>
+    <div class="lbl"><span class="n">43</span>어떤 의견인가요?</div>
+    <div class="seg"><span class="on">위험해 보여요</span><span>바꾸면 좋겠어요</span></div>
+    <div class="seg"><span>기타</span><span style="visibility:hidden">·</span></div>
+    <div class="lbl">내용</div>
+    <div class="opt" style="font-weight:400;min-height:52px;align-items:flex-start">B동 통로에 기름이 자주 흘러 있어요</div>
+    <div class="btn ghost sm">📷 사진 붙이기 (안 해도 돼요)</div>
+    <div class="lbl"><span class="n">44</span>이름</div>
+    <div class="seg"><span>이름 밝히기</span><span class="on">이름 빼기</span></div>
+    <div class="small">작은 공장에서는 내용이나 <b>쓴 언어</b>로 누군지 짐작될 수 있어요.</div>
+   </div>
+   <div class="foot"><div class="btn">대표님께 보내기</div></div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W6-나. 내가 보낸 의견</div>
+  <div class="phone">
+   <div class="bar"><span>18:30</span><span>대성정밀</span></div>
+   <div class="body" style="gap:8px">
+    <div class="head"><span class="mid">← 내가 보낸 의견</span></div>
+    <div class="q now"><div class="row"><span class="t">B동 통로에 기름이 자주 흘러 있어요</span><span class="cnt">답 옴</span></div>
+     <div class="small">9/17 · 위험해 보여요 · 이름 뺌</div>
+     <div class="small" style="color:#111;margin-top:4px;border-top:1px solid var(--line);padding-top:4px"><span class="n">45</span><b>대표님 답</b> · "내일 기름받이 달겠습니다."</div></div>
+    <div class="q"><div class="row"><span class="t">휴게실 선풍기가 고장 났어요</span></div>
+     <div class="small">9/03 · 바꾸면 좋겠어요 · 이름 밝힘</div>
+     <div class="small" style="color:#111;margin-top:4px">✓ 해결함 · 9/05 "새 선풍기 설치"</div></div>
+    <div class="lbl" style="margin-top:4px"><span class="n">46</span>진행</div>
+    <div class="small">보냄 → 대표님이 읽음 → 답 옴 → 해결함</div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W6-다. 보내기를 누르면 — 확인 한 번</div>
+  <div class="phone">
+   <div class="bar"><span>12:11</span><span>대성정밀</span></div>
+   <div class="body" style="gap:6px;opacity:.5">
+    <div class="head"><span class="mid">← 의견 보내기</span></div>
+    <div class="lbl">내용</div>
+    <div class="opt" style="font-weight:400;min-height:52px;align-items:flex-start">B동 통로에 기름이 자주 흘러 있어요</div>
+   </div>
+   <div class="dim"></div>
+   <div class="dlg">
+    <div class="mid" style="font-size:17px"><span class="n">47</span>대표님께 보낼까요?</div>
+    <div class="q"><div class="small">위험해 보여요 · 이름 뺌</div><div class="t">B동 통로에 기름이 자주 흘러 있어요</div></div>
+    <div class="small" style="color:#111"><b>보낸 뒤에는 고치거나 지울 수 없어요.</b></div>
+    <div class="btn">보내기</div>
+    <div class="btn ghost sm">더 고치기</div>
+   </div>
+  </div>
+ </div>
+</div>
+<ul class="notes">
+ <li><span class="n">42</span><b>급박한 위험을 알리는 버튼은 두지 않는다</b> (2026-09-17 결정 — 산업안전보건법 제52조의 작업중지·대피 보고는 범위 밖). 급한 순간에 앱 양식을 채우게 하면 오히려 늦는다. 대신 이 화면 맨 위에 "먼저 피하고 말로"를 적어, 의견 보내기를 위험 신고로 잘못 쓰지 않게 한다. <span class="g">②</span></li>
+ <li><span class="n">43</span>종류는 누름표 셋이다. "위험해 보여요"는 공장주 목록에서 위로 온다. <b>자기 언어로 써도 된다</b> — 공장주에게는 한국어 번역이 함께 간다(O7-다). 내용은 짧게 쓰면 되고 사진은 선택이다. 말로 입력할지는 가설이다. <span class="g">①</span><span class="g">④</span></li>
+ <li><span class="n">44</span><b>이름을 빼고 보낼 수 있다</b> (2026-09-17 결정). 신입이나 외국인 근로자가 불이익을 걱정하지 않고 말할 수 있어야 한다. 이름을 뺀 의견은 공장주에게 누가 보냈는지 보이지 않는다 (가설 — 누구에게도 보이지 않게). 다만 작은 공장에서는 내용으로 짐작될 수 있다는 것을 그 자리에서 알린다. <span class="g">①</span></li>
+ <li><span class="n">45</span>공장주의 답은 근로자 앱에 알림으로 온다. 이름을 뺀 의견에도 답이 온다 — 보낸 사람 휴대폰에서만 보인다. <span class="g">①</span></li>
+ <li><span class="n">46</span>보낸 뒤 어디까지 갔는지 보여 준다. 말해도 소용없다고 느끼면 다음에 말하지 않는다. <span class="g">①</span></li>
+ <li><span class="n">47</span><b>보내기 전에 한 번 묻는다</b> (원칙 점검 E34). 보낸 의견은 기록이라 고치거나 지울 수 없으므로 그 사실을 이 창에 적고, 이름을 뺐는지도 다시 보여 준다. 기본 버튼은 "보내기", 되돌아가는 버튼은 "더 고치기"다. 경보의 조치 완료는 묻지 않고 5초 취소로 둔다(W2-나) — 급한 버튼과 급하지 않은 버튼을 다르게 다룬다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ============ W7 알림·언어 ============ -->
+<section>
+<h2>W7. 알림·언어 · 내 정보 — 메뉴 · 머리글</h2>
+<p class="sub">홈의 <b>알림·언어</b> 칸(W7-가)과, 머리글의 이름을 누르면 여는 <b>내 정보</b>(W7-나).</p>
+<div class="frames">
+ <div class="frame">
+  <div class="cap">W7-가. 알림·언어 설정</div>
+  <div class="phone">
+   <div class="bar"><span>09:47</span><span>대성정밀</span></div>
+   <div class="body" style="gap:8px">
+    <div class="head"><span class="mid">← 알림·언어</span></div>
+    <div class="lbl"><span class="n">48</span>경보 알림</div>
+    <div class="bell">🔔 켜짐 · 끌 수 없어요</div>
+    <div class="small">휴대폰 설정에서 꺼 두면 홈에 경고가 떠요.</div>
+    <div class="lbl" style="margin-top:4px">경보가 올 때</div>
+    <div class="seg"><span class="on">소리 + 진동</span><span>진동만</span></div>
+    <div class="lbl" style="margin-top:4px"><span class="n">49</span>공지 알림</div>
+    <div class="seg"><span class="on">받기</span><span>안 받기</span></div>
+    <div class="lbl" style="margin-top:4px"><span class="n">50</span>언어<span class="hyp">가설</span></div>
+    <div class="opt on"><span>한국어</span><span>✓</span></div>
+    <div class="opt"><span>Tiếng Việt</span><span></span></div>
+    <div class="opt"><span>English</span><span></span></div>
+    <div class="opt"><span>ភាសាខ្មែរ</span><span></span></div>
+   </div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W7-나. 내 정보 (머리글 이름 ›)</div>
+  <div class="phone">
+   <div class="bar"><span>09:48</span><span>대성정밀</span></div>
+   <div class="body" style="gap:8px">
+    <div class="head"><span class="mid">← 내 정보</span></div>
+    <div class="stat"><span class="ck">👤</span><div><div class="big" style="font-size:20px">김근로</div><div class="small">대성정밀 · 근로자 · 2024-03부터</div></div></div>
+    <div class="opt"><span>화면 언어</span><span>한국어 ›</span></div>
+    <div class="opt"><span>알림</span><span>켜짐 ›</span></div>
+    <div class="small"><span class="n">51</span>이름이 틀리면 대표님께 말해 주세요.<br>공장을 그만두면 대표님이 명단에서 빼요.</div>
+    <div class="small"><span class="n">52</span>휴대폰을 바꾸면 대표님께 새 초대를 받아요.<span class="hyp">가설</span></div>
+    <div class="btn ghost sm" style="margin-top:auto">로그아웃</div>
+    <div class="small center">앱 버전 0.1</div>
+   </div>
+  </div>
+ </div>
+</div>
+<ul class="notes">
+ <li><span class="n">48</span><b>경보 알림을 끄는 스위치는 두지 않는다.</b> 앱 설치를 필수로 정한 이유가 경보를 놓치지 않기 위해서이므로, 앱 안에서 끌 수 있으면 그 결정이 무너진다. 휴대폰 설정에서 막는 것은 앱이 못 막으므로 홈(W1-다)에서 알린다. 고를 수 있는 것은 소리 여부뿐이다 — 시끄러운 현장에서는 진동만으로는 부족할 수 있어 기본값은 소리 + 진동이다. <span class="g">②</span></li>
+ <li><span class="n">49</span>공지 알림은 끌 수 있다. 경보와 공지를 한 스위치에 묶지 않는다 — 공지가 귀찮아 알림을 통째로 끄는 일을 막는다. <span class="g">②</span></li>
+ <li><span class="n">50</span>언어 목록은 가설이다(3단계: 주요 국적). 여기서 고른 언어가 경보 화면의 언어 버튼(W2-가)과 같이 바뀐다. <span class="g">④</span></li>
+ <li><span class="n">51</span>내 정보에서 근로자가 고칠 수 있는 것은 <b>언어와 알림뿐</b>이다. 이름과 소속은 공장주가 관리하는 명단(O6)에서 온다 (2026-09-17 결정). 그래서 틀렸을 때 누구에게 말하면 되는지를 적는다. <span class="g">①</span></li>
+ <li><span class="n">52</span>근로자는 초대로만 들어온다. 휴대폰을 바꾸면 공장주가 다시 초대한다 (가설 — 근로자도 번호 인증으로 다시 들어오게 할지는 나중). 로그아웃은 드물게 쓰므로 작게 둔다. <span class="g">①</span></li>
+</ul>
+</section>
+
+<!-- ============ W8 처음 설치 ============ -->
+<section>
+<h2>W8. 처음 설치 — 초대받아 들어오기 · 알림 허용</h2>
+<p class="sub">근로자는 <b>공장주가 보낸 초대</b>로 들어온다 (2026-09-17 결정 — 근로자 명단은 공장주가 관리, 공장주 웹 O6). 앱 설치가 필수이므로(2026-09-16) 처음 열 때 <b>알림 허용</b>까지 마쳐야 경보를 받는다.<br>
+기본화면(W1)이 맨 위라는 원칙에 따라 처음 한 번만 보는 이 화면은 뒤에 둔다.</p>
+<div class="frames">
+ <div class="frame">
+  <div class="cap">W8-가. 앱을 처음 열면</div>
+  <div class="phone">
+   <div class="bar"><span>08:20</span><span></span></div>
+   <div class="body" style="gap:14px">
+    <div class="head"><span class="lang" style="margin-left:auto">🌐 한국어 · Tiếng Việt · ខ្មែរ ▾ <span class="n" style="margin:0 0 0 2px">53</span></span></div>
+    <div class="center" style="margin-top:30px"><div class="done" style="margin:0 auto 10px">⛑</div><div class="big">안전 앱</div><div class="small">이름은 나중에 정해요<span class="hyp">가설</span></div></div>
+    <div class="para center"><span class="n">54</span>공장에서 받은 <b>QR을 찍거나<br>초대 링크를 누르면</b> 들어와요.</div>
+    <div class="small center">초대를 못 받았으면 공장 대표님께 말해 주세요.</div>
+   </div>
+   <div class="foot"><div class="btn">📷 QR 찍기</div><div class="small center" style="margin-top:8px">공장 대표이신가요? <b>공장주 로그인 ›</b></div></div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W8-나. 초대를 확인하면</div>
+  <div class="phone">
+   <div class="bar"><span>08:21</span><span></span></div>
+   <div class="body" style="gap:12px">
+    <div class="lbl"><span class="n">55</span>이 공장에 들어가요</div>
+    <div class="stat"><span class="ck">🏭</span><div><div class="big" style="font-size:20px">대성정밀</div><div class="small">동탄 · 박대표가 초대함</div></div></div>
+    <div class="lbl">내 이름</div>
+    <div class="opt on"><span>Nguyen Van A</span><span>✓</span></div>
+    <div class="small">공장 대표님이 초대할 때 적은 이름이에요. 틀리면 대표님께 말해 주세요.</div>
+    <div class="lbl" style="margin-top:6px">화면 언어</div>
+    <div class="opt on"><span>Tiếng Việt</span><span>✓</span></div>
+    <div class="small">나중에 알림·언어 메뉴(W7)에서 바꿀 수 있어요.</div>
+   </div>
+   <div class="foot"><div class="btn">맞아요, 들어가기</div></div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">W8-다. 알림 허용</div>
+  <div class="phone">
+   <div class="bar"><span>08:22</span><span></span></div>
+   <div class="body" style="gap:12px">
+    <div class="center" style="margin-top:20px"><div class="done" style="margin:0 auto 10px">🔔</div><div class="big"><span class="n">56</span>알림을 켜 주세요</div></div>
+    <div class="para center">기계나 공장에 이상이 생기면<br>이 앱이 <b>소리와 진동</b>으로 알려요.<br>알림을 막으면 <b>경보가 울리지 않아요.</b></div>
+    <div class="warnbar" style="margin-top:6px"><span class="ic">ℹ</span><div class="small"><span class="n">57</span>다음에 휴대폰이 묻는 창에서 <b>"허용"</b>을 눌러 주세요.<span class="hyp">가설</span></div></div>
+   </div>
+   <div class="foot"><div class="btn">알림 켜기</div><div class="small center" style="margin-top:8px"><span class="n">58</span>나중에 할게요</div></div>
+  </div>
+ </div>
+
+ <div class="frame">
+  <div class="cap">W8-라. 공장주로 로그인 (W8-가 아래 줄)</div>
+  <div class="phone">
+   <div class="bar"><span>08:30</span><span></span></div>
+   <div class="body" style="gap:12px">
+    <div class="head"><span class="mid">← 공장주 로그인</span></div>
+    <div class="para"><span class="n">59</span>웹에서 쓰는 <b>같은 휴대폰 번호</b>로 들어와요.</div>
+    <div class="lbl">휴대폰 번호</div>
+    <div class="opt on"><span>010-****-1234</span><span></span></div>
+    <div class="btn ghost sm">인증번호 받기</div>
+    <div class="lbl">인증번호 6자리</div>
+    <div class="opt"><span style="letter-spacing:6px">4 8 1 _ _ _</span><span class="small">2:48</span></div>
+    <div class="small">운영자에게 초대받은 번호만 들어올 수 있어요.</div>
+   </div>
+   <div class="foot"><div class="btn">들어가기 → 알림 허용</div></div>
+  </div>
+ </div>
+</div>
+<ul class="notes">
+ <li><span class="n">53</span>언어는 <b>첫 화면 맨 위</b>에서 고른다. 외국인 근로자는 한국어 안내를 읽지 못하면 초대를 받고도 들어오지 못한다. 초대할 때 공장주가 언어를 미리 골라 두면 그 언어로 열린다 (가설). <span class="g">④</span></li>
+ <li><span class="n">54</span>들어오는 길은 <b>공장주의 초대 하나</b>다 (2026-09-17 결정). 아무나 공장을 찾아 들어오지 못하게 해, 읽음 현황(O5)의 분모와 경보 받는 사람이 공장주가 아는 명단과 같게 한다. 공장주도 같은 앱을 쓰므로(2026-09-16) 공장주 로그인 길은 아래에 작게 둔다. <span class="g">①</span></li>
+ <li><span class="n">55</span>초대는 <b>사람마다</b> 보내고 이름이 미리 들어 있다 (가설 — 공장 공용 QR로 하면 이 화면에서 이름을 직접 적는다). 근로자는 확인만 한다. 글자 입력을 줄인다. <span class="g">①</span><span class="g">④</span></li>
+ <li><span class="n">56</span>알림 허용을 <b>따로 한 화면</b>으로 묻는다. 휴대폰이 띄우는 허용 창만으로는 왜 켜야 하는지 모른 채 "허용 안 함"을 누르기 쉽다. 왜 필요한지 먼저 말하고 창을 띄운다. <span class="g">②</span></li>
+ <li><span class="n">57</span>안드로이드는 절전·방해 금지 설정 때문에 알림이 늦거나 안 울릴 수 있다. 그 예외 설정까지 이 단계에서 안내할지는 기기를 보고 정한다 (가설). <span class="g">②</span></li>
+ <li><span class="n">58</span>"나중에"를 눌러도 들어갈 수는 있다. 막아 버리면 앱을 지우고 끝날 수 있다. 대신 홈에 "알림이 꺼져 있어요"가 계속 크게 뜬다(W1-다). 공장주는 명단(O6-가)에서 알림이 꺼진 사람을 본다. <span class="g">②</span></li>
+ <li><span class="n">59</span><b>공장주는 휴대폰 번호 인증으로 들어오고, 앱과 웹이 같은 계정이다</b> (2026-09-17 결정). 비밀번호가 없어 잊을 일이 없다 — 나이 든 공장주에게 맞춘다(3단계). 운영자가 공장을 등록할 때 넣은 번호만 들어올 수 있다(M2-나). 들어오면 근로자와 같은 알림 허용(W8-다)을 거친다. <span class="g">①</span><span class="g">②</span></li>
+</ul>
+</section>
+
+<!-- ============ W9 참고 — 경보 겹칠 때 비교 ============ -->
+<section>
+<h2>W9. 참고 — 경보가 여러 개 겹칠 때: A안 값마다 따로 알림 · B안 묶기 <span class="tag">B안으로 결정</span></h2>
+<p class="sub">결정 기록으로 남겨 둔 비교다. 지금 규칙은 W2·W3에 반영돼 있다.<br>
+상황 예시: 09:12~09:13 사이에 2번 프레스가 이상해졌다. 이 기계에는 진동센서 1대와 접촉온도 1개가 붙어 있는데, <b>진동센서 1대가 흔들림·충격 등 여러 값을 따로 낸다.</b> 그래서 이상한 값은 셋이다.<br>
+<b>결정 (2026-09-15): B안.</b> 설비 하나에 경보 하나로 묶는다. A안은 비교 근거로 남겨 둔다.<br>
+전력은 이 예시에 넣지 않는다. 전력계는 공장 전체 전기를 재므로 한 기계의 경보가 될 수 없다 (2026-09-16 바로잡음).<br>
+<b>묶는 단위 (2026-09-17 결정): 기계 한 대, 또는 기계에 안 붙는 센서 한 대.</b> 전력·가스·온습도·누수를 "공장 전체" 한 건으로 묶지 않는다 — 화면 W3.</p>
+
+<p class="plan">A안. 센서 값마다 따로 알림</p>
+<div class="frames" style="margin-bottom:28px">
+ <div class="frame">
+  <div class="cap">A-가. 잠금 화면 — 알림 3개, 진동 3번</div>
+  <div class="phone lock">
+   <div class="bar"><span></span><span>진동 ··· ×3</span></div>
+   <div class="body">
+    <div class="clock">09:13</div>
+    <div class="date">9월 15일 화요일</div>
+    <div class="noti"><div class="top"><span>안전 경보</span><span>09:13</span></div><b>⚠ 이상 · 2번 프레스 · 온도</b></div>
+    <div class="noti"><div class="top"><span>안전 경보</span><span>09:12</span></div><b>⚠ 이상 · 2번 프레스 · 진동(충격)</b></div>
+    <div class="noti"><div class="top"><span>안전 경보</span><span>09:12</span></div><b>⚠ 이상 · 2번 프레스 · 진동(흔들림)</b></div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">A-나. 앱을 열면 — 경보 3건, 조치 완료 3번</div>
+  <div class="phone">
+   <div class="bar"><span>09:13</span><span></span></div>
+   <div class="body">
+    <div class="head"><span class="big">경보 3건</span><span class="small" style="margin-left:auto">조치 안 됨 3</span></div>
+    <div class="acard"><div class="row"><span class="mid">⚠ 2번 프레스 · 진동(흔들림)</span><span class="small">09:12</span></div><div class="small">A동 2라인 · 평소보다 2배</div><div class="btn sm" style="margin-top:6px">조치 완료</div></div>
+    <div class="acard"><div class="row"><span class="mid">⚠ 2번 프레스 · 진동(충격)</span><span class="small">09:12</span></div><div class="small">A동 2라인 · 평소보다 1.6배</div><div class="btn sm" style="margin-top:6px">조치 완료</div></div>
+    <div class="acard"><div class="row"><span class="mid">⚠ 2번 프레스 · 온도</span><span class="small">09:13</span></div><div class="small">A동 2라인 · 평소보다 1.4배</div><div class="btn sm" style="margin-top:6px">조치 완료</div></div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<p class="plan">B안. 설비 하나에 경보 하나로 묶기 ✓ 결정</p>
+<div class="frames">
+ <div class="frame">
+  <div class="cap">B-가. 잠금 화면 — 알림 1개, 진동 1번</div>
+  <div class="phone lock">
+   <div class="bar"><span></span><span>진동 ···</span></div>
+   <div class="body">
+    <div class="clock">09:13</div>
+    <div class="date">9월 15일 화요일</div>
+    <div class="noti"><div class="top"><span>안전 경보</span><span>09:12 · 09:13 갱신</span></div><b>⚠ 이상 · 2번 프레스</b><div class="small">진동 · 온도</div></div>
+   </div>
+  </div>
+ </div>
+ <div class="frame">
+  <div class="cap">B-나. 앱을 열면 — 경보 1건, 조치 완료 1번</div>
+  <div class="phone">
+   <div class="bar"><span>09:13</span><span></span></div>
+   <div class="body" style="gap:12px">
+    <div class="alarm"><span class="icon">⚠</span><div><div class="big">이상</div><div class="small">09:12 시작 · 09:13 센서 추가</div></div></div>
+    <div><div class="lbl">무엇이</div><div class="big">2번 프레스</div></div>
+    <div><div class="lbl">어디서</div><div class="mid">A동 2라인</div></div>
+    <div><div class="lbl">이상한 센서 2개</div>
+     <div class="srow"><span>진동</span><div class="range thin"><div class="ok"></div><div class="now" style="left:88%"></div></div><span class="x">2배</span></div>
+     <div class="srow"><span>온도</span><div class="range thin"><div class="ok"></div><div class="now" style="left:66%"></div></div><span class="x">1.4배</span></div>
+     <div class="small">진동센서가 낸 값 여러 개는 한 줄로 묶어 보여 준다. 근로자에게 필요한 것은 "진동이 평소보다 2배"이지 어떤 값이 튀었는지가 아니다.</div>
+    </div>
+   </div>
+   <div class="foot"><div class="btn">조치 완료</div></div>
+  </div>
+ </div>
+</div>
+
+<div class="tblwrap">
+<table>
+ <tr><th>비교</th><th>A안 따로 알림</th><th>B안 설비로 묶기</th></tr>
+ <tr><td>알림·진동 횟수</td><td>이상한 <b>값</b> 수만큼 (3번)</td><td>설비마다 1번</td></tr>
+ <tr><td>조치 완료 누르는 횟수</td><td>3번</td><td>1번</td></tr>
+ <tr><td>버튼 크기 (④)</td><td>한 화면에 여러 개라 작아진다</td><td>하나라 크게 둘 수 있다</td></tr>
+ <tr><td>한 기계 문제인지 보이나</td><td>경보가 흩어져 있어 직접 짐작해야 한다</td><td>한 기계에서 센서 여러 개가 같이 이상한 게 한 화면에 보인다</td></tr>
+ <tr><td>경보를 무시할 위험 (②)</td><td>크다. 경보가 쏟아지면 사람은 무시하게 된다</td><td>작다</td></tr>
+ <tr><td>센서 하나만 이상할 때</td><td colspan="2">두 안이 같다 (화면 W2-가)</td></tr>
+ <tr><td>설비 두 곳이 동시에 이상할 때</td><td>센서 수만큼</td><td>설비 수만큼 (2건)</td></tr>
+ <tr><td>센서 하나가 값을 여러 개 낼 때</td><td>값마다 알림이 온다. 진동센서 1대만으로도 알림이 여러 번 울린다</td><td>한 줄로 묶어 "진동 2배"로 보여 준다</td></tr>
+ <tr><td>기계에 안 붙는 센서 (전력·가스·온습도·누수)</td><td>값마다 알림</td><td>센서 한 대에 1건. 공장 전체로 묶지 않는다 — 급한 가스 경보가 전기 경보에 묻히기 때문이다 (화면 W3)</td></tr>
+ <tr><td>센서 이상 기록 (A⑤)</td><td>값마다 1건</td><td>기계 1대 또는 공간 센서 1대 기준 1건 + 이상한 센서 목록</td></tr>
+ <tr><td>B안에서만 새로 정할 것</td><td>—</td><td>몇 분 안에 온 경보까지 묶나? 조치 완료를 누른 뒤 같은 설비에서 새 센서가 이상하면 새 경보인가?</td></tr>
+</table>
+</div>
+</section>
+</body>
+</html>
