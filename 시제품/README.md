@@ -25,6 +25,7 @@ cd Industrial_Safety_AI_UIUX/시제품 && ./serve.sh
 ```
 
 - `data/proto.db`는 따라오지 않는다(깃에서 뺐다). 처음 띄우면 시험용 계정과 씨앗 데이터로 다시 만들어진다.
+- **윈도우에서는 `serve.sh`가 안 돌아간다**(bash 스크립트다). 대신 `cd 시제품` 뒤에 `python server.py --port 8765`. 폰에서 열 주소는 `ipconfig`의 IPv4 주소에 `:8765`를 붙이면 된다(같은 와이파이여야 하고, 처음엔 방화벽이 물어본다 — 허용).
 - 화면 시험(`_시험/*.js`)까지 돌리려면 Playwright가 따로 필요하다: `npm i -g playwright && npx playwright install chromium`. 실행은 `NODE_PATH=$(npm root -g) node _시험/flow.js <캡처 폴더>`.
 - 인터넷에 올릴 때는 저장소 뿌리의 `render.yaml`을 쓴다(Render 무료 등급, `python 시제품/server.py --port $PORT`).
 
