@@ -1,0 +1,12 @@
+# Render 배포 설정 (2026-09-18) — 시제품 서버를 무료 등급에 올린다.
+# server.py는 파이썬 기본 라이브러리만 쓰고, 자기 폴더를 뿌리로 삼는다(ROOT = __file__ 기준).
+services:
+  - type: web
+    name: industrial-safety-uiux-proto
+    runtime: python
+    plan: free
+    region: singapore          # 현장이 한국이라 가장 가까운 곳
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python 시제품/server.py --port $PORT
+    healthCheckPath: /api/ping

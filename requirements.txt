@@ -1,0 +1,2 @@
+# 시제품 서버는 파이썬 기본 라이브러리만 쓴다 (http.server · sqlite3 · hashlib · secrets).
+# 이 파일은 Render가 파이썬 서비스로 알아보게 하려고 비워 둔다.
