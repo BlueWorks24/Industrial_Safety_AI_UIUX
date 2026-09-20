@@ -40,8 +40,6 @@ function home(s) {
       rows: [['재점검', t.filter((x) => x.kind === 're').length + '곳'], ['새로 갈 곳', t.filter((x) => x.kind === 'first').length + '곳'], ['날짜 안 정함', noDate + '곳']] })}
     ${todayPlan(s, t)}
     <div class="tiles">
-      <button class="tile" data-go="todo"><span class="ic">${I('clipboard', 24)}</span><b>내 할 일<span class="cnt">${t.length}곳</span></b></button>
-      <button class="tile" data-go="start"><span class="ic">${I('camera', 24)}</span><b>점검 시작</b></button>
       <button class="tile" data-go="records"><span class="ic">${I('folder', 24)}</span><b>내 점검 기록</b></button>
       <button class="tile" data-go="soon/factories"><span class="ic">${I('factory', 24)}</span><b>담당 공장</b></button>
     </div>
@@ -87,31 +85,41 @@ function dateSheet(s) {
   </div>`;
 }
 
-/* ---------- G2-나 방문 전 ---------- */
+/* ---------- G2-나 회사 창 (2026-09-20 — 점검 입구를 이 화면 하나로 모았다) ---------- */
+// 약도 — 실제 지도가 아니다. 큰길과 공장 자리만 보여 주는 그림이다.
+function miniMap(f) {
+  return `<div class="map">
+    <svg viewBox="0 0 320 150" aria-hidden="true">
+      <rect width="320" height="150" fill="#edf1ec"/>
+      <path d="M0 104h320" stroke="#d6dde6" stroke-width="20"/>
+      <path d="M252 0v150" stroke="#d6dde6" stroke-width="15"/>
+      <path d="M0 104h320" stroke="#fff" stroke-width="2" stroke-dasharray="11 11"/>
+      <rect x="26" y="30" width="56" height="44" rx="5" fill="#e0e6ee"/>
+      <rect x="276" y="26" width="40" height="50" rx="5" fill="#e0e6ee"/>
+      <rect x="40" y="120" width="78" height="26" rx="5" fill="#e0e6ee"/>
+      <rect x="120" y="28" width="76" height="52" rx="7" fill="#d5e2fb" stroke="#2458d6" stroke-width="2"/>
+    </svg>
+    <span class="pin">${I('pin', 20)}<b>${esc(f.name)}</b></span>
+  </div>`;
+}
 function pre(s, fid) {
   const f = FACTORIES[fid], q = recheckQueue(s, fid);
   const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid).slice(0, 2);
+  const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
   return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head(f.name, 'todo', `<span class="small">${f.area} · ${f.type}</span>`)}
-    ${hist.length ? `<div><div class="lbl">이 공장 센서 이상 기록 · 최근 ${hist.length}건</div>
-      ${hist.map((a) => `<div class="q past" style="margin-top:6px"><div class="t">${a.day} ${esc(SIM.title(a))}</div><div class="small">${SIM.endWord(a)}${a.acks[0] ? ` · 조치 완료 ${a.acks[0].at - a.start}분 뒤` : ''}</div></div>`).join('')}</div>` : ''}
+    ${head(f.name, 'todo', `<span class="small">${q.length ? `재점검 ${q.length}개` : '첫 점검'}</span>`)}
+    ${miniMap(f)}
+    <div class="place"><b>${f.area} · ${f.type} · 근로자 ${f.workers}명</b>${s.visits[fid] ? `<span class="small">${I('calendar', 15)} ${s.visits[fid]} 방문</span>` : ''}</div>
+    <button class="maplink" data-act="openMap">${I('globe', 17)} 지도 앱으로 열기</button>
     ${q.length ? `<div><div class="lbl">오늘 다시 볼 항목 ${q.length}개</div>
       ${q.map((e) => `<div class="q" style="margin-top:6px"><div class="t">${esc(e.it.text)}</div><div class="small">${e.ins.date} 문제 있음 → ${e.it.log[e.it.log.length - 1].at} 공장주 "고쳤어요"</div></div>`).join('')}</div>`
       : ''}
+    ${hist.length ? `<div><div class="lbl">이 공장 센서 이상 기록 · 최근 ${hist.length}건</div>
+      ${hist.map((a) => `<div class="q past" style="margin-top:6px"><div class="t">${a.day} ${esc(SIM.title(a))}</div><div class="small">${SIM.endWord(a)}${a.acks[0] ? ` · 조치 완료 ${a.acks[0].at - a.start}분 뒤` : ''}</div></div>`).join('')}</div>` : ''}
   </div><div class="ft">
-    ${q.length ? `<button class="btn" data-go="re/${fid}">재점검 시작</button>` : `<button class="btn" data-act="newDraft" data-fid="${fid}">점검 시작</button>`}
-  </div></div>`;
-}
-
-/* ---------- G3 점검 시작 ---------- */
-function start(s) {
-  const t = tasks(s);
-  return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('점검 시작')}${pageIntro('점검 시작')}
-    <div class="lbl">어느 공장인가요?</div>
-    ${t.map((x) => `<button class="q${x.kind === 're' ? ' now' : ''}" data-go="pre/${x.fid}"><div class="rowx"><span class="t">${FACTORIES[x.fid].name}</span><span class="ans">${x.kind === 're' ? '재점검 ›' : '첫 점검 ›'}</span></div>
-      <div class="small">${s.visits[x.fid] ? I('calendar', 14) + ' ' + s.visits[x.fid] : '날짜 안 정함'}</div></button>`).join('')}
-    <input class="input" placeholder="🔍 다른 담당 공장 찾기" disabled>
+    ${q.length ? `<button class="btn" data-go="re/${fid}">재점검 시작</button>`
+      : `<button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>
+      <button class="btn ghost" data-act="aiFirst" data-fid="${fid}">${I('sparkle', 17)} AI 체크리스트 생성</button>`}
   </div></div>`;
 }
 
@@ -327,7 +335,7 @@ function render() {
   if (needFirst && !(d && d.kind === 'first')) { R.go(''); return; }
   if (p[0] === 'todo') html = todo(s);
   else if (p[0] === 'pre') html = pre(s, p[1]);
-  else if (p[0] === 'start') html = start(s);
+  else if (p[0] === 'start') { R.go('todo'); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
   else if (p[0] === 'photo') html = photo(s);
   else if (p[0] === 'ai') html = aiWait(s);
   else if (p[0] === 'pick') html = pickScreen(s);
@@ -348,6 +356,14 @@ function render() {
 let lastHash = null;
 function sheet(v) { UI.sheet = v; render(); }
 
+// 하던 점검이 있으면 그대로 두고, 없을 때만 새로 만든다
+function startDraft(fid) {
+  DB.act((s) => {
+    if (s.draft && s.draft.kind === 'first' && s.draft.fid === fid) return;
+    s.draft = { kind: 'first', fid, photos: 0, ai: [], self: [], items: [], aiState: null };
+  });
+}
+
 const ACTS = {
   closeSheet() { sheet(null); },
   date({ fid }) {
@@ -358,7 +374,10 @@ const ACTS = {
   pickDay({ v }) { UI.sheet.day = v; render(); },
   pickTm({ v }) { UI.sheet.tm = v; render(); },
   saveDate() { const sh = UI.sheet; DB.act((s) => { s.visits[sh.fid] = `${sh.day} ${sh.tm}`; }); UI.sheet = null; toast('방문 날짜를 저장했어요'); render(); },
-  newDraft({ fid }) { DB.act((s) => { s.draft = { kind: 'first', fid, photos: 0, ai: [], self: [], items: [], aiState: null }; }); R.go('pick'); },
+  newDraft({ fid }) { startDraft(fid); R.go('pick'); },
+  // 회사 창에서 AI부터 받는다. 기본 체크리스트는 그대로 있고 제안만 먼저 채운다.
+  aiFirst({ fid }) { startDraft(fid); R.go('photo'); },
+  openMap() { toast('실제 앱은 여기서 지도 앱으로 넘어가요'); },
   goPhoto() { R.go('photo'); },
   addPhoto() { DB.act((s) => { s.draft.photos = Math.min(10, s.draft.photos + 1); }); },
   askAI() {

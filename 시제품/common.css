@@ -409,3 +409,12 @@ svg.i{flex:none;vertical-align:-.18em}
 /* 묶음 머리글을 눌러 접는다 */
 .grp.gh{width:100%;min-height:44px;padding:8px 2px;border:none;background:none;text-align:left;cursor:pointer}
 .grp .rest{background:var(--brand-l);color:var(--brand);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:800}
+/* 회사 창 약도 (2026-09-20) — 실제 지도가 아니라 공장 자리만 보여 주는 그림이다 */
+.map{position:relative;border-radius:var(--r);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+.map svg{display:block;width:100%;height:auto}
+.map .pin{position:absolute;left:49%;top:36%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--brand)}
+.map .pin b{background:var(--ink);color:#fff;font-size:12px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap}
+.place{display:flex;flex-direction:column;gap:4px}
+.place b{font-size:15px}
+.place .small{display:flex;align-items:center;gap:5px}
+.maplink{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:var(--r-s);background:var(--brand-l);color:var(--brand);font-size:15px;font-weight:700;cursor:pointer}
