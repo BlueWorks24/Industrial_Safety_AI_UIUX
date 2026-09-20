@@ -14,6 +14,7 @@ import http.server
 import json
 import os
 import secrets
+import socket
 import sqlite3
 import threading
 from datetime import datetime
@@ -226,14 +227,38 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         return self.json_out(404, {'error': 'not found'})
 
 
+class Server(http.server.ThreadingHTTPServer):
+    """IPv4와 IPv6를 함께 받는다.
+
+    Render의 내부 건강 검사가 IPv6로 찾아오기 때문이다. IPv4(0.0.0.0)로만 열어 두면
+    요청이 아예 닿지 않아 배포가 'Timed Out'으로 끝난다.
+    """
+    address_family = socket.AF_INET6
+
+    def server_bind(self):
+        try:
+            self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        except OSError:
+            pass  # IPv6만 받는 기계면 그대로 둔다
+        return super().server_bind()
+
+
+def make_server(port):
+    try:
+        return Server(('::', port), Handler)
+    except OSError:  # IPv6를 못 쓰는 기계면 IPv4로 돌아간다
+        return http.server.ThreadingHTTPServer(('0.0.0.0', port), Handler)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--port', type=int, default=8765)
     ap.add_argument('--reset', action='store_true', help='임시 DB를 지우고 처음 계정으로 다시 만든다')
     a = ap.parse_args()
     init_db(a.reset)
-    srv = http.server.ThreadingHTTPServer(('0.0.0.0', a.port), Handler)
-    print(f'시제품 서버: http://localhost:{a.port}/  (DB: {DB_PATH})', flush=True)
+    srv = make_server(a.port)
+    fam = 'IPv4+IPv6' if srv.address_family == socket.AF_INET6 else 'IPv4'
+    print(f'시제품 서버: http://localhost:{a.port}/  ({fam})  (DB: {DB_PATH})', flush=True)
     srv.serve_forever()
 
 
