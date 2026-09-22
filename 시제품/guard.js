@@ -1,7 +1,7 @@
 // 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null };
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, view: 'list', pin: null };
 const SRC = { base: '기본', prev: '지난번 문제', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -80,12 +80,66 @@ function todo(s) {
   const bk = t.filter((x) => x.kind === 'back' && inArea(x)), re = t.filter((x) => x.kind === 're' && inArea(x)), fr = t.filter((x) => x.kind === 'first' && inArea(x));
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('내 할 일', '', `<span class="small">${TEAM.name} · ${t.length}곳</span>`)}${pageIntro('내 할 일')}
+    <div class="seg">${[['list', '목록'], ['map', '지도']].map(([v, w]) => `<button class="${UI.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${w}</button>`).join('')}</div>
     <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
+    ${UI.view === 'map' ? taskMap(s, [...bk, ...re, ...fr], (x) => (x.kind === 'back' ? backCard(x) : card(x))) : `
     ${bk.length ? `<div class="lbl">반려됨 · 고쳐서 다시 내요</div>${bk.map(backCard).join('')}` : ''}
     ${re.length ? `<div class="lbl">재점검</div>${re.map(card).join('')}` : ''}
     ${fr.length ? `<div class="lbl">새로 갈 곳 · 우리 조 권역</div>${fr.map(card).join('')}` : ''}
-    ${bk.length + re.length + fr.length ? '' : `<div class="stat"><div class="mid">${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요</div></div>`}
+    ${bk.length + re.length + fr.length ? '' : `<div class="stat"><div class="mid">${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요</div></div>`}`}
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
+}
+/* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
+   권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
+   신호가 약해도 테두리와 핀은 보이게 하려는 것이다. 핀은 할 일 종류마다 모양과 말이 다르다(색만으로 가르지 않는다). */
+const KIND = { back: '반려', re: '재점검', first: '새로' };
+const MAPK = Math.cos(37.15 * Math.PI / 180), MAP_AR = 11 / 10;  // 경도 줄임 · 지도 칸 가로:세로
+const mxy = ([x, y]) => [x * MAPK * 1000, -y * 1000];
+const ringArea = (r) => Math.abs(r.reduce((a, c, i) => { const n = r[(i + 1) % r.length]; return a + c[0] * n[1] - n[0] * c[1]; }, 0)) / 2;
+// 범위를 잡을 때는 큰 땅덩이만 본다 — 섬 몇 개 때문에 지도가 작아지지 않게
+const mainPolys = (d) => { const big = Math.max(...d.polys.map((p) => ringArea(p[0]))); return d.polys.filter((p) => ringArea(p[0]) >= big * 0.2); };
+function bboxOf(names) {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  HWASEONG.filter((h) => names.includes(h.name)).forEach((h) => mainPolys(h).forEach((p) => p[0].forEach((c) => {
+    const [x, y] = mxy(c); x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); })));
+  return { x0, y0, x1, y1 };
+}
+function taskMap(s, list, cardOf) {
+  const mine = (nm) => TEAM.areas.find((a) => TEAM.dongs[a].includes(nm));
+  const focus = UI.area ? TEAM.dongs[UI.area] : TEAM.areas.flatMap((a) => TEAM.dongs[a]);
+  // 보여 줄 범위 — 고른 권역(없으면 우리 조 권역 전체)에 맞추고 지도 칸 비율로 늘린다
+  const { x0, y0, x1, y1 } = bboxOf(focus);
+  let w = (x1 - x0) * 1.12, h = (y1 - y0) * 1.18;
+  if (w / h > MAP_AR) h = w / MAP_AR; else w = h * MAP_AR;
+  const vx = (x0 + x1) / 2 - w / 2, vy = (y0 + y1) / 2 - h / 2;
+  const pct = (ll) => { const [x, y] = mxy(ll); return [((x - vx) / w) * 100, ((y - vy) / h) * 100]; };
+  const path = (polys) => polys.map((p) => p.map((r) => 'M' + r.map((c) => mxy(c).map((v) => v.toFixed(1)).join(',')).join('L') + 'Z').join('')).join('');
+  // 우리 권역은 맨 나중에 그려 이웃 동의 회색 선에 덮이지 않게 한다
+  const shapes = [...HWASEONG].sort((a, b) => !!mine(a.name) - !!mine(b.name)).map((d) => {
+    const a = mine(d.name), on = a && (!UI.area || UI.area === a);
+    return `<path d="${path(d.polys)}" class="${a ? (on ? 'mine on' : 'mine') : ''}"${a ? ` data-act="area" data-v="${a}"` : ''}><title>${d.gu} ${d.name}</title></path>`;
+  }).join('');
+  // 권역 이름 — 권역 가장자리 안쪽에서 핀을 피해 자리를 고른다 (위 → 아래 → 왼쪽 → 오른쪽)
+  const pinBox = list.map((x) => { const [l, t] = pct(FACTORIES[x.fid].ll); return [l - 8, t - 14, l + 8, t + 1]; });
+  const labels = TEAM.areas.map((a) => {
+    const b = bboxOf(TEAM.dongs[a]);
+    const L = ((b.x0 - vx) / w) * 100, Rt = ((b.x1 - vx) / w) * 100, T = ((b.y0 - vy) / h) * 100, B = ((b.y1 - vy) / h) * 100;
+    const cx = (L + Rt) / 2, cy = (T + B) / 2;
+    const spot = [[cx, T + 6], [cx, B - 5], [L + 7, cy], [Rt - 7, cy]].find(([l, t]) => l > 5 && l < 95 && t > 4 && t < 96
+      && !pinBox.some(([a0, b0, a1, b1]) => l + 6 > a0 && l - 6 < a1 && t + 3.5 > b0 && t - 3.5 < b1));
+    return spot ? `<span class="glab" style="left:${spot[0]}%;top:${spot[1]}%">${a}</span>` : '';
+  }).join('');
+  const today = (fid) => (s.visits[fid] || '').startsWith('오늘');
+  const pins = list.map((x) => {
+    const [l, t] = pct(FACTORIES[x.fid].ll);
+    return `<button class="gpin k-${x.kind}${today(x.fid) ? ' today' : ''}${UI.pin === x.fid ? ' sel' : ''}" style="left:${l}%;top:${t}%" data-act="pin" data-fid="${x.fid}" aria-label="${FACTORIES[x.fid].name} ${KIND[x.kind]}">
+      <i>${KIND[x.kind]}</i><b>${FACTORIES[x.fid].name}</b></button>`;
+  }).join('');
+  const sel = list.find((x) => x.fid === UI.pin);
+  return `<div class="gmap"><svg viewBox="${vx.toFixed(1)} ${vy.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${shapes}</svg>${labels}${pins}</div>
+    <div class="gleg"><span><i class="k-back"></i>반려</span><span><i class="k-re"></i>재점검</span><span><i class="k-first"></i>새로 갈 곳</span><span><i class="today"></i>오늘 방문</span></div>
+    ${sel ? cardOf(sel) : `<div class="small">${list.length ? `핀을 누르면 그 공장이 아래에 나와요 · ${UI.area || '우리 조 권역'} ${list.length}곳` : `${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요`}</div>`}
+    <div class="small gsrc">경계: 통계청 SGIS · vuski/admdongkor (CC BY 4.0)</div>`;
 }
 function dateSheet(s) {
   const sh = UI.sheet, f = FACTORIES[sh.fid];
@@ -483,7 +537,9 @@ const ACTS = {
   ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; }); },
   ansBad({ n }) { sheet({ type: 'bad', n: +n, photo: !!DB.s.draft.items[+n].shot }); },
   fold({ k }) { UI.fold[k] = !UI.fold[k]; render(); },
-  area({ v }) { UI.area = v === '전체' ? null : v; render(); },
+  area({ v }) { UI.area = v === '전체' ? null : v; UI.pin = null; render(); },
+  view({ v }) { UI.view = v; UI.pin = null; render(); },
+  pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },
   pickResult({ v }) { DB.act((s) => { s.draft.result = v; }); },
   // 반려된 점검을 연다 — 답은 그대로 두고 고친다 (2026-09-22)
   redo({ id }) {

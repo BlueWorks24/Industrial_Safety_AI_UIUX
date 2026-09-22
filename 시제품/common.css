@@ -423,3 +423,26 @@ svg.i{flex:none;vertical-align:-.18em}
 .stt.s-wait{background:#eef2fb;color:var(--brand)}
 .stt.s-ok{background:var(--green-l);color:var(--green)}
 .stt.s-back{background:var(--amber-l);color:var(--amber)}
+/* 지킴이 내 할 일 · 지도 (2026-09-22) — 권역 테두리는 SVG, 핀과 이름은 HTML로 얹어 크기가 줄지 않게 */
+.gmap{position:relative;aspect-ratio:11/10;border-radius:16px;overflow:hidden;background:#f3f5f8;border:1px solid var(--ring)}
+.gmap svg{position:absolute;inset:0;width:100%;height:100%}
+.gmap path{fill:#e6eaf0;stroke:#c9d1dc;stroke-width:1;vector-effect:non-scaling-stroke}
+.gmap path.mine{fill:#e3ebfb;stroke:#8fa9e4;cursor:pointer}
+.gmap path.mine.on{fill:#d3e0fa;stroke:var(--brand);stroke-width:2}
+.glab{position:absolute;transform:translate(-50%,-50%);font-size:13px;font-weight:800;color:var(--navy);background:rgba(255,255,255,.75);border-radius:6px;padding:1px 6px;pointer-events:none;white-space:nowrap}
+.gpin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:none;padding:0;cursor:pointer;min-width:44px;min-height:44px;justify-content:flex-end}
+.gpin i{font-style:normal;font-size:12px;font-weight:800;border-radius:999px;padding:4px 9px;box-shadow:0 2px 6px rgba(23,32,51,.25);white-space:nowrap}
+.gpin b{font-size:11px;font-weight:800;color:var(--ink);background:rgba(255,255,255,.85);border-radius:5px;padding:0 4px;white-space:nowrap}
+.gpin.k-back i{background:var(--amber);color:#fff}
+.gpin.k-re i{background:#fff;color:var(--amber);box-shadow:inset 0 0 0 2px var(--amber),0 2px 6px rgba(23,32,51,.2)}
+.gpin.k-first i{background:var(--brand);color:#fff}
+.gpin.today i{outline:3px solid #111;outline-offset:2px}
+.gpin.sel i{transform:scale(1.15)}
+.gleg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;font-weight:700;color:var(--mid)}
+.gleg span{display:inline-flex;align-items:center;gap:5px}
+.gleg i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.gleg i.k-back{background:var(--amber)}
+.gleg i.k-re{background:#fff;box-shadow:inset 0 0 0 2px var(--amber)}
+.gleg i.k-first{background:var(--brand)}
+.gleg i.today{background:#fff;outline:2px solid #111;outline-offset:1px}
+.gsrc{font-size:11px;color:var(--soft)}

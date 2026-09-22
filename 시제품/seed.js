@@ -32,10 +32,11 @@ const SNOOZE_LIMIT = 2;      // 미루기 한도 — 경보 하나에 2번 (가�
 const REMIND_MIN = 5;        // 조치 완료 뒤 다시 보는 간격 (분)
 
 const FACTORIES = {
-  daesung:  { name: '대성정밀', area: '동탄', type: '금속가공', workers: 8 , roman: 'Daesung Precision' },
-  hanbit:   { name: '한빛화학', area: '향남', type: '화학', workers: 18 , roman: 'Hanbit Chemical' },
-  dongbang: { name: '동방금속', area: '봉담', type: '금속가공', workers: 11 , roman: 'Dongbang Metal' },
-  taegwang: { name: '태광기계', area: '우정', type: '기계', workers: 9 , roman: 'Taegwang Machinery' },
+  // ll: 지도 핀 자리 [경도, 위도] — 가짜 좌표. 그 읍·면·동 안쪽에 찍었다 (2026-09-22)
+  daesung:  { name: '대성정밀', area: '동탄', dong: '동탄2동', ll: [127.07914, 37.18946], type: '금속가공', workers: 8 , roman: 'Daesung Precision' },
+  hanbit:   { name: '한빛화학', area: '향남', dong: '향남읍', ll: [126.93302, 37.11831], type: '화학', workers: 18 , roman: 'Hanbit Chemical' },
+  dongbang: { name: '동방금속', area: '봉담', dong: '봉담읍', ll: [126.9341, 37.2072], type: '금속가공', workers: 11 , roman: 'Dongbang Metal' },
+  taegwang: { name: '태광기계', area: '우정', dong: '우정읍', ll: [126.79918, 37.07409], type: '기계', workers: 9 , roman: 'Taegwang Machinery' },
 };
 
 // 업종 × 분야 기본 체크리스트 (운영자 판) — 지킴이는 자기 조(전기) 칸만 받는다
@@ -105,7 +106,9 @@ const CHECKLIST = {
   ],
 };
 // 지킴이 조 — 기존 웹처럼 조장 + 조원 3이 읍·면·동 권역을 맡는다 (2026-09-22). 이름은 가상.
-const TEAM = { name: '전기 1조', lead: '이조장', members: ['이조장', '김지킴', '박지킴', '최지킴'], areas: ['동탄', '향남', '봉담', '우정'] };
+const TEAM = { name: '전기 1조', lead: '이조장', members: ['이조장', '김지킴', '박지킴', '최지킴'], areas: ['동탄', '향남', '봉담', '우정'],
+  // 권역 이름 → 그 안의 읍·면·동 (지도 테두리용, geo.js의 이름과 같다)
+  dongs: { '동탄': ['동탄1동', '동탄2동', '동탄3동', '동탄4동', '동탄5동', '동탄6동', '동탄7동', '동탄8동', '동탄9동'], '향남': ['향남읍'], '봉담': ['봉담읍'], '우정': ['우정읍'] } };
 // 점검 결과 종류 — 기존 웹의 "점검결과" 칸. 패트롤·기타가 무엇인지는 아직 모른다 (가설)
 const RESULTS = ['점검완료', '재점검', '패트롤', '기타'];
 
