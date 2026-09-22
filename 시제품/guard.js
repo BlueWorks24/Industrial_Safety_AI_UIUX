@@ -75,7 +75,6 @@ function facPhoto(fid) {
 // 공장 카드 — 사진 · 이름 + 상태 · 위치 · 거리 · 방문일 · 그 상태에 맞는 단추 하나
 function fcard(s, x) {
   const f = FACTORIES[x.fid], v = s.visits[x.fid];
-  const [tw, tc] = { back: ['반려', 't-back'], re: [`재점검 ${x.n || ''}`.trim(), 't-re'], first: ['첫 점검', 't-first'] }[x.kind];
   const go = `${I('chevron', 16)}`;
   const btn = x.kind === 'back' ? `<button class="fbtn" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기 ${go}</button>`
     : !v ? `<button class="fbtn line" data-act="date" data-fid="${x.fid}">방문일 정하기 ${go}</button>`
@@ -87,9 +86,9 @@ function fcard(s, x) {
   return `<div class="fcard">
     <button class="fphw" data-go="pre/${x.fid}" aria-label="${f.name} 자세히">${facPhoto(x.fid)}</button>
     <div class="fbody">
-      <div class="fnm"><button class="fname" data-go="pre/${x.fid}">${f.name}</button><span class="ftag ${tc}">${tw}</span></div>
+      <div class="fnm"><button class="fname" data-go="pre/${x.fid}">${f.name}</button>${x.kind === 'back' ? '<span class="ftag t-back">반려</span>' : ''}</div>
       <div class="floc">화성시 ${f.dong}</div>
-      <div class="fmeta">${kmTo(f.ll).toFixed(1)}km · ${f.type} · ${f.workers}명</div>
+      <div class="fmeta">${kmTo(f.ll).toFixed(1)}km</div>
       ${when}${btn}
     </div></div>`;
 }

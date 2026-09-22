@@ -473,8 +473,6 @@ svg.i{flex:none;vertical-align:-.18em}
 .fname{flex:1;min-width:0;padding:0;border:none;background:none;text-align:left;font:inherit;font-size:18px;font-weight:800;letter-spacing:-.03em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .ftag{flex:none;font-size:12px;font-weight:800;border-radius:6px;padding:2px 7px;margin-top:2px}
 .ftag.t-back{background:var(--amber);color:#fff}
-.ftag.t-re{background:var(--amber-l);color:var(--amber)}
-.ftag.t-first{background:var(--brand-l);color:var(--brand)}
 .floc,.fmeta{font-size:14px;color:var(--mid)}
 .fwhen{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink)}
 .fwhen.now{color:var(--brand)}
