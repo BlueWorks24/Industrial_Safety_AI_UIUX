@@ -80,9 +80,11 @@ function fcard(s, x) {
   const go = `${I('chevron', 16)}`;
   const btn = x.kind === 'back' ? `<button class="fbtn" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기 ${go}</button>`
     : !v ? `<button class="fbtn line" data-act="date" data-fid="${x.fid}">방문일 정하기 ${go}</button>`
-    : `<button class="fbtn" data-act="newDraft" data-fid="${x.fid}">점검 시작 ${go}</button>`;
+    // 방문일이 있으면 "일정 변경"을 점검 시작 옆에 나란히 — 날짜 줄 끝의 글자 링크는 단추로 안 보였다 (2026-09-22 사용자 지시)
+    : `<div class="fbtns"><button class="fbtn" data-act="newDraft" data-fid="${x.fid}">점검 시작 ${go}</button>
+      <button class="fbtn line fsub" data-act="date" data-fid="${x.fid}">${I('calendar', 15)} 일정 변경</button></div>`;
   const when = x.kind === 'back' ? `<div class="fwhen">${x.ins.back.at} 운영자 반려</div><div class="fwhen note">${esc(x.ins.back.note)}</div>`
-    : v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문<button class="fchg" data-act="date" data-fid="${x.fid}">바꾸기</button></div>`
+    : v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문</div>`
     : '<div class="fwhen none">방문일 안 정함</div>';
   return `<div class="fcard">
     <button class="fphw" data-go="pre/${x.fid}" aria-label="${f.name} 자세히">${facPhoto(x.fid)}</button>
