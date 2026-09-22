@@ -108,13 +108,12 @@ function home(s) {
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
-    ${findBox()}
-    ${areaChips((a) => all.filter((x) => FACTORIES[x.fid].area === a).length)}
+    ${findRow('home')}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
     ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}
     <button class="hall" data-go="factories">${I('factory', 18)} 공장 전체보기<em>${nAll}곳</em>${I('chevron', 18)}</button>
     <div class="proto">가상 데이터와 임시 사진으로 만든 시제품이에요</div>
-  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
+  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }
 
 // 최근 방문한 곳 — 참고 앱의 "최근방문매장" 자리. 내가 마지막으로 점검한 곳과 그 점검의 상태 (2026-09-22)
@@ -207,19 +206,34 @@ function factoriesScreen(s) {
     .sort((a, b) => kmTo(FACTORIES[a].ll) - kmTo(FACTORIES[b].ll));
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('공장 전체보기', '', `<span class="small">${TEAM.name}</span>`)}
-    ${findBox()}
-    ${areaChips((a) => team.filter((f) => FACTORIES[f].area === a).length)}
+    ${findRow('fac')}
     <div class="fst">${[['all', `전체 ${inTeam.length}`], ['todo', `할 일 있음 ${nTodo}`], ['none', `할 일 없음 ${inTeam.length - nTodo}`]].map(([k, w]) => `<button class="${UI.fst === k ? 'on' : ''}" data-act="fst" data-v="${k}">${w}</button>`).join('')}</div>
     ${list.map((fid) => facRow(s, fid, tk(fid))).join('') || `<div class="cnone">${q ? `"${esc(q)}"에 맞는 공장이 없어요` : '공장이 없어요'}</div>`}
-  </div></div>`;
+  </div></div>${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }
 // 찾기 칸과 권역 칩 — 홈과 공장 전체보기가 같이 쓴다 (2026-09-22 사용자 지시: 공장 탭을 없애고 찾기·권역을 홈으로).
 // 권역은 누를 때마다 켜고 끄는 토글이고 여러 개 켤 수 있다. 하나도 안 켜면 전체
 const inAreas = (fid) => !UI.areas.length || UI.areas.includes(FACTORIES[fid].area);
 const matchQ = (fid) => { const q = UI.fq.trim(); return !q || FACTORIES[fid].name.includes(q) || FACTORIES[fid].dong.includes(q); };
-const findBox = () => `<input class="input hfind" id="fq" type="search" placeholder="공장 이름이나 동으로 찾기" value="${esc(UI.fq)}" autocomplete="off">`;
-const areaChips = (n) => `<div class="htgs" role="group" aria-label="권역">${TEAM.areas.map((a) => { const on = UI.areas.includes(a);
-  return `<button class="htg${on ? ' on' : ''}" data-act="areaT" data-v="${a}" aria-pressed="${on}">${on ? I('check', 14) : ''}${a}<em>${n(a)}</em></button>`; }).join('')}</div>`;
+// 찾기 칸 + 권역 단추 한 줄 — 권역은 칩을 늘어놓지 않고 단추 하나로, 누르면 화성시를 구별로 묶은 창에서 고른다 (2026-09-22 사용자 결정)
+const areaName = (a) => { const d = TEAM.dongs[a]; return d.length === 1 ? d[0] : d.every((x) => new RegExp(`^${a}\\d+동$`).test(x)) ? `${a} 1~${d.length}동` : `${a} 일대`; };
+const areaWord = () => (!UI.areas.length ? '권역 전체' : UI.areas.length === 1 ? areaName(UI.areas[0]) : `${areaName(UI.areas[0])} 외 ${UI.areas.length - 1}`);
+const findRow = (kind) => `<div class="hfrow"><input class="input" id="fq" type="search" placeholder="공장 이름이나 동으로 찾기" value="${esc(UI.fq)}" autocomplete="off">
+  <button class="harea${UI.areas.length ? ' on' : ''}" data-act="areaOpen" data-v="${kind}">${areaWord()} ${I('chevron', 14)}</button></div>`;
+// 권역 고르기 창 — 화성시 구 → 우리 조 읍·면·동. 줄마다 할 일 수(홈) 또는 공장 수(공장 전체보기). 적용해야 목록이 바뀐다
+const GU_ORDER = ['만세구', '효행구', '병점구', '동탄구'];
+function areaSheet(s) {
+  const sh = UI.sheet, gu = (a) => (HWASEONG.find((h) => h.name === TEAM.dongs[a][0]) || {}).gu || '';
+  const n = sh.v === 'home' ? (a) => `할 일 ${tasks(s).filter((x) => FACTORIES[x.fid].area === a).length}`
+    : (a) => `공장 ${Object.keys(FACTORIES).filter((f) => FACTORIES[f].area === a).length}`;
+  const groups = GU_ORDER.map((g) => [g, TEAM.areas.filter((a) => gu(a) === g)]).filter(([, l]) => l.length);
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="mid">권역 고르기 <span class="small">화성시 ${TEAM.name}</span></div>
+    ${groups.map(([g, l]) => `<div class="asg">${g}</div>${l.map((a) => { const on = sh.pick.includes(a);
+      return `<button class="arow${on ? ' on' : ''}" data-act="areaPick" data-v="${a}" aria-pressed="${on}"><span class="achk">${on ? I('check', 16) : ''}</span><b>${areaName(a)}</b><em>${n(a)}</em></button>`; }).join('')}`).join('')}
+    <div class="row"><button class="btn ghost cxl" data-act="areaClear">모두 풀기</button><button class="btn" data-act="areaApply">${sh.pick.length ? `${sh.pick.length}곳 적용하기` : '전체 보기'}</button></div>
+  </div>`;
+}
 // 찾기 칸 — 한글을 조합하는 동안에는 다시 그리지 않는다 (그리면 글자가 끊긴다)
 document.addEventListener('input', (e) => { if (e.target.id === 'fq' && !e.isComposing) { UI.fq = e.target.value; render(); } });
 document.addEventListener('compositionend', (e) => { if (e.target.id === 'fq') { UI.fq = e.target.value; render(); } });
@@ -738,7 +752,10 @@ const ACTS = {
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
   fst({ v }) { UI.fst = v; render(); },
-  areaT({ v }) { UI.areas = UI.areas.includes(v) ? UI.areas.filter((a) => a !== v) : [...UI.areas, v]; render(); },
+  areaOpen({ v }) { sheet({ type: 'area', v, pick: [...UI.areas] }); },
+  areaPick({ v }) { const p = UI.sheet.pick; UI.sheet.pick = p.includes(v) ? p.filter((a) => a !== v) : [...p, v]; render(); },
+  areaClear() { UI.sheet.pick = []; render(); },
+  areaApply() { UI.areas = [...UI.sheet.pick]; UI.sheet = null; render(); },
   calM({ v }) { UI.calM = Math.min(12, Math.max(1, UI.calM + +v)); UI.calD = null; render(); },
   pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },
   pickResult({ v }) { DB.act((s) => { s.draft.result = v; }); },

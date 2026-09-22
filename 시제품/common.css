@@ -573,11 +573,19 @@ svg.i{flex:none;vertical-align:-.18em}
 .dpick{display:flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;background:var(--brand-l);color:var(--brand);font-size:15px;font-weight:800}
 .dpick.none{background:#f3f4f6;color:var(--mid);font-weight:600}
 /* ===== 홈 찾기 · 권역 토글 · 공장 전체보기 (2026-09-22) — 공장 탭을 없애고 홈으로 옮김 ===== */
-.hfind{margin-top:4px}
-.htgs{display:flex;flex-wrap:wrap;gap:6px}
-.htg{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 12px;border:1px solid var(--line2);border-radius:999px;background:#fff;font:inherit;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer}
-.htg em{font-style:normal;font-size:12px;font-weight:700;color:var(--soft);margin-left:2px}
-.htg.on{background:var(--brand-l);border-color:var(--brand);color:var(--brand)}
-.htg.on em{color:var(--brand)}
 .hall{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:50px;margin-top:4px;border:1px solid var(--line2);border-radius:12px;background:#fff;font:inherit;font-size:15px;font-weight:800;color:var(--ink);cursor:pointer}
 .hall em{font-style:normal;font-size:13px;font-weight:700;color:var(--mid)}
+/* 찾기 칸 + 권역 단추 한 줄, 권역 고르기 창 — 화성시 구별 (2026-09-22) */
+.hfrow{display:flex;gap:8px;align-items:stretch;margin-top:4px}
+.hfrow .input{flex:1;min-width:0}
+.harea{flex:none;display:inline-flex;align-items:center;gap:2px;max-width:46%;padding:0 10px 0 12px;border:1.5px solid var(--line2);border-radius:var(--r-s);background:#fff;font:inherit;font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.harea.on{border-color:var(--brand);background:var(--brand-l);color:var(--brand)}
+.asg{margin-top:10px;font-size:13px;font-weight:800;color:var(--mid)}
+.arow{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;text-align:left;cursor:pointer}
+.arow + .arow{margin-top:6px}
+.arow b{flex:1;font-size:16px;font-weight:700}
+.arow em{font-style:normal;font-size:13px;font-weight:700;color:var(--mid)}
+.achk{flex:none;width:24px;height:24px;border-radius:7px;border:1.5px solid var(--line2);display:grid;place-items:center;color:#fff}
+.arow.on{border-color:var(--brand);background:var(--brand-l)}
+.arow.on .achk{background:var(--brand);border-color:var(--brand)}
+
