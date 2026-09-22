@@ -184,7 +184,7 @@ function mapScreen(s) {
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 // 하단바 — 첫 단계 화면에만 붙는다 (점검 도중에는 없음)
-const NAV = [['', '홈', 'home'], ['cal', '캘린더', 'calendar'], ['map', '지도', 'pin'], ['records', '점검 기록', 'folder'], ['weekly', '주간 보고', 'list'], ['soon/me', '내 정보', 'user']];
+const NAV = [['', '홈', 'home'], ['cal', '캘린더', 'calendar'], ['map', '지도', 'pin'], ['weekly', '주간 보고', 'list'], ['soon/me', '내 정보', 'user']];
 const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, ic]) => `<button class="${on === go ? 'on' : ''}" data-go="${go}"${on === go ? ' aria-current="page"' : ''}>${I(ic, 22)}<span>${w}</span></button>`).join('')}</nav>`;
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
@@ -619,7 +619,7 @@ function render() {
   const keep = document.activeElement && document.activeElement.id;
   const val = keep && document.activeElement.value;
   const top = p.join('/');
-  if (['', 'cal', 'map', 'records', 'weekly', 'soon/me'].includes(top)) html += gnav(top);
+  if (['', 'cal', 'map', 'weekly', 'soon/me'].includes(top)) html += gnav(top);  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
   $('#app').innerHTML = html;
   if (NV.st === 'ready') nvMount();
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
