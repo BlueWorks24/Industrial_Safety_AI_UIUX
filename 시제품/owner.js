@@ -20,11 +20,12 @@ function frame(active, body, split, key = active) {
     tabs: TABS, active, title, desc, body, split, menu: UI.menu });
 }
 const myAlarms = (s) => s.alarms.filter((a) => alarmFid(a) === FID);
-const STATE_WORD = { todo: '아직 안 고침', claimed: '고쳤어요 표시함 · 재점검 기다림', fixed: '재점검에서 고쳐짐 확인', back: '재점검에서 안 고쳐짐' };
+// 2026-09-22 재점검을 따로 두지 않는다 — 고쳤는지는 다음 점검 때 확인한다
+const STATE_WORD = { todo: '아직 안 고침', claimed: '고쳤어요 표시함 · 다음 점검 때 확인', fixed: '점검에서 고쳐짐 확인', back: '점검에서 안 고쳐짐' };
 
 function myItems(s) {
   const out = [];
-  s.inspections.filter((i) => i.fid === FID && APPROVED(i)).forEach((ins) => ins.items.filter((x) => x.answer === 'bad').forEach((it) => out.push({ ins, it, st: itemState(it) })));
+  s.inspections.filter((i) => i.fid === FID && APPROVED(i)).forEach((ins) => ins.items.filter(TRACKED).forEach((it) => out.push({ ins, it, st: itemState(it) })));
   return out;
 }
 
@@ -84,29 +85,32 @@ function inspRec(s) {
   const ins = list.find((i) => i.id === UI.openInsp) || list[0];
   if (!ins) return frame('rec', `${subTabs('insp')}<div class="kcard"><div class="kt">아직 지킴이 점검 기록이 없어요</div><div class="small">지킴이가 점검 결과를 내면 여기에 보여요.</div></div>`);
   const order = { back: 0, todo: 1, claimed: 2, fixed: 3 };
-  const bad = ins.items.filter((x) => x.answer === 'bad').sort((a, b) => order[itemState(a)] - order[itemState(b)]);
-  const ok = ins.items.filter((x) => x.answer === 'ok'), na = ins.items.filter((x) => x.answer === 'na');
-  const itemHtml = (it) => {
+  const bad = ins.items.filter(TRACKED).sort((a, b) => order[itemState(a)] - order[itemState(b)]);
+  const ok = ins.items.filter((x) => x.answer === 'ok' && !x.ref), na = ins.items.filter((x) => x.answer === 'na' && !x.ref);
+  // 이 점검에서 다시 본 지난번 미흡 — 원래 항목(옛 점검 기록)을 찾아 그 상태와 단추를 여기서도 보인다
+  const refs = ins.items.filter((x) => x.ref).map((x) => { const o = s.inspections.find((i) => i.id === x.ref.ins); const it = o && o.items.find((y) => y.id === x.ref.id); return it && { o, it }; }).filter(Boolean);
+  const itemHtml = (it, from = ins) => {
     const st = itemState(it);
     const hist = (it.log || []).map((l) => l.t === 'fix'
       ? `<div class="small">${l.at} 고쳤어요${l.note ? ` · "${esc(l.note)}"` : ''}</div>`
-      : `<div class="small">${l.at} 재점검 · <b class="ink">${l.result === 'fixed' ? '고쳐짐' : '안 고쳐짐'}</b>${l.reason ? ` · 사정: ${esc(l.reason)}` : ''}${l.photo ? ' 📷' : ''}</div>`).join('');
+      : `<div class="small">${l.at} 점검에서 확인 · <b class="ink">${l.result === 'fixed' ? '고쳐짐' : '안 고쳐짐'}</b>${l.reason ? ` · 사정: ${esc(l.reason)}` : ''}${l.photo ? ' 📷' : ''}</div>`).join('');
     let action = '';
-    if (st === 'todo' || st === 'back') action = `<button class="btn inl" data-act="fix" data-ins="${ins.id}" data-id="${it.id}">${st === 'back' ? '다시 고쳤어요' : '고쳤어요'}</button>`;
-    if (st === 'claimed') action = `<button class="btn ghost inl" data-act="unfix" data-ins="${ins.id}" data-id="${it.id}">표시 취소</button>`;
+    if (st === 'todo' || st === 'back') action = `<button class="btn inl" data-act="fix" data-ins="${from.id}" data-id="${it.id}">${st === 'back' ? '다시 고쳤어요' : '고쳤어요'}</button>`;
+    if (st === 'claimed') action = `<button class="btn ghost inl" data-act="unfix" data-ins="${from.id}" data-id="${it.id}">표시 취소</button>`;
     return `<div class="item2 ${st === 'back' || st === 'todo' ? 'strong' : ''}">
-      <div class="rowx"><b>${esc(it.text)}</b><span class="ans">문제 있음 <span class="ph">📷</span></span></div>
+      <div class="rowx"><b>${esc(it.text)}</b><span class="ans">${from === ins ? '문제 있음' : `${from.date} 문제 있음`} <span class="ph">📷</span></span></div>
       <div class="small">지킴이 메모: ${esc(it.memo || '없음')}</div>${hist}
       <div class="rowx" style="margin-top:6px"><span class="state">${st === 'back' ? '⚠ ' : st === 'fixed' || st === 'claimed' ? '✓ ' : ''}${STATE_WORD[st]}</span>${action}</div></div>`;
   };
   return frame('rec', `${subTabs('insp')}
     <div class="split">
-      <div class="list">${list.map((i) => { const b = i.items.filter((x) => x.answer === 'bad'); return `<button class="q ${i.id === ins.id ? 'now' : ''}" data-act="openInsp" data-id="${i.id}">
-        <div class="t">${i.date} 지킴이 점검</div><div class="small">${i.items.length}항목 · 문제 ${b.length}개${b.length ? ' · 고칠 것 ' + b.filter((x) => ['todo', 'back'].includes(itemState(x))).length : ''}</div></button>`; }).join('')}</div>
+      <div class="list">${list.map((i) => { const b = i.items.filter(TRACKED); return `<button class="q ${i.id === ins.id ? 'now' : ''}" data-act="openInsp" data-id="${i.id}">
+        <div class="t">${i.date} 지킴이 점검</div><div class="small">${i.items.length}항목 · 문제 ${b.length}개${b.length ? ' · 고칠 것 ' + b.filter((x) => ['todo', 'back'].includes(itemState(x))).length : ''}${i.items.some((x) => x.ref) ? ` · 지난번 미흡 확인 ${i.items.filter((x) => x.ref).length}` : ''}</div></button>`; }).join('')}</div>
       <div class="detail">
         <div class="rowx"><span style="font-size:22px;font-weight:850">${ins.date} 지킴이 점검</span><span class="small">🔒 점검 결과는 고칠 수 없음</span></div>
-        <div class="lbl">문제 있음 ${bad.length}개</div>
-        ${bad.map(itemHtml).join('') || '<div class="small">문제 없음</div>'}
+        ${refs.length ? `<div class="lbl">지난번 미흡 확인 ${refs.length}개</div>${refs.map(({ o, it }) => itemHtml(it, o)).join('')}` : ''}
+        <div class="lbl">${refs.length ? '새로 찾은 문제' : '문제 있음'} ${bad.length}개</div>
+        ${bad.map((it) => itemHtml(it)).join('') || '<div class="small">문제 없음</div>'}
         <button class="add" data-act="toggleOk">이상 없음 ${ok.length}개${na.length ? ` · 해당 없음 ${na.length}개` : ''} ${UI.showOk ? '▾ 접기' : '▸ 펼치기'}</button>
         ${UI.showOk ? ok.map((x) => `<div class="small">· ${esc(x.text)} — 이상 없음</div>`).join('')
           + na.map((x) => `<div class="small">· ${esc(x.text)} — 해당 없음 (이 공장에 없는 것)</div>`).join('') : ''}

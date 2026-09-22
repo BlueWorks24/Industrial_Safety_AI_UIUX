@@ -2,21 +2,18 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
 const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all' };
-const SRC = { base: '기본', prev: '지난번 문제', ai: 'AI 제안', self: '직접 추가' };
+const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
   const t = [];
   // 반려된 점검이 맨 위 — 고쳐서 다시 내야 한다 (2026-09-22). 다시 낸 것이 아직 안 올라갔으면 빼 둔다
   s.inspections.filter((i) => i.st === 'back' && TEAM.members.includes(i.by)
     && !s.outbox.guard.some((m) => m.data.redo === i.id)).forEach((ins) => t.push({ fid: ins.fid, kind: 'back', ins }));
-  ['daesung', 'dongbang'].forEach((fid) => {
-    const q = recheckQueue(s, fid);
-    const waiting = s.outbox.guard.some((m) => m.data.kind === 're' && m.data.fid === fid);
-    if (q.length && !waiting) t.push({ fid, kind: 're', n: q.length, q });
-  });
-  ['hanbit', 'taegwang'].forEach((fid) => {
-    const done = s.inspections.some((i) => i.fid === fid) || s.outbox.guard.some((m) => m.data.fid === fid);
-    if (!done) t.push({ fid, kind: 'first' });
+  // 가야 할 곳 (2026-09-22 — 재점검을 따로 두지 않는다): 공장주가 "고쳤어요"를 누른 미흡이 있는 곳, 아직 점검 안 한 배정 공장.
+  // 어느 쪽이든 할 일은 "점검" 하나이고, 지난번 미흡(prev개)이 있으면 그 점검 체크리스트에 따로 붙는다
+  ['daesung', 'dongbang', 'hanbit', 'taegwang'].forEach((fid) => {
+    if (t.some((x) => x.fid === fid) || s.outbox.guard.some((m) => m.data.fid === fid)) return;
+    if (recheckQueue(s, fid).length || !s.inspections.some((i) => i.fid === fid)) t.push({ fid, kind: 'visit', prev: openIssues(s, fid).length });
   });
   return t;
 }
@@ -46,8 +43,9 @@ function kmTo([x, y]) {
   const a = Math.sin(((y - y0) * rad) / 2) ** 2 + Math.cos(y0 * rad) * Math.cos(y * rad) * Math.sin(((x - x0) * rad) / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
-// 탭 셋 — 거리순(할 일 전체) · 일정순(방문 날짜가 가까운 순) · 재점검(공장주가 고쳤다고 한 곳만) (2026-09-22 사용자 결정)
-const SORTS = [['near', '거리순'], ['date', '일정순'], ['re', '재점검']];
+// 탭 셋 — 거리순(할 일 전체) · 일정순(방문 날짜가 가까운 순) · 미흡 있음(지난번 미흡이 남은 곳만) (2026-09-22 사용자 결정)
+// 셋째 탭은 처음 "재점검"이었는데 재점검을 따로 두지 않기로 하면서 이름을 바꿨다
+const SORTS = [['near', '거리순'], ['date', '일정순'], ['prev', '미흡 있음']];
 // 방문 일정을 셀 수 있게 — 오늘(이야기 속 9/17)부터, 같은 날이면 시간 순, 날짜 안 정함은 맨 뒤
 function whenKey(v) {
   if (!v) return Infinity;
@@ -79,7 +77,6 @@ function fcard(s, x) {
   const go = `${I('chevron', 16)}`;
   const btn = x.kind === 'back' ? `<button class="fbtn" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기 ${go}</button>`
     : !v ? `<button class="fbtn line" data-act="date" data-fid="${x.fid}">방문일 정하기 ${go}</button>`
-    : x.kind === 're' ? `<button class="fbtn" data-go="re/${x.fid}">재점검 시작 ${go}</button>`
     : `<button class="fbtn" data-act="newDraft" data-fid="${x.fid}">점검 시작 ${go}</button>`;
   const when = x.kind === 'back' ? `<div class="fwhen note">${x.ins.back.at} 반려 · ${esc(x.ins.back.note)}</div>`
     : v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문<button class="fchg" data-act="date" data-fid="${x.fid}">바꾸기</button></div>`
@@ -96,7 +93,7 @@ function fcard(s, x) {
 function home(s) {
   locate();
   const all = tasks(s), nToday = all.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).length;
-  const t = sortTasks(s, UI.sort === 're' ? all.filter((x) => x.kind === 're') : all, UI.sort);
+  const t = sortTasks(s, UI.sort === 'prev' ? all.filter((x) => x.prev) : all, UI.sort);
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
     <div class="ghello"><span class="gav">${I('user', 30)}</span><div>
@@ -106,7 +103,7 @@ function home(s) {
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
-    ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.sort === 're' ? '다시 볼 곳이 없어요' : '할 일이 없어요'}</div></div>`}
+    ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.sort === 'prev' ? '지난번 미흡이 남은 곳이 없어요' : '할 일이 없어요'}</div></div>`}
     <div class="proto">시제품 · 가상 데이터 · 사진은 임시</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
@@ -157,7 +154,7 @@ function calScreen(s) {
     if (!d) return '<span class="cday blank"></span>';
     const l = byDay[d] || [], dow = i % 7;
     return `<button class="cday${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}${m === TODAY.m && d === TODAY.d ? ' today' : ''}${d === sel ? ' sel' : ''}" data-act="calDay" data-v="${d}" aria-label="${m}월 ${d}일${l.length ? ` 점검 ${l.length}곳` : ''}">
-      <span class="cn">${d}</span><span class="cdots">${l.slice(0, 3).map((x) => `<i class="k-${x.kind}"></i>`).join('')}${l.length > 3 ? `<em>+${l.length - 3}</em>` : ''}</span></button>`;
+      <span class="cn">${d}</span><span class="cdots">${l.slice(0, 3).map((x) => `<i class="k-${x.prev ? 'prev' : 'visit'}"></i>`).join('')}${l.length > 3 ? `<em>+${l.length - 3}</em>` : ''}</span></button>`;
   }).join('');
   const day = byDay[sel] || [], dow = new Date(y, m - 1, sel).getDay();
   const undated = t.filter((x) => !s.visits[x.fid]);
@@ -166,11 +163,11 @@ function calScreen(s) {
     <div class="calh"><button class="cmv" data-act="calM" data-v="-1" aria-label="이전 달">${I('back', 20)}</button><b>${y}년 ${m}월</b>
       <button class="cmv nx" data-act="calM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
     <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
-    <div class="gleg"><span><i class="k-re"></i>재점검</span><span><i class="k-first"></i>첫 점검</span></div>
+    <div class="gleg"><span><i class="k-prev"></i>미흡 확인 있음</span><span><i class="k-visit"></i>점검</span></div>
     <div class="cdh">${m}월 ${sel}일 ${WD[dow]}요일${m === TODAY.m && sel === TODAY.d ? ' · 오늘' : ''}<em>${day.length}곳</em></div>
     ${day.map((x) => fcard(s, x)).join('') || '<div class="cnone">이 날 잡힌 점검이 없어요</div>'}
     ${undated.length ? `<div class="cdh">날짜 안 정한 곳<em>${undated.length}곳</em></div>
-      <div class="cund">${undated.map((x) => `<div class="cundr"><span><b>${FACTORIES[x.fid].name}</b><small>화성시 ${FACTORIES[x.fid].dong} · ${x.kind === 're' ? `재점검 ${x.n}` : '첫 점검'}</small></span>
+      <div class="cund">${undated.map((x) => `<div class="cundr"><span><b>${FACTORIES[x.fid].name}</b><small>화성시 ${FACTORIES[x.fid].dong} ${x.prev ? ` · 지난번 미흡 ${x.prev}개` : ''}</small></span>
         <button class="fbtn line" data-act="date" data-fid="${x.fid}">날짜 정하기</button></div>`).join('')}</div>` : ''}
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
@@ -182,7 +179,7 @@ const mdNum = (d) => { const m = String(d || '').match(/(\d+)\/(\d+)/); return m
 const lastIns = (s, fid) => s.inspections.filter((i) => i.fid === fid).sort((a, b) => mdNum(b.date) - mdNum(a.date))[0];
 function facRow(s, fid, tk) {
   const f = FACTORIES[fid], li = lastIns(s, fid);
-  const now = tk.map((x) => (x.kind === 'back' ? '반려' : x.kind === 're' ? `재점검 ${x.n}개` : '첫 점검')).join(', ');
+  const now = tk.map((x) => (x.kind === 'back' ? '반려' : x.prev ? `점검 · 지난번 미흡 ${x.prev}개` : '점검')).join(', ');
   return `<button class="fcard fall" data-go="pre/${fid}">
     <span class="fphw">${facPhoto(fid)}</span>
     <span class="fbody"><span class="fname">${f.name}</span><span class="floc">화성시 ${f.dong}</span><span class="fmeta">${kmTo(f.ll).toFixed(1)}km</span>
@@ -226,7 +223,8 @@ const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, i
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
    신호가 약해도 테두리와 핀은 보이게 하려는 것이다. 핀은 할 일 종류마다 모양과 말이 다르다(색만으로 가르지 않는다). */
-const KIND = { back: '반려', re: '재점검', first: '새로' };
+const KIND = { back: '반려', prev: '미흡', visit: '점검' };
+const pinKind = (x) => (x.kind === 'back' ? 'back' : x.prev ? 'prev' : 'visit');
 const MAPK = Math.cos(37.15 * Math.PI / 180), MAP_AR = 11 / 10;  // 경도 줄임 · 지도 칸 가로:세로
 const mxy = ([x, y]) => [x * MAPK * 1000, -y * 1000];
 const ringArea = (r) => Math.abs(r.reduce((a, c, i) => { const n = r[(i + 1) % r.length]; return a + c[0] * n[1] - n[0] * c[1]; }, 0)) / 2;
@@ -265,7 +263,7 @@ function taskMap(s, list, cardOf) {
   }).join('');
   const pins = list.map((x) => { const [l, t] = pct(FACTORIES[x.fid].ll); return pinHtml(s, x, `left:${l}%;top:${t}%`); }).join('');
   const sel = list.find((x) => x.fid === UI.pin);
-  const tail = `<div class="gleg"><span><i class="k-back"></i>반려</span><span><i class="k-re"></i>재점검</span><span><i class="k-first"></i>새로 갈 곳</span><span><i class="today"></i>오늘 방문</span></div>
+  const tail = `<div class="gleg"><span><i class="k-back"></i>반려</span><span><i class="k-prev"></i>미흡 확인 있음</span><span><i class="k-visit"></i>점검</span><span><i class="today"></i>오늘 방문</span></div>
     ${sel ? cardOf(sel) : `<div class="small">${list.length ? `핀을 누르면 그 공장이 아래에 나와요 · ${UI.area || '우리 조 권역'} ${list.length}곳` : `${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요`}</div>`}
     <div class="small gsrc">경계: 통계청 SGIS · vuski/admdongkor (CC BY 4.0)</div>`;
   nvLoad();
@@ -275,9 +273,9 @@ function taskMap(s, list, cardOf) {
 }
 // 핀 하나 — 그림 지도에서는 자리(style)를 받아 버튼으로, 네이버 지도에서는 마커 속 내용으로 쓴다
 function pinHtml(s, x, style) {
-  const f = FACTORIES[x.fid], cls = `gpin k-${x.kind}${(s.visits[x.fid] || '').startsWith('오늘') ? ' today' : ''}${UI.pin === x.fid ? ' sel' : ''}`;
-  const inner = `<i>${KIND[x.kind]}</i><b>${f.name}</b>`;
-  return style ? `<button class="${cls}" style="${style}" data-act="pin" data-fid="${x.fid}" aria-label="${f.name} ${KIND[x.kind]}">${inner}</button>`
+  const k = pinKind(x), f = FACTORIES[x.fid], cls = `gpin k-${k}${(s.visits[x.fid] || '').startsWith('오늘') ? ' today' : ''}${UI.pin === x.fid ? ' sel' : ''}`;
+  const inner = `<i>${KIND[k]}</i><b>${f.name}</b>`;
+  return style ? `<button class="${cls}" style="${style}" data-act="pin" data-fid="${x.fid}" aria-label="${f.name} ${KIND[k]}">${inner}</button>`
     : `<div class="nvpin"><span class="${cls}">${inner}</span></div>`;
 }
 
@@ -363,24 +361,28 @@ function miniMap(f) {
     <span class="pin">${I('pin', 20)}<b>${esc(f.name)}</b></span>
   </div>`;
 }
+// 지난번 미흡 항목 한 줄 설명 — 언제 문제였고, 그 뒤 공장주가 무엇을 했나
+function prevNote(e) {
+  const last = (e.it.log || []).slice(-1)[0];
+  return `${e.ins.date} 문제 있음${last ? (last.t === 'fix' ? ` · ${last.at} 공장주 "고쳤어요"${last.note ? ` · "${esc(last.note)}"` : ''}` : last.result === 'not' ? ` · ${last.at} 점검에서 안 고쳐짐` : '') : ' · 공장주가 아직 안 고침'}`;
+}
 function pre(s, fid) {
-  const f = FACTORIES[fid], q = recheckQueue(s, fid);
+  const f = FACTORIES[fid], q = openIssues(s, fid);
   const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid).slice(0, 2);
   const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
   return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head(f.name, '', `<span class="small">${q.length ? `재점검 ${q.length}개` : '첫 점검'}</span>`)}
+    ${head(f.name, '', `<span class="small">${q.length ? `지난번 미흡 ${q.length}개` : '점검'}</span>`)}
     ${miniMap(f)}
     <div class="place"><b>${f.area} · ${f.type} · 근로자 ${f.workers}명</b>${s.visits[fid] ? `<span class="small">${I('calendar', 15)} ${s.visits[fid]} 방문</span>` : ''}</div>
     <button class="maplink" data-act="openMap">${I('globe', 17)} 지도 앱으로 열기</button>
-    ${q.length ? `<div><div class="lbl">오늘 다시 볼 항목 ${q.length}개</div>
-      ${q.map((e) => `<div class="q" style="margin-top:6px"><div class="t">${esc(e.it.text)}</div><div class="small">${e.ins.date} 문제 있음 → ${e.it.log[e.it.log.length - 1].at} 공장주 "고쳤어요"</div></div>`).join('')}</div>`
+    ${q.length ? `<div><div class="lbl">지난번 미흡 항목 ${q.length}개 · 이번 점검에 같이 봐요</div>
+      ${q.map((e) => `<div class="q" style="margin-top:6px"><div class="t">${esc(e.it.text)}</div><div class="small">${prevNote(e)}</div></div>`).join('')}</div>`
       : ''}
     ${hist.length ? `<div><div class="lbl">이 공장 센서 이상 기록 · 최근 ${hist.length}건</div>
       ${hist.map((a) => `<div class="q past" style="margin-top:6px"><div class="t">${a.day} ${esc(SIM.title(a))}</div><div class="small">${SIM.endWord(a)}${a.acks[0] ? ` · 조치 완료 ${a.acks[0].at - a.start}분 뒤` : ''}</div></div>`).join('')}</div>` : ''}
   </div><div class="ft">
-    ${q.length ? `<button class="btn" data-go="re/${fid}">재점검 시작</button>`
-      : `<button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>
-      <button class="btn ghost" data-act="aiFirst" data-fid="${fid}">${I('sparkle', 17)} AI 체크리스트 생성</button>`}
+    <button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>
+    <button class="btn ghost" data-act="aiFirst" data-fid="${fid}">${I('sparkle', 17)} AI 체크리스트 생성</button>
   </div></div>`;
 }
 
@@ -418,11 +420,13 @@ function pickScreen(s) {
   const d = s.draft, f = FACTORIES[d.fid];
   const nBase = CHECKLIST.areas.reduce((n, a) => n + a.items.length, 0);
   const nSel = d.ai.filter((x) => x.sel).length;
-  const total = nBase + nSel + d.self.length;
+  const nPrev = openIssues(s, d.fid).length, total = nPrev + nBase + nSel + d.self.length;
   const asked = d.aiState === 'done';
   const answered = d.items.some((x) => x.answer);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
     ${head('점검 중 · ' + f.name, 'pre/' + d.fid)}
+    ${nPrev ? `<div class="grp">지난번 미흡 항목<span class="must">${nPrev}개 · 이번 점검에 같이 봐요</span></div>
+    ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
     <div class="grp">기본 체크리스트 · ${CHECKLIST.ver}<span class="must">${nBase}문항 · 고르지 않아도 전부 점검</span></div>
     ${CHECKLIST.areas.map((a) => `<div class="item"><div class="bul">✓</div><div><div class="t">${a.no} ${a.name}</div><div class="why">${a.common ? '공통' : '설비별 · 없는 설비는 해당 없음'} · ${a.items.length}문항</div></div></div>`).join('')}
     <div class="grp">AI 제안 · 원할 때만<span class="must">${asked ? `${d.ai.length}개 중 ${nSel}개 고름` : '아직 안 받음'}</span></div>
@@ -487,14 +491,14 @@ function checkList(s) {
     if (k !== last) {  // 묶음 머리글 — 눌러서 접고 편다
       last = k;
       const g = d.items.filter((y) => gkey(y) === k), rest = g.filter((y) => !y.answer).length;
-      const tag = AREA[k] ? `<span class="must">${AREA[k].common ? '공통' : '설비별'}</span>` : '';
+      const tag = AREA[k] ? `<span class="must">${AREA[k].common ? '공통' : '설비별'}</span>` : k === 'prev' ? '<span class="must">이상 없음 = 고쳐짐</span>' : '';
       rows += `<button class="grp gh" data-act="fold" data-k="${k}">${UI.fold[k] ? '▸' : '▾'} ${gname(k)}${tag}<span class="must">${g.length}개</span>${rest ? `<span class="rest">안 본 것 ${rest}</span>` : '<span class="small">다 답함</span>'}</button>`;
     }
     if (UI.fold[k] || (only && x.answer)) return;
     const st = x.answer || '';
     const mark = [x.memo ? '메모: ' + esc(x.memo) : '', x.shot ? '사진 1장' : ''].filter(Boolean).join(' · ');
     rows += `<div class="crow ${st}">
-      <div class="ctop"><span class="cnum">${i + 1}</span><div class="t">${esc(x.text)}</div></div>
+      <div class="ctop"><span class="cnum">${i + 1}</span><div class="t">${esc(x.text)}</div></div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
       <div class="cans">
         <button class="${st === 'ok' ? 'on ok' : ''}" data-act="ans" data-n="${i}" data-v="ok">${ANS.ok}</button>
         <button class="${st === 'bad' ? 'on bad' : ''}" data-act="ansBad" data-n="${i}">${ANS.bad}</button>
@@ -521,7 +525,9 @@ function badSheet(s) {
   const it = s.draft.items[UI.sheet.n];
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="mid">${esc(it.text)}</div>
-    <div class="ans">문제 있음</div>
+    <div class="ans">${it.ref ? '아직 안 고쳐짐' : '문제 있음'}</div>
+    ${it.ref ? `<div class="lbl">공장주에게 들은 사정 (안 골라도 돼요 · 다시 누르면 풀려요)</div>
+      ${['큰 공사가 필요해요', '부품·업체를 기다려요', '이유를 몰라요'].map((r) => `<button class="pick${UI.sheet.reason === r ? ' on' : ''}" data-act="pickReason" data-v="${r}">${r}</button>`).join('')}` : ''}
     <div class="lbl">지금 모습 (안 찍어도 돼요)</div>
     <div class="row"><div class="thumb">${UI.sheet.photo ? '📷 1장' : '없음'}</div><button class="btn ghost sm" data-act="sheetPhoto">＋ 사진 찍기</button></div>
     <div class="lbl">메모 (안 써도 돼요)</div>
@@ -529,51 +535,7 @@ function badSheet(s) {
     <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveBad">저장</button></div>
   </div>`;
 }
-/* ---------- G6 재점검 ---------- */
-function reList(s, fid) {
-  const d = s.draft && s.draft.kind === 're' && s.draft.fid === fid ? s.draft : null;
-  if (!d) { DB.act((s) => { s.draft = { kind: 're', fid, res: {} }; }); return ''; }
-  const q = recheckQueue(s, fid), f = FACTORIES[fid];
-  const n = q.filter((e) => d.res[e.it.id]).length;
-  return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head('재점검 · ' + f.name, 'pre/' + fid, '<span class="small">(저장됨)</span>')}
-    <div class="ai">공장주가 고쳤다고 한 항목 ${q.length}개 · ${n}개 봄</div>
-    ${q.map((e) => { const r = d.res[e.it.id], fx = e.it.log[e.it.log.length - 1]; return `<div class="task${r ? '' : ' re'}">
-      <div class="t mid">${esc(e.it.text)}</div>
-      <div class="small">${e.ins.date} 문제 있음${e.it.memo ? ' · ' + esc(e.it.memo) : ''}</div>
-      <div class="small ink">${fx.at} 공장주 "고쳤어요"${fx.note ? ` · "${esc(fx.note)}"` : ' · 설명 없음'}</div>
-      ${r ? `<div class="row"><span class="ans" style="flex:1">${r.result === 'fixed' ? '✓ 고쳐짐' : '✕ 안 고쳐짐'}${r.reason ? ' · ' + r.reason : ''}</span><button class="btn ghost sm" style="flex:0 0 84px" data-act="reClear" data-id="${e.it.id}">바꾸기</button></div>`
-        : `<div class="row"><button class="btn ghost" data-act="reFixed" data-id="${e.it.id}">고쳐짐</button><button class="btn ghost" data-act="reNot" data-id="${e.it.id}">안 고쳐짐</button></div>`}
-    </div>`; }).join('')}
-  </div><div class="ft"><button class="btn" data-go="resum/${fid}" ${n === q.length ? '' : 'disabled'}>다 봤어요 (${n}/${q.length})</button></div></div>
-  ${UI.sheet && UI.sheet.type === 'not' ? notSheet(s, q) : ''}`;
-}
-function notSheet(s, q) {
-  const e = q.find((x) => x.it.id === UI.sheet.id);
-  const reasons = ['큰 공사가 필요해요', '부품·업체를 기다려요', '이유를 몰라요'];
-  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
-    <div class="mid">${esc(e.it.text)}</div>
-    <div class="ans">안 고쳐짐</div>
-    <div class="lbl">공장주에게 들은 사정 (안 골라도 돼요 · 다시 누르면 풀려요)</div>
-    ${reasons.map((r) => `<button class="pick${UI.sheet.reason === r ? ' on' : ''}" data-act="pickReason" data-v="${r}">${r}</button>`).join('')}
-    <div class="lbl">지금 모습 (안 찍어도 돼요)</div>
-    <div class="row"><div class="thumb">${UI.sheet.photo ? '📷 1장' : '없음'}</div><button class="btn ghost sm" data-act="sheetPhoto">＋ 사진 찍기</button></div>
-    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveNot">저장</button></div>
-  </div>`;
-}
-function reSum(s, fid) {
-  const d = s.draft, q = recheckQueue(s, fid), f = FACTORIES[fid];
-  const not = q.filter((e) => d.res[e.it.id] && d.res[e.it.id].result === 'not');
-  return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head('재점검 · ' + f.name, 're/' + fid)}
-    <div class="donemark">${I('check', 40)}</div>
-    <div class="center big">${q.length}개 다 봤어요</div>
-    <div class="center small">고쳐짐 ${q.length - not.length} · 안 고쳐짐 ${not.length}</div>
-    ${not.length ? `<div class="q"><div class="t">안 고쳐진 항목은 공장주에게 다시 가요</div>${not.map((e) => `<div class="small">· ${esc(e.it.text)}</div>`).join('')}</div>` : ''}
-    <div class="warnbar"><span class="ic">${I('lock', 22)}</span><div class="small ink">내고 나면 고칠 수 없어요.<br>공장주와 운영자가 바로 봐요.</div></div>
-  </div><div class="ft"><button class="btn ghost" data-go="re/${fid}">← 답 고치기</button><button class="btn" data-act="submitRe" data-fid="${fid}">재점검 결과 내기</button></div></div>`;
-}
-
+/* G6 재점검 화면은 2026-09-22 걷었다 — 지난번 미흡 항목은 다음 점검의 체크리스트에 붙는다 */
 /* ---------- 낸 뒤 ---------- */
 function sent(s, kind) {
   const wait = unsentN(s), first = kind === 'first';
@@ -590,7 +552,7 @@ function records(s) {
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('내 점검 기록')}${pageIntro('내 점검 기록')}
     ${mine.map((i) => { const bad = i.items.filter((x) => x.answer === 'bad'), st = i.st || 'ok';
-      const how = st === 'ok' ? (bad.length ? ' · ' + bad.map((x) => ({ todo: '고침 기다림', claimed: '재점검 기다림', fixed: '고쳐짐', back: '다시 공장주에게' }[itemState(x)])).join(', ') : '')
+      const how = st === 'ok' ? (bad.length ? ' · ' + bad.map((x) => ({ todo: '고침 기다림', claimed: '다음 점검 때 확인', fixed: '고쳐짐', back: '다시 공장주에게' }[itemState(x)])).join(', ') : '')
         : st === 'wait' ? ' · 운영자 검사를 기다려요' : '';
       return `<div class="q${st === 'back' ? ' now' : ''}"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span><span class="stt s-${st}">${ST_WORD[st]}</span></div>
       <div class="small">${i.date} · ${i.result || RESULTS[0]}${i.ver ? ' · ' + i.ver : ''} · ${i.items.length}항목 · 문제 ${bad.length}개${how}</div>
@@ -602,16 +564,12 @@ function records(s) {
 const WEEK = { key: '9/15', label: '9/15(월) ~ 9/19(금)', days: ['9/15', '9/16', '9/17', '9/18', '9/19'] };
 function weekCounts(s) {
   const ins = s.inspections.filter((i) => WEEK.days.includes(i.date) && TEAM.members.includes(i.by));
-  // 우리 재점검(고쳤나 다시 보러 간 것)은 기존 칸의 "재점검"으로 센다 (가설 — 기존 "재점검"의 뜻을 아직 모른다)
-  const reF = [...new Set(s.inspections.flatMap((i) => i.items.some((it) => (it.log || []).some((l) => l.t === 'recheck' && WEEK.days.includes(l.at))) ? [i.fid] : []))];
   const c = Object.fromEntries(RESULTS.map((r) => [r, ins.filter((i) => (i.result || RESULTS[0]) === r).length]));
-  c['재점검'] += reF.length;
-  return { firms: new Set([...ins.map((i) => i.fid), ...reF]).size, c, ins, reF };
+  return { firms: new Set(ins.map((i) => i.fid)).size, c, ins };
 }
 function weekly(s) {
   const w = weekCounts(s), done = (s.weekly || {})[WEEK.key];
-  const lines = [...w.ins.map((i) => `${FACTORIES[i.fid].name} · ${i.date} ${i.result || RESULTS[0]} · ${ST_WORD[i.st || 'ok']}`),
-    ...w.reF.map((fid) => `${FACTORIES[fid].name} · 재점검(고쳤나 다시 봄)`)];
+  const lines = w.ins.map((i) => `${FACTORIES[i.fid].name} · ${i.date} ${i.result || RESULTS[0]} · ${ST_WORD[i.st || 'ok']}`);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('주간 보고', '', `<span class="small">${TEAM.name}</span>`)}
     <div class="today"><div><b>${WEEK.label}</b><span>${TEAM.name} · 조장 ${TEAM.lead} · 조원 ${TEAM.members.filter((m) => m !== TEAM.lead).join('·')}</span></div></div>
@@ -647,8 +605,7 @@ function render() {
   else if (p[0] === 'pick') html = pickScreen(s);
   else if (p[0] === 'list') html = checkList(s);
   else if (p[0] === 'ans' || p[0] === 'sum') { R.go('list'); return; }
-  else if (p[0] === 're') { html = reList(s, p[1]); if (!html) return; }
-  else if (p[0] === 'resum') html = reSum(s, p[1]);
+  else if (p[0] === 're' || p[0] === 'resum') { R.go('pre/' + p[1]); return; }  // 옛 재점검 주소 — 회사 창으로
   else if (p[0] === 'sent') html = sent(s, p[1]);
   else if (p[0] === 'weekly') html = weekly(s);
   else if (p[0] === 'records') html = records(s);
@@ -732,13 +689,15 @@ const ACTS = {
       const base = CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => ({ id: `c${a.key}-${i}`, text: t, src: 'base', area: a.key })));
       const ai = d.ai.filter((x) => x.sel).map((x) => ({ id: 'a' + x.idx, text: AI_SUGGEST[x.idx].text, src: 'ai', photo: x.photo }));
       const self = d.self.map((t, i) => ({ id: 's' + i, text: t, src: 'self' }));
+      // 지난번 미흡 항목 — 맨 앞 묶음. 원래 항목을 ref로 가리키고, 승인되면 답이 원래 항목에 적힌다 (common.js settlePrev)
+      const prev = openIssues(s, d.fid).map((e) => ({ id: `p-${e.ins.id}-${e.it.id}`, text: e.it.text, src: 'prev', ref: { ins: e.ins.id, id: e.it.id }, note: prevNote(e) }));
       const old = Object.fromEntries(d.items.map((x) => [x.id, x]));
-      d.items = [...base, ...ai, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo } : { answer: null }));
+      d.items = [...prev, ...base, ...ai, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot } : { answer: null }));
     });
     R.go('list');
   },
   ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; }); },
-  ansBad({ n }) { sheet({ type: 'bad', n: +n, photo: !!DB.s.draft.items[+n].shot }); },
+  ansBad({ n }) { const it = DB.s.draft.items[+n]; sheet({ type: 'bad', n: +n, photo: !!it.shot, reason: it.reason || null }); },
   fold({ k }) { UI.fold[k] = !UI.fold[k]; render(); },
   area({ v }) { UI.area = v === '전체' ? null : v; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
@@ -765,35 +724,23 @@ const ACTS = {
   only({ v }) { UI.only = v === '1'; render(); },
   sheetPhoto() { UI.sheet.photo = true; render(); },
   saveBad() {
-    const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ph = UI.sheet.photo;
+    const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ph = UI.sheet.photo, reason = UI.sheet.reason || '';
     UI.sheet = null;
-    DB.act((s) => { const it = s.draft.items[n]; it.answer = 'bad'; it.memo = memo; it.shot = ph; });
+    DB.act((s) => { const it = s.draft.items[n]; it.answer = 'bad'; it.memo = memo; it.shot = ph; it.reason = reason; });
   },
   submitFirst() {
     const d = DB.s.draft;
     const data = { kind: 'first', fid: d.fid, redo: d.redo || null, by: ME, team: TEAM.name, ver: CHECKLIST.ver, result: d.result || RESULTS[0],
-      items: d.items.map((x) => ({ id: x.id, text: x.text, src: x.src, area: x.area, answer: x.answer, memo: x.memo || '', log: [] })) };
+      items: d.items.map((x) => ({ id: x.id, text: x.text, src: x.src, area: x.area, answer: x.answer, memo: x.memo || '', log: [],
+        ...(x.ref ? { ref: x.ref, note: x.note, reason: x.reason || '', shot: !!x.shot } : {}) })) };
     DB.act((s) => {
       if (s.net.guard) applyInspection(s, data); else s.outbox.guard.push({ type: 'inspection', data });
-      DB.log(`지킴이 ${d.redo ? '반려된 점검 다시 냄' : '첫 점검 냄'} · ${FACTORIES[d.fid].name}`);
+      if (!d.redo) s.visits[d.fid] = null;  // 다녀왔으니 방문일을 비운다
+      DB.log(`지킴이 ${d.redo ? '반려된 점검 다시 냄' : '점검 냄'} · ${FACTORIES[d.fid].name}`);
       s.draft = null;
     });
     R.go('sent/first');
   },
-  reFixed({ id }) { DB.act((s) => { s.draft.res[id] = { result: 'fixed' }; }); },
-  reNot({ id }) { sheet({ type: 'not', id, reason: null, photo: false }); },
   pickReason({ v }) { UI.sheet.reason = UI.sheet.reason === v ? null : v; render(); },
-  saveNot() { const sh = UI.sheet; UI.sheet = null; DB.act((s) => { s.draft.res[sh.id] = { result: 'not', reason: sh.reason, photo: sh.photo }; }); },
-  reClear({ id }) { DB.act((s) => { delete s.draft.res[id]; }); },
-  submitRe({ fid }) {
-    const q = recheckQueue(DB.s, fid), d = DB.s.draft;
-    const data = { kind: 're', fid, results: q.map((e) => ({ insId: e.ins.id, itemId: e.it.id, result: d.res[e.it.id].result === 'fixed' ? 'fixed' : 'not', reason: d.res[e.it.id].reason, photo: d.res[e.it.id].photo })) };
-    DB.act((s) => {
-      if (s.net.guard) applyInspection(s, data); else s.outbox.guard.push({ type: 'inspection', data });
-      s.visits[fid] = null; s.draft = null;
-      DB.log(`지킴이 재점검 냄 · ${FACTORIES[fid].name}`);
-    });
-    R.go('sent/re');
-  },
 };
 wire(ACTS, render);

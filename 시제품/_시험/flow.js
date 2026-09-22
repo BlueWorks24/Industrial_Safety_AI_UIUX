@@ -43,18 +43,23 @@ const B = 'http://127.0.0.1:8765/';
   await ctl(W, 'normal', ''); await ctl(W, 'normal', '');
   await W.goto(B + 'worker.html#/history'); await shot(W, 'w_history');
 
-  // 지킴이 재점검
+  // 지킴이 — 지난번 미흡이 있는 공장 점검 (재점검을 따로 두지 않고 미흡 항목이 체크리스트에 붙는다, 2026-09-22)
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_home');
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_todo');  // 내 할 일은 홈 목록이 되었다 (2026-09-22)
   await G.locator('[data-act="date"][data-fid="taegwang"]').click(); await click(G, '9/23(수)'); await shot(G, 'g_date');
   await G.locator('[data-act="saveDate"]').click();
   await G.locator('[data-go="pre/daesung"]').first().click(); await shot(G, 'g_pre');
-  await click(G, '재점검 시작'); await shot(G, 'g_re');
-  await G.locator('[data-act="reFixed"]').first().click();
-  await G.locator('[data-act="reNot"]').first().click(); await click(G, '부품·업체를 기다려요'); await shot(G, 'g_not_sheet');
-  await G.locator('[data-act="saveNot"]').click(); await shot(G, 'g_re_done');
-  await click(G, '다 봤어요'); await shot(G, 'g_resum');
-  await click(G, '재점검 결과 내기'); await shot(G, 'g_sent');
+  await G.locator('.ft [data-act="newDraft"]').click(); await shot(G, 'g_re');
+  await click(G, '개로 점검 시작');
+  // 미흡 두 개 — 첫째는 고쳐짐(이상 없음), 둘째는 아직 안 고쳐짐(문제 있음 + 사정)
+  await G.locator('[data-act="ans"][data-n="0"][data-v="ok"]').click();
+  await G.locator('[data-act="ansBad"][data-n="1"]').click(); await click(G, '부품·업체를 기다려요'); await shot(G, 'g_not_sheet');
+  await G.locator('[data-act="saveBad"]').click(); await shot(G, 'g_re_done');
+  const nd = await G.evaluate(() => DB.s.draft.items.length);
+  for (let i = 2; i < nd; i++) { await G.locator(`[data-act="ans"][data-n="${i}"][data-v="ok"]`).click(); }
+  await shot(G, 'g_resum');
+  await click(G, '점검 결과 내기'); await shot(G, 'g_sent');
+  await ctl(G, 'approve');  // 운영자 승인 → 원래 미흡 항목에 고쳐짐 / 안 고쳐짐이 적힌다
   // 공장주 고칠 것
   await O.goto(B + 'web.html#/rec/insp'); await O.waitForSelector('.wtop'); await shot(O, 'o_insp_back');
   await click(O, '다시 고쳤어요'); await O.fill('#fixNote', '부품 받아서 벗겨진 전선 교체함'); await shot(O, 'o_fix_dlg');

@@ -202,11 +202,23 @@ function itemState(it) {
 }
 // 운영자가 승인한 점검만 공장주에게 가고 재점검 목록에 오른다 (2026-09-22, 흐름도 B⑥-1). 상태가 없는 옛 기록은 승인된 것으로 읽는다.
 const APPROVED = (ins) => (ins.st || 'ok') === 'ok';
-function recheckQueue(s, fid) {
+// 지난번 미흡 항목 (2026-09-22 사용자 결정 — 따로 재점검하지 않는다. 다음에 그 공장을 점검할 때 이 항목들이 체크리스트에 붙는다)
+// 새 점검에 다시 붙은 복사본(ref가 있는 것)은 원래 항목 하나로만 센다 — 같은 문제를 두 번 세지 않게
+const TRACKED = (it) => it.answer === 'bad' && !it.ref;
+function openIssues(s, fid) {
   const out = [];
   s.inspections.filter((i) => i.fid === fid && APPROVED(i)).forEach((ins) =>
-    ins.items.filter((it) => it.answer === 'bad' && itemState(it) === 'claimed').forEach((it) => out.push({ ins, it })));
+    ins.items.filter((it) => TRACKED(it) && itemState(it) !== 'fixed').forEach((it) => out.push({ ins, it })));
   return out;
+}
+// 그중 공장주가 "고쳤어요"를 누른 것 — 이게 있으면 다시 가 볼 공장이 된다
+const recheckQueue = (s, fid) => openIssues(s, fid).filter((e) => itemState(e.it) === 'claimed');
+// 운영자가 점검을 승인할 때 — 붙었던 미흡 항목의 답을 원래 항목에 적는다 (이상 없음 = 고쳐짐, 문제 있음 = 안 고쳐짐)
+function settlePrev(s, ins) {
+  ins.items.filter((x) => x.ref && (x.answer === 'ok' || x.answer === 'bad')).forEach((x) => {
+    const o = s.inspections.find((i) => i.id === x.ref.ins), it = o && o.items.find((y) => y.id === x.ref.id);
+    if (it) (it.log = it.log || []).push({ t: 'recheck', at: ins.date, result: x.answer === 'ok' ? 'fixed' : 'not', reason: x.reason || '', photo: !!x.shot });
+  });
 }
 
 /* ---------- 화면 넘기기 ---------- */
@@ -326,7 +338,7 @@ document.addEventListener('click', (e) => {
     if (c === 'other') SIM.ack(s, b.dataset.id, OWNER_NAME[alarmFid(SIM.get(s, b.dataset.id))]);
     if (c === 'ai') s.aiDown = !s.aiDown;
     const ins = (c === 'approve' || c === 'reject') && s.inspections.find((i) => i.id === b.dataset.id);
-    if (ins && c === 'approve') { ins.st = 'ok'; ins.locked = true; ins.okAt = '9/17'; DB.log(`운영자 점검 승인 · ${FACTORIES[ins.fid].name}`); }
+    if (ins && c === 'approve') { ins.st = 'ok'; ins.locked = true; ins.okAt = '9/17'; settlePrev(s, ins); DB.log(`운영자 점검 승인 · ${FACTORIES[ins.fid].name}`); }
     // 반려 사유는 예시다 — 기존 웹에 사유 칸이 있는지 아직 모른다 (가설)
     if (ins && c === 'reject') { ins.st = 'back'; ins.back = { at: '9/17', note: '문제 항목의 메모가 짧아요. 무엇이 어떻게 문제인지 적어 다시 내 주세요.' }; DB.log(`운영자 점검 반려 · ${FACTORIES[ins.fid].name}`); }
     const v = (s.voices || [])[0];
