@@ -267,7 +267,7 @@ function pageIntro(h, p) {
 }
 let taps = [];
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('#sbar, .appbar .mark, .gtop .mark, .alarm .icon')) return;
+  if (!e.target.closest('#sbar, .appbar .mark, .alarm .icon')) return;
   const now = Date.now();
   taps = taps.filter((t) => now - t < 700); taps.push(now);
   if (taps.length >= 3) { taps = []; toggleCtl(); }
