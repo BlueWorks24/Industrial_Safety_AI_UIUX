@@ -508,3 +508,36 @@ svg.i{flex:none;vertical-align:-.18em}
 @media (max-width:359px){.gact{font-size:13px;padding:0 6px;gap:4px}.gact svg{display:none}}  /* 작은 폰에서 두 단추가 칸을 넘지 않게 */
 .gact em{font-style:normal;font-size:12px;font-weight:800;background:#fff;color:#2b4c7e;border-radius:999px;padding:1px 7px}
 .gact em.warn{background:var(--amber);color:#fff}
+/* ===== 지킴이 캘린더 (2026-09-22) — 방문일을 잡으면 그 날짜 칸에 저절로 올라간다 ===== */
+.calh{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:10px}
+.calh b{font-size:18px;font-weight:800;letter-spacing:-.02em;min-width:120px;text-align:center}
+.cmv{width:40px;height:40px;border:1px solid var(--line2);border-radius:10px;background:#fff;display:grid;place-items:center;color:var(--ink);cursor:pointer}
+.cmv.nx svg{transform:rotate(180deg)}
+.cgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px}
+.cwd{text-align:center;font-size:12px;font-weight:700;color:var(--mid);padding:4px 0}
+.cwd.sun,.cday.sun .cn{color:#d14343}
+.cwd.sat,.cday.sat .cn{color:var(--brand)}
+.cday{height:50px;min-width:0;border:none;border-radius:10px;background:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:6px 0 0;font:inherit;cursor:pointer}
+.cday.blank{cursor:default}
+.cday .cn{font-size:14px;font-weight:700;color:var(--ink);width:26px;height:26px;border-radius:50%;display:grid;place-items:center}
+.cday.today .cn{box-shadow:inset 0 0 0 2px var(--ink)}
+.cday.sel{background:#eef2fb}
+.cday.sel .cn{background:var(--ink);color:#fff}
+.cdots{display:flex;gap:2px;align-items:center;min-height:6px}
+.cdots i{width:14px;height:4px;border-radius:2px;display:block}
+.cdots i.k-re{background:var(--amber)}
+.cdots i.k-first{background:var(--brand)}
+.cdots em{font-style:normal;font-size:10px;font-weight:800;color:var(--mid)}
+.cdh{display:flex;align-items:baseline;gap:8px;margin-top:8px;font-size:16px;font-weight:800;letter-spacing:-.02em}
+.cdh em{font-style:normal;font-size:13px;font-weight:700;color:var(--mid)}
+.cnone{padding:18px;text-align:center;font-size:14px;color:var(--soft);background:#fff;border:1px dashed var(--line2);border-radius:12px}
+.cund{background:#fff;border:1px solid var(--line2);border-radius:14px;overflow:hidden}
+.cundr{display:flex;align-items:center;gap:10px;padding:10px 14px}
+.cundr + .cundr{border-top:1px solid var(--line)}
+.cundr span{flex:1;min-width:0;display:flex;flex-direction:column}
+.cundr b{font-size:15px;font-weight:800}
+.cundr small{font-size:13px;color:var(--mid)}
+.cundr .fbtn{margin:0;min-height:36px;font-size:14px}
+/* 하단바가 여섯 칸이 되어 작은 폰에서는 글자를 줄인다 */
+.gnav button span{white-space:nowrap;font-size:11px;letter-spacing:-.03em}  /* 여섯 칸이라 한 칸이 좁다 — "점검 기록"이 두 줄로 꺾이지 않게 */
+@media (max-width:379px){.gnav{margin:0 8px 8px;padding:4px}.gnav button{min-height:52px}.gnav button span{font-size:10.5px}}

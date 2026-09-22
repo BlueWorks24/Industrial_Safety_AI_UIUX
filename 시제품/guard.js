@@ -1,7 +1,7 @@
 // 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, pin: null, sort: 'near' };
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, pin: null, sort: 'near', calM: 9, calD: null };
 const SRC = { base: '기본', prev: '지난번 문제', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -133,6 +133,47 @@ function homeActs(s) {
     <button class="gact" data-go="records">${I('folder', 17)}점검 결과 보기${badge}</button></div>`;
 }
 
+/* ---------- G10 캘린더 (2026-09-22 사용자 요청) ----------
+   따로 예약 목록을 두지 않고 방문일(s.visits)에서 바로 그린다 — 홈이든 여기든 날짜를 정하면 그 칸에 저절로 올라간다.
+   반려는 방문이 아니라서 달력에 올리지 않는다. 이야기 속 오늘은 2026-09-17(목). */
+const TODAY = { y: 2026, m: 9, d: 17 };
+const WD = ['일', '월', '화', '수', '목', '금', '토'];
+// "오늘 10:00" · "9/18(금) 14:00" · "9/23(수) 오전" → { m, d, tm }
+function visitDay(v) {
+  if (!v) return null;
+  if (v.startsWith('오늘')) return { m: TODAY.m, d: TODAY.d, tm: v.replace('오늘', '').trim() };
+  const g = v.match(/(\d+)\/(\d+)(?:\([^)]*\))?\s*(.*)/);
+  return g ? { m: +g[1], d: +g[2], tm: g[3] } : null;
+}
+function calScreen(s) {
+  const y = TODAY.y, m = UI.calM, t = tasks(s).filter((x) => x.kind !== 'back');
+  const byDay = {};
+  t.forEach((x) => { const v = visitDay(s.visits[x.fid]); if (v && v.m === m) (byDay[v.d] = byDay[v.d] || []).push(x); });
+  Object.values(byDay).forEach((l) => l.sort((a, b) => whenKey(s.visits[a.fid]) - whenKey(s.visits[b.fid])));
+  const first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
+  const sel = UI.calD || (m === TODAY.m ? TODAY.d : 1);
+  const cells = [...Array(first).fill(''), ...Array.from({ length: days }, (_, i) => i + 1)].map((d, i) => {
+    if (!d) return '<span class="cday blank"></span>';
+    const l = byDay[d] || [], dow = i % 7;
+    return `<button class="cday${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}${m === TODAY.m && d === TODAY.d ? ' today' : ''}${d === sel ? ' sel' : ''}" data-act="calDay" data-v="${d}" aria-label="${m}월 ${d}일${l.length ? ` 점검 ${l.length}곳` : ''}">
+      <span class="cn">${d}</span><span class="cdots">${l.slice(0, 3).map((x) => `<i class="k-${x.kind}"></i>`).join('')}${l.length > 3 ? `<em>+${l.length - 3}</em>` : ''}</span></button>`;
+  }).join('');
+  const day = byDay[sel] || [], dow = new Date(y, m - 1, sel).getDay();
+  const undated = t.filter((x) => !s.visits[x.fid]);
+  return `${sbar('지킴이')}<div class="scr"><div class="bd">
+    ${head('캘린더', '', `<span class="small">${TEAM.name}</span>`)}
+    <div class="calh"><button class="cmv" data-act="calM" data-v="-1" aria-label="이전 달">${I('back', 20)}</button><b>${y}년 ${m}월</b>
+      <button class="cmv nx" data-act="calM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
+    <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
+    <div class="gleg"><span><i class="k-re"></i>재점검</span><span><i class="k-first"></i>첫 점검</span></div>
+    <div class="cdh">${m}월 ${sel}일 ${WD[dow]}요일${m === TODAY.m && sel === TODAY.d ? ' · 오늘' : ''}<em>${day.length}곳</em></div>
+    ${day.map((x) => fcard(s, x)).join('') || '<div class="cnone">이 날 잡힌 점검이 없어요</div>'}
+    ${undated.length ? `<div class="cdh">날짜 안 정한 곳<em>${undated.length}곳</em></div>
+      <div class="cund">${undated.map((x) => `<div class="cundr"><span><b>${FACTORIES[x.fid].name}</b><small>화성시 ${FACTORIES[x.fid].dong} · ${x.kind === 're' ? `재점검 ${x.n}` : '첫 점검'}</small></span>
+        <button class="fbtn line" data-act="date" data-fid="${x.fid}">날짜 정하기</button></div>`).join('')}</div>` : ''}
+  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
+}
+
 /* ---------- 지도 (하단바) — 예전 내 할 일의 지도 보기를 옮겼다 ---------- */
 function mapScreen(s) {
   const list = sortTasks(s, tasks(s)).filter((x) => !UI.area || FACTORIES[x.fid].area === UI.area);
@@ -143,7 +184,7 @@ function mapScreen(s) {
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 // 하단바 — 첫 단계 화면에만 붙는다 (점검 도중에는 없음)
-const NAV = [['', '홈', 'home'], ['map', '지도', 'pin'], ['records', '점검 기록', 'folder'], ['weekly', '주간 보고', 'list'], ['soon/me', '내 정보', 'user']];
+const NAV = [['', '홈', 'home'], ['cal', '캘린더', 'calendar'], ['map', '지도', 'pin'], ['records', '점검 기록', 'folder'], ['weekly', '주간 보고', 'list'], ['soon/me', '내 정보', 'user']];
 const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, ic]) => `<button class="${on === go ? 'on' : ''}" data-go="${go}"${on === go ? ' aria-current="page"' : ''}>${I(ic, 22)}<span>${w}</span></button>`).join('')}</nav>`;
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
@@ -560,6 +601,7 @@ function render() {
   if (needFirst && !(d && d.kind === 'first')) { R.go(''); return; }
   if (p[0] === 'todo') { R.go(''); return; }  // 옛 주소 — 내 할 일은 홈 목록이 되었다 (2026-09-22)
   else if (p[0] === 'map') html = mapScreen(s);
+  else if (p[0] === 'cal') html = calScreen(s);
   else if (p[0] === 'pre') html = pre(s, p[1]);
   else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
   else if (p[0] === 'photo') html = photo(s);
@@ -577,7 +619,7 @@ function render() {
   const keep = document.activeElement && document.activeElement.id;
   const val = keep && document.activeElement.value;
   const top = p.join('/');
-  if (['', 'map', 'records', 'weekly', 'soon/me'].includes(top)) html += gnav(top);
+  if (['', 'cal', 'map', 'records', 'weekly', 'soon/me'].includes(top)) html += gnav(top);
   $('#app').innerHTML = html;
   if (NV.st === 'ready') nvMount();
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
@@ -603,7 +645,13 @@ const ACTS = {
   },
   pickDay({ v }) { UI.sheet.day = v; render(); },
   pickTm({ v }) { UI.sheet.tm = v; render(); },
-  saveDate() { const sh = UI.sheet; DB.act((s) => { s.visits[sh.fid] = `${sh.day} ${sh.tm}`; }); UI.sheet = null; toast('방문 날짜를 저장했어요'); render(); },
+  saveDate() {
+    const sh = UI.sheet, v = `${sh.day} ${sh.tm}`;
+    DB.act((s) => { s.visits[sh.fid] = v; });
+    const d = visitDay(v);  // 캘린더에서 정했으면 그 날짜로 옮겨 방금 올라간 점검을 보여 준다
+    if (d && R.path()[0] === 'cal') { UI.calM = d.m; UI.calD = d.d; }
+    UI.sheet = null; toast('방문 날짜를 저장했어요'); render();
+  },
   newDraft({ fid }) { startDraft(fid); R.go('pick'); },
   // 회사 창에서 AI부터 받는다. 기본 체크리스트는 그대로 있고 제안만 먼저 채운다.
   aiFirst({ fid }) { startDraft(fid); R.go('photo'); },
@@ -655,6 +703,8 @@ const ACTS = {
   fold({ k }) { UI.fold[k] = !UI.fold[k]; render(); },
   area({ v }) { UI.area = v === '전체' ? null : v; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
+  calDay({ v }) { UI.calD = +v; render(); },
+  calM({ v }) { UI.calM = Math.min(12, Math.max(1, UI.calM + +v)); UI.calD = null; render(); },
   pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },
   pickResult({ v }) { DB.act((s) => { s.draft.result = v; }); },
   // 반려된 점검을 연다 — 답은 그대로 두고 고친다 (2026-09-22)
