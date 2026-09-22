@@ -92,7 +92,7 @@ const B = 'http://127.0.0.1:8765/';
   await ctl(G, 'reject'); await G.goto(B + 'guard.html#/todo'); await shot(G, 'g_todo_back');
   await G.locator('[data-act="view"][data-v="map"]').click(); await G.locator('[data-act="pin"][data-fid="hanbit"]').click(); await shot(G, 'g_todo_map');
   await G.locator('[data-act="view"][data-v="list"]').click();
-  await click(G, '고쳐서 다시 내기'); await shot(G, 'g_redo');
+  await G.locator('[data-act="redo"]').first().click(); await shot(G, 'g_redo');
   await G.locator('.ft [data-act="submitFirst"]').click(); await shot(G, 'g_sent_redo');
   await ctl(G, 'approve'); await G.goto(B + 'guard.html#/records'); await shot(G, 'g_records_ok');
   await G.goto(B + 'guard.html#/weekly'); await shot(G, 'g_weekly');

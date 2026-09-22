@@ -1,7 +1,7 @@
 // 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, view: 'list', pin: null };
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, areas: [], view: 'list', pin: null };  // areas: 켠 권역들, 비면 전체
 const SRC = { base: '기본', prev: '지난번 문제', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -20,9 +20,11 @@ function tasks(s) {
   });
   return t;
 }
-// 앱 머리글 + 위치 띠 — 웹과 같은 결
-const bar = () => appBar('안전지킴이', '산업안전지킴이', `<button class="me" data-go="soon/me">${ME} ›</button>`);
-const head = (title, go = '', end = '') => `<div class="apptop">${band(title, go, end)}${bar()}</div>`;
+// 머리글 — 한 줄: 뒤로 · 제목 · 오른쪽 한마디 (2026-09-22 다시 그림, 남색 띠·줄무늬·로고 줄을 걷음).
+// 오른쪽 끝 작은 방패는 시연 조작판을 여는 자리다 (세 번 누르기). go가 null이면 뒤로 단추가 없다(홈).
+const hdr = (title, go = '', end = '') => `<div class="gtop">${go !== null ? `<button class="gback" data-go="${go}" aria-label="뒤로">${I('back', 22)}</button>` : ''}
+  <h1>${title}</h1><span class="gend">${end}</span><i class="mark" title="시연 조작판: 세 번 누르기"></i></div>`;
+const head = (title, go = '', end = '') => `<div class="apptop">${hdr(title, go, end)}</div>`;
 const unsentN = (s) => s.outbox.guard.length;
 
 /* ---------- G1 홈 ---------- */
@@ -38,7 +40,7 @@ function home(s) {
   const nBack = t.filter((x) => x.kind === 'back').length;
   const nWait = s.inspections.filter((i) => i.st === 'wait' && i.by === ME).length;
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
-    <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
+    ${head('안전지킴이', null, `<button class="me" data-go="soon/me">${ME} ›</button>`)}
     <div class="today"><div><b>9월 17일 목요일</b><span>${TEAM.name} · 권역 ${TEAM.areas.join('·')}</span></div>
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
@@ -54,39 +56,40 @@ function home(s) {
   </div></div>`;
 }
 
-/* ---------- G2 내 할 일 ---------- */
+/* ---------- G2 내 할 일 (2026-09-22 다시 그림) ----------
+   위: 할 일 수 + 작은 목록/지도 전환 · 권역 칩(켜고 끄기, 여러 개, 하나도 안 켜면 전체) · 아래: 종류별 묶음 목록. */
+const inAreas = (fid) => !UI.areas.length || UI.areas.includes(FACTORIES[fid].area);
+// 목록 한 줄 — 공장 이름·할 일 종류가 한 줄에, 그 아래 위치·설명, 맨 아래 방문일과 그 일에 맞는 단추
+function taskRow(s, x) {
+  const f = FACTORIES[x.fid], v = s.visits[x.fid];
+  if (x.kind === 'back') return `<div class="grow">
+      <div class="gmain"><div class="gl1"><b>${f.name}</b><span class="gtag t-back">반려</span></div>
+        <div class="gl2">${f.area} · ${x.ins.date} 점검 · ${x.ins.back.at} 운영자 반려</div>
+        <div class="gnote">${esc(x.ins.back.note)}</div></div>
+      <div class="gfoot"><button class="btn sm" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기</button></div></div>`;
+  const tag = x.kind === 're' ? `<span class="gtag t-re">재점검 ${x.n}</span>` : '<span class="gtag t-first">첫 점검</span>';
+  const why = x.kind === 're' ? `공장주 "고쳤어요" · ${[...new Set(x.q.map((e) => e.it.log[e.it.log.length - 1].at))].join(', ')}` : '';
+  return `<div class="grow">
+      <button class="gmain" data-go="pre/${x.fid}"><div class="gl1"><b>${f.name}</b>${tag}<span class="gchev">${I('chevron', 18)}</span></div>
+        <div class="gl2">${f.area} · ${f.type} · ${f.workers}명</div>${why ? `<div class="gl2">${why}</div>` : ''}</button>
+      <div class="gfoot">${v ? `<span class="gdate${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 15)} ${v} 방문</span>` : '<span class="gdate none">방문일 안 정함</span>'}
+        <button class="glink" data-act="date" data-fid="${x.fid}">${v ? '바꾸기' : '날짜 정하기'}</button></div></div>`;
+}
 function todo(s) {
-  const t = tasks(s);
-  const card = (x) => {
-    const f = FACTORIES[x.fid], v = s.visits[x.fid];
-    const sub = x.kind === 're'
-      ? `${f.area} · 공장주가 "고쳤어요" 누름 · ${x.q.map((e) => e.it.log[e.it.log.length - 1].at).filter((v, i, a) => a.indexOf(v) === i).join(', ')}`
-      : `${f.area} · ${f.type} · ${f.workers}명`;
-    return `<div class="task${x.kind === 're' ? ' re' : ''}">
-      <button class="q" style="border:none;padding:0" data-go="pre/${x.fid}"><div class="nm"><b>${f.name}</b><span class="ans">${x.kind === 're' ? `재점검 ${x.n}개` : '첫 점검'} ›</span></div>
-      <div class="small">${sub}</div></button>
-      ${v ? `<div class="row"><span class="small ink" style="font-weight:700;flex:1;display:flex;align-items:center;gap:6px">${I('calendar', 17)} ${v} 방문</span><button class="btn ghost sm" style="flex:0 0 84px" data-act="date" data-fid="${x.fid}">바꾸기</button></div>`
-          : `<button class="btn ghost sm" data-act="date" data-fid="${x.fid}">${I('calendar', 18)} 날짜 정하기</button>`}
-    </div>`;
-  };
-  const backCard = (x) => `<div class="task re">
-      <div class="nm"><b>${FACTORIES[x.fid].name}</b><span class="stt s-back">반려됨</span></div>
-      <div class="small">${x.ins.date} 점검 · ${x.ins.back.at} 운영자 반려</div>
-      <div class="small ink">"${esc(x.ins.back.note)}"</div>
-      <button class="btn sm" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기</button>
-    </div>`;
-  // 권역(읍·면·동)으로 걸러 본다 — 조가 맡은 공장이 많아지면 이것부터 쓴다
-  const inArea = (x) => !UI.area || FACTORIES[x.fid].area === UI.area;
-  const bk = t.filter((x) => x.kind === 'back' && inArea(x)), re = t.filter((x) => x.kind === 're' && inArea(x)), fr = t.filter((x) => x.kind === 'first' && inArea(x));
+  const t = tasks(s), vis = t.filter((x) => inAreas(x.fid));
+  const bk = vis.filter((x) => x.kind === 'back'), re = vis.filter((x) => x.kind === 're'), fr = vis.filter((x) => x.kind === 'first');
+  const group = (name, list) => (list.length ? `<section class="gsec"><h3>${name}<em>${list.length}</em></h3><div class="grows">${list.map((x) => taskRow(s, x)).join('')}</div></section>` : '');
+  const nIn = (a) => t.filter((x) => FACTORIES[x.fid].area === a).length;
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('내 할 일', '', `<span class="small">${TEAM.name} · ${t.length}곳</span>`)}${pageIntro('내 할 일')}
-    <div class="seg">${[['list', '목록'], ['map', '지도']].map(([v, w]) => `<button class="${UI.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${w}</button>`).join('')}</div>
-    <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
-    ${UI.view === 'map' ? taskMap(s, [...bk, ...re, ...fr], (x) => (x.kind === 'back' ? backCard(x) : card(x))) : `
-    ${bk.length ? `<div class="lbl">반려됨 · 고쳐서 다시 내요</div>${bk.map(backCard).join('')}` : ''}
-    ${re.length ? `<div class="lbl">재점검</div>${re.map(card).join('')}` : ''}
-    ${fr.length ? `<div class="lbl">새로 갈 곳 · 우리 조 권역</div>${fr.map(card).join('')}` : ''}
-    ${bk.length + re.length + fr.length ? '' : `<div class="stat"><div class="mid">${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요</div></div>`}`}
+    ${head('내 할 일', '', TEAM.name)}
+    <div class="gtool"><span class="gcount">할 일 <b>${vis.length}</b>곳${UI.areas.length ? ` <small>/ 전체 ${t.length}</small>` : ''}</span>
+      <div class="gsw">${[['list', '목록', 'list'], ['map', '지도', 'pin']].map(([v, w, ic]) => `<button class="${UI.view === v ? 'on' : ''}" data-act="view" data-v="${v}" aria-pressed="${UI.view === v}">${I(ic, 15)}${w}</button>`).join('')}</div></div>
+    <div class="gchips" role="group" aria-label="권역">${TEAM.areas.map((a) => { const on = UI.areas.includes(a);
+      return `<button class="gchip${on ? ' on' : ''}" data-act="area" data-v="${a}" aria-pressed="${on}">${a}<span>${nIn(a)}</span></button>`; }).join('')}
+      ${UI.areas.length ? '<button class="gchip clr" data-act="area" data-v="">모두 보기</button>' : ''}</div>
+    ${UI.view === 'map' ? taskMap(s, vis, (x) => `<div class="grows">${taskRow(s, x)}</div>`) : `
+    ${group('반려됨', bk)}${group('재점검', re)}${group('새로 갈 곳', fr)}
+    ${vis.length ? '' : `<div class="gempty">${UI.areas.length ? UI.areas.join('·') + '에는 ' : ''}할 일이 없어요</div>`}`}
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
@@ -106,7 +109,7 @@ function bboxOf(names) {
 }
 function taskMap(s, list, cardOf) {
   const mine = (nm) => TEAM.areas.find((a) => TEAM.dongs[a].includes(nm));
-  const focus = UI.area ? TEAM.dongs[UI.area] : TEAM.areas.flatMap((a) => TEAM.dongs[a]);
+  const focus = (UI.areas.length ? UI.areas : TEAM.areas).flatMap((a) => TEAM.dongs[a]);
   // 보여 줄 범위 — 고른 권역(없으면 우리 조 권역 전체)에 맞추고 지도 칸 비율로 늘린다
   const { x0, y0, x1, y1 } = bboxOf(focus);
   let w = (x1 - x0) * 1.12, h = (y1 - y0) * 1.18;
@@ -116,7 +119,7 @@ function taskMap(s, list, cardOf) {
   const path = (polys) => polys.map((p) => p.map((r) => 'M' + r.map((c) => mxy(c).map((v) => v.toFixed(1)).join(',')).join('L') + 'Z').join('')).join('');
   // 우리 권역은 맨 나중에 그려 이웃 동의 회색 선에 덮이지 않게 한다
   const shapes = [...HWASEONG].sort((a, b) => !!mine(a.name) - !!mine(b.name)).map((d) => {
-    const a = mine(d.name), on = a && (!UI.area || UI.area === a);
+    const a = mine(d.name), on = a && (!UI.areas.length || UI.areas.includes(a));
     return `<path d="${path(d.polys)}" class="${a ? (on ? 'mine on' : 'mine') : ''}"${a ? ` data-act="area" data-v="${a}"` : ''}><title>${d.gu} ${d.name}</title></path>`;
   }).join('');
   // 권역 이름 — 권역 가장자리 안쪽에서 핀을 피해 자리를 고른다 (위 → 아래 → 왼쪽 → 오른쪽)
@@ -132,7 +135,7 @@ function taskMap(s, list, cardOf) {
   const pins = list.map((x) => { const [l, t] = pct(FACTORIES[x.fid].ll); return pinHtml(s, x, `left:${l}%;top:${t}%`); }).join('');
   const sel = list.find((x) => x.fid === UI.pin);
   const tail = `<div class="gleg"><span><i class="k-back"></i>반려</span><span><i class="k-re"></i>재점검</span><span><i class="k-first"></i>새로 갈 곳</span><span><i class="today"></i>오늘 방문</span></div>
-    ${sel ? cardOf(sel) : `<div class="small">${list.length ? `핀을 누르면 그 공장이 아래에 나와요 · ${UI.area || '우리 조 권역'} ${list.length}곳` : `${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요`}</div>`}
+    ${sel ? cardOf(sel) : `<div class="small">${list.length ? `핀을 누르면 그 공장이 아래에 나와요 · ${UI.areas.join('·') || '우리 조 권역'} ${list.length}곳` : `${UI.areas.length ? UI.areas.join('·') + '에는 ' : ''}할 일이 없어요`}</div>`}
     <div class="small gsrc">경계: 통계청 SGIS · vuski/admdongkor (CC BY 4.0)</div>`;
   nvLoad();
   if (NV.st === 'ready') { UI.nvArgs = { list, focus }; return `<div class="gmap nv" id="nvSlot"></div>${tail}`; }
@@ -180,7 +183,7 @@ function nvMount() {
     NV.map.data.addListener('click', (e) => { const a = e.feature.getProperty('area'); if (a) ACTS.area({ v: a }); });
   } else { slot.appendChild(NV.el); NV.map.refresh(true); }
   NV.map.data.setStyle((f) => {
-    const a = f.getProperty('area'), on = a && (!UI.area || UI.area === a);
+    const a = f.getProperty('area'), on = a && (!UI.areas.length || UI.areas.includes(a));
     return a ? { fillColor: '#2458d6', fillOpacity: on ? 0.14 : 0.05, strokeColor: '#2458d6', strokeWeight: on ? 3 : 1.5, strokeOpacity: on ? 0.95 : 0.5, clickable: true }
       : { fillOpacity: 0, strokeColor: '#6b7789', strokeWeight: 1, strokeOpacity: 0.45, clickable: false };
   });
@@ -191,7 +194,7 @@ function nvMount() {
     N.Event.addListener(m, 'click', () => ACTS.pin({ fid: x.fid }));
     return m;
   });
-  const key = UI.area || '전체';  // 권역을 바꿀 때만 범위를 다시 맞춘다 — 핀을 누를 때마다 지도가 튀지 않게
+  const key = UI.areas.join(',') || '전체';  // 권역을 바꿀 때만 범위를 다시 맞춘다 — 핀을 누를 때마다 지도가 튀지 않게
   if (NV.fit !== key) {
     NV.fit = key; const b = bboxLL(focus);
     NV.map.fitBounds(new N.LatLngBounds(new N.LatLng(b.s, b.w), new N.LatLng(b.n, b.e)), { top: 44, right: 20, bottom: 16, left: 20 });
@@ -343,7 +346,7 @@ function checkList(s) {
   const bad = d.items.filter((x) => x.answer === 'bad');
   const only = UI.only && left;
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
-  const top = `<div class="apptop">${band((redo ? '고쳐 내기 · ' : '점검 중 · ') + f.name, redo ? 'todo' : 'pick')}${bar()}
+  const top = `<div class="apptop">${hdr((redo ? '고쳐 내기 · ' : '점검 · ') + f.name, redo ? 'todo' : 'pick')}
     <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} <span class="small">· ${CHECKLIST.ver}</span></span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
     <div class="prog">${['ok', 'bad', 'na'].map((v) => `<i class="${v}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div>
     <div class="tally"><span class="ok">✓ ${ANS.ok} ${nOk}</span><span class="bad">⚠ ${ANS.bad} ${nBad}</span>${nNa ? `<span class="na">— ${ANS.na} ${nNa}</span>` : ''}${left ? `<span>안 본 것 ${left}</span>` : ''}</div></div></div>`;
@@ -454,7 +457,7 @@ const ST_WORD = { wait: '검사 대기', ok: '승인', back: '반려됨' };
 function records(s) {
   const mine = s.inspections.filter((i) => i.by === ME);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('내 점검 기록')}${pageIntro('내 점검 기록')}
+    ${head('내 점검 기록')}
     ${mine.map((i) => { const bad = i.items.filter((x) => x.answer === 'bad'), st = i.st || 'ok';
       const how = st === 'ok' ? (bad.length ? ' · ' + bad.map((x) => ({ todo: '고침 기다림', claimed: '재점검 기다림', fixed: '고쳐짐', back: '다시 공장주에게' }[itemState(x)])).join(', ') : '')
         : st === 'wait' ? ' · 운영자 검사를 기다려요' : '';
@@ -594,7 +597,8 @@ const ACTS = {
   ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; }); },
   ansBad({ n }) { sheet({ type: 'bad', n: +n, photo: !!DB.s.draft.items[+n].shot }); },
   fold({ k }) { UI.fold[k] = !UI.fold[k]; render(); },
-  area({ v }) { UI.area = v === '전체' ? null : v; UI.pin = null; render(); },
+  // 권역 칩 — 누를 때마다 켜고 끈다. 빈 값은 모두 끄기(= 전체)
+  area({ v }) { UI.areas = !v ? [] : UI.areas.includes(v) ? UI.areas.filter((a) => a !== v) : [...UI.areas, v]; UI.pin = null; render(); },
   view({ v }) { UI.view = v; UI.pin = null; render(); },
   pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },
   pickResult({ v }) { DB.act((s) => { s.draft.result = v; }); },
