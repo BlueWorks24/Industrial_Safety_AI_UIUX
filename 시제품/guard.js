@@ -114,12 +114,12 @@ function home(s) {
 function recentVisit(s) {
   const ins = s.inspections.find((i) => i.by === ME);
   if (!ins) return `<div class="gvisit"><div class="gvt">최근 방문한 곳</div><div class="gvsub">아직 점검한 곳이 없어요</div>${homeActs(s)}</div>`;
-  const f = FACTORIES[ins.fid], st = ins.st || 'ok', bad = ins.items.filter((x) => x.answer === 'bad').length;
-  return `<div class="gvisit"><div class="gvt">최근 방문한 곳</div>
+  const f = FACTORIES[ins.fid], [m, d] = ins.date.split('/').map(Number);
+  // 점검한 날은 제목 줄 오른쪽에 — "언제 갔던 곳"이 먼저 읽히게 (2026-09-22 사용자: 승인 표시·문제 수 빼고 날짜 자리 옮김)
+  return `<div class="gvisit"><div class="gvt">최근 방문한 곳<span class="gvdate">${I('calendar', 15)} ${m}월 ${d}일 (${WD[new Date(TODAY.y, m - 1, d).getDay()]})</span></div>
     <div class="gvrow"><div class="gvtx">
       <div class="gvkm">${I('pin', 15)} ${kmTo(f.ll).toFixed(1)}km</div>
-      <b>${f.name}</b><div class="gvsub">화성시 ${f.dong} · ${ins.date} 점검 · 문제 ${bad}개</div>
-      <div class="gvst"><span class="stt s-${st}">${ST_WORD[st]}</span></div>
+      <b>${f.name}</b><div class="gvsub">화성시 ${f.dong}</div>
       <button class="fbtn gvbtn" data-go="pre/${ins.fid}">공장 보기 ${I('chevron', 16)}</button></div>
       <button class="gvph" data-go="pre/${ins.fid}" aria-label="${f.name}">${facPhoto(ins.fid)}</button></div>${homeActs(s)}</div>`;
 }
