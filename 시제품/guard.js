@@ -334,18 +334,29 @@ function nvMount() {
     NV.map.fitBounds(new N.LatLngBounds(new N.LatLng(b.s, b.w), new N.LatLng(b.n, b.e)), { top: 44, right: 20, bottom: 16, left: 20 });
   }
 }
+// 방문일 정하기 — 달력에서 날짜를 누르고 오전/오후를 고른다 (2026-09-22 사용자 요청: 날짜 다섯 개 단추 → 달력).
+// 지난 날은 못 고르고, 다른 공장 방문이 잡힌 날엔 막대가 뜬다. 저장하면 캘린더 탭에 바로 오른다(방문일에서 그리므로).
 function dateSheet(s) {
-  const sh = UI.sheet, f = FACTORIES[sh.fid];
-  const days = ['9/21(월)', '9/22(화)', '9/23(수)', '9/24(목)', '9/25(금)'];
-  const tms = ['오전', '오후'];
-  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+  const sh = UI.sheet, f = FACTORIES[sh.fid], y = TODAY.y, m = sh.m;
+  const first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
+  const booked = {};
+  tasks(s).forEach((x) => { const v = visitDay(s.visits[x.fid]); if (x.fid !== sh.fid && v && v.m === m) booked[v.d] = (booked[v.d] || 0) + 1; });
+  const cells = [...Array(first).fill(0), ...Array.from({ length: days }, (_, i) => i + 1)].map((d, i) => {
+    if (!d) return '<span class="cday blank"></span>';
+    const past = m < TODAY.m || (m === TODAY.m && d < TODAY.d), dow = i % 7;
+    return `<button class="cday${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}${m === TODAY.m && d === TODAY.d ? ' today' : ''}${sh.pm === m && sh.d === d ? ' sel' : ''}${past ? ' dis' : ''}" data-act="pickD" data-v="${d}"${past ? ' disabled' : ''} aria-label="${m}월 ${d}일${booked[d] ? ` 다른 방문 ${booked[d]}곳` : ''}">
+      <span class="cn">${d}</span><span class="cdots">${Array.from({ length: Math.min(3, booked[d] || 0) }, () => '<i class="k-visit"></i>').join('')}</span></button>`;
+  }).join('');
+  const picked = sh.d ? `${sh.pm}월 ${sh.d}일 (${WD[new Date(y, sh.pm - 1, sh.d).getDay()]})` : '';
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet dsheet"><div class="grip"></div>
     <div class="mid">${f.name} 방문 날짜</div>
-    <div class="lbl">날짜</div>
-    <div class="seg">${days.map((d) => `<button class="${sh.day === d ? 'on' : ''}" data-act="pickDay" data-v="${d}">${d}</button>`).join('')}</div>
+    <div class="calh"><button class="cmv" data-act="sheetM" data-v="-1" aria-label="이전 달"${m <= TODAY.m ? ' disabled' : ''}>${I('back', 20)}</button><b>${y}년 ${m}월</b>
+      <button class="cmv nx" data-act="sheetM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
+    <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
     <div class="lbl">시간</div>
-    <div class="seg">${tms.map((d) => `<button class="${sh.tm === d ? 'on' : ''}" data-act="pickTm" data-v="${d}">${d}</button>`).join('')}</div>
-    <div class="small">우리 조와 공장주에게 보여요<span class="hyp">가설</span></div>
-    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveDate" ${sh.day ? '' : 'disabled'}>저장</button></div>
+    <div class="seg">${['오전', '오후'].map((d) => `<button class="${sh.tm === d ? 'on' : ''}" data-act="pickTm" data-v="${d}">${d}</button>`).join('')}</div>
+    <div class="dpick${picked ? '' : ' none'}">${picked ? `${I('calendar', 16)} ${picked} ${sh.tm} 방문` : '달력에서 날짜를 골라 주세요'}</div>
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveDate" ${sh.d ? '' : 'disabled'}>저장</button></div>
   </div>`;
 }
 
@@ -646,18 +657,19 @@ function startDraft(fid) {
 const ACTS = {
   closeSheet() { sheet(null); },
   date({ fid }) {
-    const v = DB.s.visits[fid];
-    const day = v && v.includes('(') ? v.split(' ')[0] : null;
-    sheet({ type: 'date', fid, day, tm: v && /1[2-9]:|오후/.test(v) ? '오후' : '오전' });
+    const v = DB.s.visits[fid], d = visitDay(v);  // 이미 잡힌 날이 있으면 그 달·그 날을 골라 둔 채로 연다
+    sheet({ type: 'date', fid, m: d ? d.m : TODAY.m, pm: d ? d.m : null, d: d ? d.d : null, tm: v && /1[2-9]:|오후/.test(v) ? '오후' : '오전' });
   },
-  pickDay({ v }) { UI.sheet.day = v; render(); },
+  pickD({ v }) { UI.sheet.pm = UI.sheet.m; UI.sheet.d = +v; render(); },
+  sheetM({ v }) { UI.sheet.m = Math.min(12, Math.max(TODAY.m, UI.sheet.m + +v)); render(); },
   pickTm({ v }) { UI.sheet.tm = v; render(); },
   saveDate() {
-    const sh = UI.sheet, v = `${sh.day} ${sh.tm}`;
+    const sh = UI.sheet, isToday = sh.pm === TODAY.m && sh.d === TODAY.d;
+    const v = isToday ? `오늘 ${sh.tm}` : `${sh.pm}/${sh.d}(${WD[new Date(TODAY.y, sh.pm - 1, sh.d).getDay()]}) ${sh.tm}`;
     DB.act((s) => { s.visits[sh.fid] = v; });
     const d = visitDay(v);  // 캘린더에서 정했으면 그 날짜로 옮겨 방금 올라간 점검을 보여 준다
     if (d && R.path()[0] === 'cal') { UI.calM = d.m; UI.calD = d.d; }
-    UI.sheet = null; toast('방문 날짜를 저장했어요'); render();
+    UI.sheet = null; toast(`${v} 방문을 캘린더에 올렸어요`); render();
   },
   newDraft({ fid }) { startDraft(fid); R.go('pick'); },
   // 회사 창에서 AI부터 받는다. 기본 체크리스트는 그대로 있고 제안만 먼저 채운다.

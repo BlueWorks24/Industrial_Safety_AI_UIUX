@@ -564,3 +564,11 @@ svg.i{flex:none;vertical-align:-.18em}
 .cundr .gtg{margin-top:3px;align-self:flex-start}
 .gul{margin:0;padding:12px 16px 12px 34px;font-size:14px;color:var(--ink);line-height:1.6}
 .gstack{display:flex;flex-direction:column;gap:8px}
+/* ===== 방문일 정하기 창 — 달력 (2026-09-22) ===== */
+.dsheet .calh{margin-top:4px}
+.dsheet .cmv:disabled{opacity:.35;cursor:default}
+.dsheet .cday{height:44px}
+.cday.dis{cursor:default}
+.cday.dis .cn{color:#c4cad3 !important}
+.dpick{display:flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;background:var(--brand-l);color:var(--brand);font-size:15px;font-weight:800}
+.dpick.none{background:#f3f4f6;color:var(--mid);font-weight:600}

@@ -46,7 +46,7 @@ const B = 'http://127.0.0.1:8765/';
   // 지킴이 — 지난번 미흡이 있는 공장 점검 (재점검을 따로 두지 않고 미흡 항목이 체크리스트에 붙는다, 2026-09-22)
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_home');
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_todo');  // 내 할 일은 홈 목록이 되었다 (2026-09-22)
-  await G.locator('[data-act="date"][data-fid="taegwang"]').click(); await click(G, '9/23(수)'); await shot(G, 'g_date');
+  await G.locator('[data-act="date"][data-fid="taegwang"]').click(); await G.locator('.sheet [data-act="pickD"][data-v="23"]').click(); await shot(G, 'g_date');
   await G.locator('[data-act="saveDate"]').click();
   await G.locator('[data-go="pre/daesung"]').first().click(); await shot(G, 'g_pre');
   await G.locator('.ft [data-act="newDraft"]').click(); await shot(G, 'g_re');
