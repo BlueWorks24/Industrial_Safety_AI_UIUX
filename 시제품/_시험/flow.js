@@ -53,7 +53,7 @@ const B = 'http://127.0.0.1:8765/';
   await click(G, '개로 점검 시작');
   // 미흡 두 개 — 첫째는 고쳐짐(이상 없음), 둘째는 아직 안 고쳐짐(문제 있음 + 사정)
   await G.locator('[data-act="ans"][data-n="0"][data-v="ok"]').click();
-  await G.locator('[data-act="ansBad"][data-n="1"]').click(); await click(G, '부품·업체를 기다려요'); await shot(G, 'g_not_sheet');
+  await G.locator('[data-act="ansBad"][data-n="1"]').click(); await click(G, '부품이나 업체를 기다려요'); await shot(G, 'g_not_sheet');
   await G.locator('[data-act="saveBad"]').click(); await shot(G, 'g_re_done');
   const nd = await G.evaluate(() => DB.s.draft.items.length);
   for (let i = 2; i < nd; i++) { await G.locator(`[data-act="ans"][data-n="${i}"][data-v="ok"]`).click(); }

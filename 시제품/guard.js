@@ -21,6 +21,9 @@ function tasks(s) {
 const bar = () => appBar('안전지킴이', '산업안전지킴이', `<button class="me" data-go="soon/me">${ME} ›</button>`);
 const head = (title, go = '', end = '') => `<div class="apptop">${band(title, go, end)}${bar()}</div>`;
 const unsentN = (s) => s.outbox.guard.length;
+// 여러 정보를 "·"로 한 줄에 잇지 않는다 (2026-09-22 사용자 지시) — 이름표·값 두 칸 표와 작은 꼬리표로 나눠 보인다
+const kv = (rows) => `<dl class="gkv">${rows.filter(Boolean).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
+const tg = (t, c = '') => `<span class="gtg${c ? ' ' + c : ''}">${t}</span>`;
 
 /* ---------- G1 홈 = 공장 목록 (2026-09-22, 사용자가 준 세차장 예약 앱 구성을 참고) ----------
    머리글 아래 프로필과 인삿말 → 정렬 탭(급한 순·거리순·방문일순) → 공장 카드(사진·이름·위치·거리·단추) → 아래에 하단바.
@@ -78,7 +81,7 @@ function fcard(s, x) {
   const btn = x.kind === 'back' ? `<button class="fbtn" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기 ${go}</button>`
     : !v ? `<button class="fbtn line" data-act="date" data-fid="${x.fid}">방문일 정하기 ${go}</button>`
     : `<button class="fbtn" data-act="newDraft" data-fid="${x.fid}">점검 시작 ${go}</button>`;
-  const when = x.kind === 'back' ? `<div class="fwhen note">${x.ins.back.at} 반려 · ${esc(x.ins.back.note)}</div>`
+  const when = x.kind === 'back' ? `<div class="fwhen">${x.ins.back.at} 운영자 반려</div><div class="fwhen note">${esc(x.ins.back.note)}</div>`
     : v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문<button class="fchg" data-act="date" data-fid="${x.fid}">바꾸기</button></div>`
     : '<div class="fwhen none">방문일 안 정함</div>';
   return `<div class="fcard">
@@ -104,7 +107,7 @@ function home(s) {
     ${recentVisit(s)}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
     ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.sort === 'prev' ? '지난번 미흡이 남은 곳이 없어요' : '할 일이 없어요'}</div></div>`}
-    <div class="proto">시제품 · 가상 데이터 · 사진은 임시</div>
+    <div class="proto">가상 데이터와 임시 사진으로 만든 시제품이에요</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 
@@ -164,10 +167,10 @@ function calScreen(s) {
       <button class="cmv nx" data-act="calM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
     <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
     <div class="gleg"><span><i class="k-prev"></i>미흡 확인 있음</span><span><i class="k-visit"></i>점검</span></div>
-    <div class="cdh">${m}월 ${sel}일 ${WD[dow]}요일${m === TODAY.m && sel === TODAY.d ? ' · 오늘' : ''}<em>${day.length}곳</em></div>
+    <div class="cdh">${m}월 ${sel}일 ${WD[dow]}요일${m === TODAY.m && sel === TODAY.d ? tg('오늘', 'now') : ''}<em>${day.length}곳</em></div>
     ${day.map((x) => fcard(s, x)).join('') || '<div class="cnone">이 날 잡힌 점검이 없어요</div>'}
     ${undated.length ? `<div class="cdh">날짜 안 정한 곳<em>${undated.length}곳</em></div>
-      <div class="cund">${undated.map((x) => `<div class="cundr"><span><b>${FACTORIES[x.fid].name}</b><small>화성시 ${FACTORIES[x.fid].dong} ${x.prev ? ` · 지난번 미흡 ${x.prev}개` : ''}</small></span>
+      <div class="cund">${undated.map((x) => `<div class="cundr"><span><b>${FACTORIES[x.fid].name}</b><small>화성시 ${FACTORIES[x.fid].dong}</small>${x.prev ? tg(`미흡 ${x.prev}`, 'warn') : ''}</span>
         <button class="fbtn line" data-act="date" data-fid="${x.fid}">날짜 정하기</button></div>`).join('')}</div>` : ''}
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
@@ -179,12 +182,12 @@ const mdNum = (d) => { const m = String(d || '').match(/(\d+)\/(\d+)/); return m
 const lastIns = (s, fid) => s.inspections.filter((i) => i.fid === fid).sort((a, b) => mdNum(b.date) - mdNum(a.date))[0];
 function facRow(s, fid, tk) {
   const f = FACTORIES[fid], li = lastIns(s, fid);
-  const now = tk.map((x) => (x.kind === 'back' ? '반려' : x.prev ? `점검 · 지난번 미흡 ${x.prev}개` : '점검')).join(', ');
+  const now = tk.map((x) => (x.kind === 'back' ? tg('반려', 'warn') : tg('점검 예정', 'now') + (x.prev ? tg(`미흡 ${x.prev}`, 'warn') : ''))).join('');
   return `<button class="fcard fall" data-go="pre/${fid}">
     <span class="fphw">${facPhoto(fid)}</span>
     <span class="fbody"><span class="fname">${f.name}</span><span class="floc">화성시 ${f.dong}</span><span class="fmeta">${kmTo(f.ll).toFixed(1)}km</span>
-      <span class="fwhen${li ? '' : ' none'}">${li ? `마지막 점검 ${li.date} · ${ST_WORD[li.st || 'ok']}` : '점검 기록 없음'}</span>
-      ${now ? `<span class="fwhen now">지금 할 일 · ${now}</span>` : ''}</span>
+      <span class="fwhen${li ? '' : ' none'}">${li ? `마지막 점검 ${li.date} ${tg(ST_WORD[li.st || 'ok'], 's-' + (li.st || 'ok'))}` : '점검 기록 없음'}</span>
+      ${now ? `<span class="fwhen">${now}</span>` : ''}</span>
     <span class="gchev">${I('chevron', 18)}</span></button>`;
 }
 function factoriesScreen(s) {
@@ -212,7 +215,7 @@ document.addEventListener('compositionend', (e) => { if (e.target.id === 'fq') {
 function mapScreen(s) {
   const list = sortTasks(s, tasks(s)).filter((x) => !UI.area || FACTORIES[x.fid].area === UI.area);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('지도', '', `<span class="small">${TEAM.name} · ${list.length}곳</span>`)}
+    ${head('지도', '', `<span class="small">${list.length}곳</span>`)}
     <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
     ${taskMap(s, list, (x) => fcard(s, x))}
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
@@ -264,8 +267,8 @@ function taskMap(s, list, cardOf) {
   const pins = list.map((x) => { const [l, t] = pct(FACTORIES[x.fid].ll); return pinHtml(s, x, `left:${l}%;top:${t}%`); }).join('');
   const sel = list.find((x) => x.fid === UI.pin);
   const tail = `<div class="gleg"><span><i class="k-back"></i>반려</span><span><i class="k-prev"></i>미흡 확인 있음</span><span><i class="k-visit"></i>점검</span><span><i class="today"></i>오늘 방문</span></div>
-    ${sel ? cardOf(sel) : `<div class="small">${list.length ? `핀을 누르면 그 공장이 아래에 나와요 · ${UI.area || '우리 조 권역'} ${list.length}곳` : `${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요`}</div>`}
-    <div class="small gsrc">경계: 통계청 SGIS · vuski/admdongkor (CC BY 4.0)</div>`;
+    ${sel ? cardOf(sel) : `<div class="small">${list.length ? '핀을 누르면 그 공장이 아래에 나와요' : `${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요`}</div>`}
+    <div class="small gsrc">경계 자료: 통계청 SGIS, vuski/admdongkor (CC BY 4.0)</div>`;
   nvLoad();
   if (NV.st === 'ready') { UI.nvArgs = { list, focus }; return `<div class="gmap nv" id="nvSlot"></div>${tail}`; }
   return `${NV.st === 'fail' ? '<div class="small">네이버 지도를 불러오지 못해 그림 지도로 보여요</div>' : ''}<div class="gmap"><svg viewBox="${vx.toFixed(1)} ${vy.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${shapes}</svg>${labels}${pins}</div>
@@ -364,7 +367,8 @@ function miniMap(f) {
 // 지난번 미흡 항목 한 줄 설명 — 언제 문제였고, 그 뒤 공장주가 무엇을 했나
 function prevNote(e) {
   const last = (e.it.log || []).slice(-1)[0];
-  return `${e.ins.date} 문제 있음${last ? (last.t === 'fix' ? ` · ${last.at} 공장주 "고쳤어요"${last.note ? ` · "${esc(last.note)}"` : ''}` : last.result === 'not' ? ` · ${last.at} 점검에서 안 고쳐짐` : '') : ' · 공장주가 아직 안 고침'}`;
+  const next = last ? (last.t === 'fix' ? `${last.at} 공장주 "고쳤어요"${last.note ? `<br>"${esc(last.note)}"` : ''}` : last.result === 'not' ? `${last.at} 점검에서 안 고쳐짐` : '') : '공장주가 아직 안 고침';
+  return `${e.ins.date} 문제 있음${next ? '<br>' + next : ''}`;
 }
 function pre(s, fid) {
   const f = FACTORIES[fid], q = openIssues(s, fid);
@@ -373,13 +377,13 @@ function pre(s, fid) {
   return `${sbar(f.name)}<div class="scr"><div class="bd">
     ${head(f.name, '', `<span class="small">${q.length ? `지난번 미흡 ${q.length}개` : '점검'}</span>`)}
     ${miniMap(f)}
-    <div class="place"><b>${f.area} · ${f.type} · 근로자 ${f.workers}명</b>${s.visits[fid] ? `<span class="small">${I('calendar', 15)} ${s.visits[fid]} 방문</span>` : ''}</div>
+    ${kv([['위치', `화성시 ${f.dong}`], ['업종', f.type], ['근로자', `${f.workers}명`], s.visits[fid] && ['방문', s.visits[fid]]])}
     <button class="maplink" data-act="openMap">${I('globe', 17)} 지도 앱으로 열기</button>
-    ${q.length ? `<div><div class="lbl">지난번 미흡 항목 ${q.length}개 · 이번 점검에 같이 봐요</div>
+    ${q.length ? `<div><div class="lbl">지난번 미흡 항목 ${q.length}개</div><div class="small">이번 점검에 같이 봐요</div>
       ${q.map((e) => `<div class="q" style="margin-top:6px"><div class="t">${esc(e.it.text)}</div><div class="small">${prevNote(e)}</div></div>`).join('')}</div>`
       : ''}
-    ${hist.length ? `<div><div class="lbl">이 공장 센서 이상 기록 · 최근 ${hist.length}건</div>
-      ${hist.map((a) => `<div class="q past" style="margin-top:6px"><div class="t">${a.day} ${esc(SIM.title(a))}</div><div class="small">${SIM.endWord(a)}${a.acks[0] ? ` · 조치 완료 ${a.acks[0].at - a.start}분 뒤` : ''}</div></div>`).join('')}</div>` : ''}
+    ${hist.length ? `<div><div class="lbl">최근 센서 이상 기록 ${hist.length}건</div>
+      ${hist.map((a) => `<div class="q past" style="margin-top:6px"><div class="t">${a.day} ${esc(SIM.title(a))}</div><div class="small">${SIM.endWord(a)}${a.acks[0] ? `<br>울린 뒤 ${a.acks[0].at - a.start}분 만에 조치` : ''}</div></div>`).join('')}</div>` : ''}
   </div><div class="ft">
     <button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>
     <button class="btn ghost" data-act="aiFirst" data-fid="${fid}">${I('sparkle', 17)} AI 체크리스트 생성</button>
@@ -390,12 +394,12 @@ function pre(s, fid) {
 function photo(s) {
   const d = s.draft, f = FACTORIES[d.fid];
   return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head('점검 중 · ' + f.name, 'pick')}
+    ${head(f.name + ' 점검', 'pick')}
     <div class="mid">공장 안을 찍어 주세요</div>
-    <div class="small">분전반·전선·콘센트 같은 곳 · <b class="ink">찍힌 것만 봐요</b></div>
+    <div class="small">분전반, 전선, 콘센트 같은 곳을 찍어요<br><b class="ink">AI는 찍힌 것만 봐요</b></div>
     <div class="thumbs">${Array.from({ length: d.photos }, (_, i) => `<div class="thumb">사진 ${i + 1}</div>`).join('')}
       <button class="thumb" style="border:2px dashed var(--ink);background:#fff;font-size:22px" data-act="addPhoto">＋</button></div>
-    <div class="small">${d.photos}장 찍음 · 최대 10장</div>
+    <div class="small">${d.photos} / 10장</div>
   </div><div class="ft">
     <button class="btn" data-act="askAI" ${d.photos ? '' : 'disabled'}>AI에게 보내기</button>
     <button class="btn ghost" data-act="toList">기본 체크리스트로 돌아가기</button>
@@ -424,32 +428,33 @@ function pickScreen(s) {
   const asked = d.aiState === 'done';
   const answered = d.items.some((x) => x.answer);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
-    ${head('점검 중 · ' + f.name, 'pre/' + d.fid)}
-    ${nPrev ? `<div class="grp">지난번 미흡 항목<span class="must">${nPrev}개 · 이번 점검에 같이 봐요</span></div>
+    ${head(f.name + ' 점검', 'pre/' + d.fid)}
+    ${nPrev ? `<div class="grp">지난번 미흡 항목<span class="must">${nPrev}개</span></div>
     ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
-    <div class="grp">기본 체크리스트 · ${CHECKLIST.ver}<span class="must">${nBase}문항 · 고르지 않아도 전부 점검</span></div>
-    ${CHECKLIST.areas.map((a) => `<div class="item"><div class="bul">✓</div><div><div class="t">${a.no} ${a.name}</div><div class="why">${a.common ? '공통' : '설비별 · 없는 설비는 해당 없음'} · ${a.items.length}문항</div></div></div>`).join('')}
-    <div class="grp">AI 제안 · 원할 때만<span class="must">${asked ? `${d.ai.length}개 중 ${nSel}개 고름` : '아직 안 받음'}</span></div>
+    <div class="grp">기본 체크리스트<span class="must">${CHECKLIST.ver}</span><span class="must">${nBase}문항</span></div>
+    <div class="small">고르지 않아도 전부 점검해요</div>
+    ${CHECKLIST.areas.map((a) => `<div class="item"><div class="bul">✓</div><div><div class="t">${a.no} ${a.name}</div><div class="why">${tg(a.common ? '공통' : '설비별')}${tg(a.items.length + '문항')}${a.common ? '' : '<br>없는 설비는 해당 없음으로'}</div></div></div>`).join('')}
+    <div class="grp">AI 제안<span class="must">원할 때만</span><span class="must">${asked ? `${d.ai.length}개 중 ${nSel}개 고름` : '아직 안 받음'}</span></div>
     ${asked ? `
-    <div class="small"><b class="ink">사진 속 것만 봐요</b> · 틀릴 수 있어요</div>
+    <div class="small"><b class="ink">사진 속 것만 봐요.</b> 틀릴 수 있어요.</div>
     ${d.ai.length === 0 ? `<div class="small">사진에서 찾은 것 없음 — 위험이 없다는 뜻은 아니에요.</div>` : ''}
     ${d.ai.map((x, i) => { const g = AI_SUGGEST[x.idx]; return `<div class="item${x.sel ? ' sel' : ''}">
       <button class="chk" data-act="toggleAI" data-i="${i}" aria-label="고르기">${x.sel ? '✓' : ''}</button>
       <div style="flex:1"><div class="t">${esc(g.text)}</div>
-      <button class="link small" style="padding:0;min-height:36px" data-act="why" data-i="${i}">사진: ${g.seen} · 비슷한 사고: ${esc(g.cases[0].t)} ›</button></div></div>`; }).join('')}
+      <button class="link small" style="padding:0;min-height:36px" data-act="why" data-i="${i}">사진에서 본 것: ${g.seen}<br>비슷한 사고: ${esc(g.cases[0].t)} ›</button></div></div>`; }).join('')}
     <button class="add" data-act="goPhoto">＋ 사진 더 찍어 다시 받기</button>` : `
     <button class="add" data-act="goPhoto">${I('camera', 16)} 사진 찍어 AI 제안 받기</button>`}
     ${d.self.length ? `<div class="grp">직접 추가<span class="must">${d.self.length}개</span></div>` : ''}
     ${d.self.map((t) => `<div class="item sel"><div class="bul">${I('plus', 14)}</div><div><div class="t">${esc(t)}</div><div class="why">직접 추가</div></div></div>`).join('')}
     <button class="add" data-act="addSelf">＋ 항목 직접 추가</button>
-  </div><div class="ft"><button class="btn" data-act="startAnswer">${answered ? `이어서 점검하기 · ${total}개` : `${total}개로 점검 시작`}</button></div></div>
+  </div><div class="ft"><button class="btn" data-act="startAnswer">${answered ? `${total}개 이어서 점검하기` : `${total}개로 점검 시작`}</button></div></div>
   ${UI.sheet && UI.sheet.type === 'why' ? whySheet(s) : ''}${UI.sheet && UI.sheet.type === 'self' ? selfSheet() : ''}`;
 }
 function whySheet(s) {
   const x = s.draft.ai[UI.sheet.i], g = AI_SUGGEST[x.idx], sp = g.spot;
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="mid">${esc(g.text)}</div>
-    <div class="lbl">AI가 본 자리 · 사진 ${x.photo}</div>
+    <div class="lbl">AI가 본 자리 (사진 ${x.photo})</div>
     <div class="photo">사진 ${x.photo}<span class="box" style="left:${sp.l}%;top:${sp.t}%;width:${sp.w}%;height:${sp.h}%">${g.seen}</span></div>
     <div class="lbl">비슷한 사고 사례 (설명용 예시)</div>
     ${g.cases.map((c) => `<div class="case"><b>${esc(c.t)}</b><div class="small">같은 점: ${esc(c.same)}</div></div>`).join('')}
@@ -481,8 +486,8 @@ function checkList(s) {
   const bad = d.items.filter((x) => x.answer === 'bad');
   const only = UI.only && left;
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
-  const top = `<div class="apptop">${band((redo ? '고쳐 내기 · ' : '점검 중 · ') + f.name, redo ? '' : 'pick')}${bar()}
-    <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} <span class="small">· ${CHECKLIST.ver}</span></span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
+  const top = `<div class="apptop">${band(f.name + (redo ? ' 고쳐 내기' : ' 점검'), redo ? '' : 'pick')}${bar()}
+    <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
     <div class="prog">${['ok', 'bad', 'na'].map((v) => `<i class="${v}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div>
     <div class="tally"><span class="ok">✓ ${ANS.ok} ${nOk}</span><span class="bad">⚠ ${ANS.bad} ${nBad}</span>${nNa ? `<span class="na">— ${ANS.na} ${nNa}</span>` : ''}${left ? `<span>안 본 것 ${left}</span>` : ''}</div></div></div>`;
   let rows = '', last = null;
@@ -496,7 +501,7 @@ function checkList(s) {
     }
     if (UI.fold[k] || (only && x.answer)) return;
     const st = x.answer || '';
-    const mark = [x.memo ? '메모: ' + esc(x.memo) : '', x.shot ? '사진 1장' : ''].filter(Boolean).join(' · ');
+    const mark = [x.memo ? '메모: ' + esc(x.memo) : '', x.shot ? '사진 1장' : ''].filter(Boolean).join('<br>');
     rows += `<div class="crow ${st}">
       <div class="ctop"><span class="cnum">${i + 1}</span><div class="t">${esc(x.text)}</div></div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
       <div class="cans">
@@ -509,11 +514,11 @@ function checkList(s) {
   });
   const res = d.result || RESULTS[0];
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
-    ${redo && redo.back ? `<div class="warnbar"><span class="ic">${I('alert', 22)}</span><div><div class="mid">운영자가 반려했어요 · ${redo.back.at}</div><div class="small ink">"${esc(redo.back.note)}"</div></div></div>` : ''}
+    ${redo && redo.back ? `<div class="warnbar"><span class="ic">${I('alert', 22)}</span><div><div class="mid">${redo.back.at} 운영자가 반려했어요</div><div class="small ink">"${esc(redo.back.note)}"</div></div></div>` : ''}
     ${left ? `<div class="seg"><button class="${UI.only ? '' : 'on'}" data-act="only" data-v="0">전체 ${d.items.length}</button><button class="${UI.only ? 'on' : ''}" data-act="only" data-v="1">안 본 것 ${left}</button></div>` : ''}
     ${rows}
     ${bad.length ? `<div class="grp">문제로 찍은 항목<span class="must">${bad.length}개</span></div>
-      <div class="q">${bad.map((x) => `<div class="small">· ${esc(x.text)}</div>`).join('')}</div>` : ''}
+      <ul class="q gul">${bad.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ul>` : ''}
     ${left ? '' : `<div class="lbl">점검 결과<span class="hyp">가설</span></div>
       <div class="seg">${RESULTS.map((r) => `<button class="${res === r ? 'on' : ''}" data-act="pickResult" data-v="${r}">${r}</button>`).join('')}</div>
       <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">운영자가 검사해요. 반려되면 고쳐서 다시 낼 수 있어요.<br>승인되면 문제 항목이 공장주에게 개선 요청으로 가요.</div></div>`}
@@ -526,8 +531,8 @@ function badSheet(s) {
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="mid">${esc(it.text)}</div>
     <div class="ans">${it.ref ? '아직 안 고쳐짐' : '문제 있음'}</div>
-    ${it.ref ? `<div class="lbl">공장주에게 들은 사정 (안 골라도 돼요 · 다시 누르면 풀려요)</div>
-      ${['큰 공사가 필요해요', '부품·업체를 기다려요', '이유를 몰라요'].map((r) => `<button class="pick${UI.sheet.reason === r ? ' on' : ''}" data-act="pickReason" data-v="${r}">${r}</button>`).join('')}` : ''}
+    ${it.ref ? `<div class="lbl">공장주에게 들은 사정 (안 골라도 돼요)</div>
+      ${['큰 공사가 필요해요', '부품이나 업체를 기다려요', '이유를 몰라요'].map((r) => `<button class="pick${UI.sheet.reason === r ? ' on' : ''}" data-act="pickReason" data-v="${r}">${r}</button>`).join('')}` : ''}
     <div class="lbl">지금 모습 (안 찍어도 돼요)</div>
     <div class="row"><div class="thumb">${UI.sheet.photo ? '📷 1장' : '없음'}</div><button class="btn ghost sm" data-act="sheetPhoto">＋ 사진 찍기</button></div>
     <div class="lbl">메모 (안 써도 돼요)</div>
@@ -552,12 +557,15 @@ function records(s) {
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('내 점검 기록')}${pageIntro('내 점검 기록')}
     ${mine.map((i) => { const bad = i.items.filter((x) => x.answer === 'bad'), st = i.st || 'ok';
-      const how = st === 'ok' ? (bad.length ? ' · ' + bad.map((x) => ({ todo: '고침 기다림', claimed: '다음 점검 때 확인', fixed: '고쳐짐', back: '다시 공장주에게' }[itemState(x)])).join(', ') : '')
-        : st === 'wait' ? ' · 운영자 검사를 기다려요' : '';
+      // 문제 항목의 처리 상태를 상태마다 세어 보인다 (항목마다 한 줄씩 쓰면 같은 말이 되풀이된다)
+      const word = { todo: '고침 기다림', claimed: '다음 점검 때 확인', fixed: '고쳐짐', back: '다시 공장주에게' };
+      const cnt = bad.reduce((m, x) => { const w = word[itemState(x)]; m[w] = (m[w] || 0) + 1; return m; }, {});
+      const how = st === 'ok' ? Object.entries(cnt).map(([w, n]) => `${w} ${n}개`).join('<br>')
+        : st === 'wait' ? '운영자 검사를 기다려요' : '';
       return `<div class="q${st === 'back' ? ' now' : ''}"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span><span class="stt s-${st}">${ST_WORD[st]}</span></div>
-      <div class="small">${i.date} · ${i.result || RESULTS[0]}${i.ver ? ' · ' + i.ver : ''} · ${i.items.length}항목 · 문제 ${bad.length}개${how}</div>
+      ${kv([['점검일', i.date], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['항목', `${i.items.length}개`], ['문제', `${bad.length}개`], how && ['처리', how]])}
       ${st === 'back' ? `<div class="small ink">반려 사유: "${esc(i.back.note)}"</div><button class="btn ghost sm" data-act="redo" data-id="${i.id}">고쳐서 다시 내기</button>` : ''}</div>`; }).join('')}
-    ${s.outbox.guard.map((m) => `<div class="q now"><div class="t">${FACTORIES[m.data.fid].name} · 9/17</div><div class="small">${I('clock', 14)} 휴대폰에 저장됨 · 아직 안 올라감</div></div>`).join('')}
+    ${s.outbox.guard.map((m) => `<div class="q now"><div class="rowx"><span class="t">${FACTORIES[m.data.fid].name}</span><span class="small">9/17</span></div><div class="small">${I('clock', 14)} 휴대폰에 저장됨<br>전파가 잡히면 올라가요</div></div>`).join('')}
   </div></div>`;
 }
 /* ---------- G9 주간 보고 (2026-09-22 — 기존 웹 "주간점검"의 칸을 따른다: 점검조·작성자·점검 기업 수·결과별 수) ---------- */
@@ -569,17 +577,18 @@ function weekCounts(s) {
 }
 function weekly(s) {
   const w = weekCounts(s), done = (s.weekly || {})[WEEK.key];
-  const lines = w.ins.map((i) => `${FACTORIES[i.fid].name} · ${i.date} ${i.result || RESULTS[0]} · ${ST_WORD[i.st || 'ok']}`);
+  const lines = w.ins.map((i) => `<div class="rowx"><span><b>${FACTORIES[i.fid].name}</b> <span class="small">${i.date} ${i.result || RESULTS[0]}</span></span>${tg(ST_WORD[i.st || 'ok'], 's-' + (i.st || 'ok'))}</div>`);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('주간 보고', '', `<span class="small">${TEAM.name}</span>`)}
-    <div class="today"><div><b>${WEEK.label}</b><span>${TEAM.name} · 조장 ${TEAM.lead} · 조원 ${TEAM.members.filter((m) => m !== TEAM.lead).join('·')}</span></div></div>
-    <div class="lbl">이번 주 실적 · 점검 기록에서 저절로 셉니다</div>
+    <div class="today"><div><b>${WEEK.label}</b></div></div>
+    ${kv([['조', TEAM.name], ['조장', TEAM.lead], ['조원', TEAM.members.filter((m) => m !== TEAM.lead).join(', ')], ['작성자', ME]])}
+    <div class="lbl">이번 주 실적</div>
     <div class="q"><div class="rowx"><span class="t">점검 기업</span><b>${w.firms}곳</b></div>
       ${RESULTS.map((r) => `<div class="rowx"><span class="small">${r}</span><span class="small ink">${w.c[r]}건</span></div>`).join('')}</div>
-    ${lines.length ? `<div class="lbl">이번 주 점검</div><div class="q">${lines.map((l) => `<div class="small">· ${esc(l)}</div>`).join('')}</div>` : ''}
+    ${lines.length ? `<div class="lbl">이번 주 점검</div><div class="q gstack">${lines.join('')}</div>` : ''}
     ${done ? `<div class="stat"><div class="ck">${I('check', 26)}</div><div><div class="mid">${done.at} ${esc(done.by)} 냄</div><div class="small ink">${done.memo ? '특이 사항: ' + esc(done.memo) : '특이 사항 없음'}</div></div></div>`
       : `<div class="lbl">특이 사항 (안 써도 돼요)</div><textarea class="input" id="wkMemo" placeholder="예: 향남 공장 한 곳이 점검을 거부함"></textarea>`}
-    <div class="small">작성자 ${ME} · 조장이 확인하는지는 아직 몰라요<span class="hyp">가설</span></div>
+    <div class="small">조장이 확인하는지는 아직 몰라요<span class="hyp">가설</span></div>
   </div><div class="ft">${done ? '<button class="btn ghost" data-go="">홈으로</button>' : '<button class="btn" data-act="sendWeekly">주간 보고 내기</button>'}</div></div>`;
 }
 function soon(s, w) {

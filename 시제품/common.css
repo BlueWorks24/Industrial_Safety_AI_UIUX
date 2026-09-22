@@ -414,9 +414,6 @@ svg.i{flex:none;vertical-align:-.18em}
 .map svg{display:block;width:100%;height:auto}
 .map .pin{position:absolute;left:49%;top:36%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--brand)}
 .map .pin b{background:var(--ink);color:#fff;font-size:12px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap}
-.place{display:flex;flex-direction:column;gap:4px}
-.place b{font-size:15px}
-.place .small{display:flex;align-items:center;gap:5px}
 .maplink{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:var(--r-s);background:var(--brand-l);color:var(--brand);font-size:15px;font-weight:700;cursor:pointer}
 /* 지킴이 점검 상태 — 운영자 제출 검사 (2026-09-22) */
 .stt{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;white-space:nowrap;vertical-align:1px}
@@ -551,3 +548,17 @@ svg.i{flex:none;vertical-align:-.18em}
 .fst button{min-height:40px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;padding:0;font:inherit;font-size:14px;font-weight:700;color:var(--soft);cursor:pointer}
 .fst button.on{color:var(--ink);border-bottom-color:var(--ink)}
 
+/* ===== 지킴이 — 정보를 "·"로 잇지 않고 나눠 보이는 도구 (2026-09-22 사용자 지시) ===== */
+.gkv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:2px 0;font-size:14px;line-height:1.45}
+.gkv dt{color:var(--mid);font-weight:600;white-space:nowrap}
+.gkv dd{margin:0;color:var(--ink);font-weight:700;min-width:0}
+.gtg{display:inline-flex;align-items:center;margin:0 4px 0 0;padding:1px 7px;border-radius:6px;background:#eef1f5;color:var(--mid);font-size:12px;font-weight:700;line-height:1.5;vertical-align:1px;white-space:nowrap}
+.gtg.now{background:var(--brand-l);color:var(--brand)}
+.gtg.warn{background:var(--amber-l);color:var(--amber)}
+.gtg.s-ok{background:var(--green-l);color:var(--green)}
+.gtg.s-wait{background:#eef2fb;color:var(--brand)}
+.gtg.s-back{background:var(--amber-l);color:var(--amber)}
+.cdh .gtg{margin-left:2px}
+.cundr .gtg{margin-top:3px;align-self:flex-start}
+.gul{margin:0;padding:12px 16px 12px 34px;font-size:14px;color:var(--ink);line-height:1.6}
+.gstack{display:flex;flex-direction:column;gap:8px}
