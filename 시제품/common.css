@@ -539,3 +539,13 @@ svg.i{flex:none;vertical-align:-.18em}
 /* 하단바가 여섯 칸이 되어 작은 폰에서는 글자를 줄인다 */
 .gnav button span{white-space:nowrap;font-size:11px;letter-spacing:-.03em}  /* 여섯 칸이라 한 칸이 좁다 — "점검 기록"이 두 줄로 꺾이지 않게 */
 @media (max-width:379px){.gnav{margin:0 8px 8px;padding:4px}.gnav button{min-height:52px}.gnav button span{font-size:10.5px}}
+/* ===== 지킴이 공장 목록 (G8, 2026-09-22) — 카드 전체가 회사 창으로 가는 단추 ===== */
+.fall{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;align-items:center}
+.fall .fphw{display:block}
+.fall .fbody > span{display:block}
+.fall .fname{font-size:18px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fall .gchev{flex:none;color:var(--soft);display:inline-flex}
+.fst{display:flex;gap:14px;border-bottom:1px solid var(--line);margin:0 -16px;padding:0 16px}
+.fst button{min-height:40px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;padding:0;font:inherit;font-size:14px;font-weight:700;color:var(--soft);cursor:pointer}
+.fst button.on{color:var(--ink);border-bottom-color:var(--ink)}
+

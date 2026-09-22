@@ -1,7 +1,7 @@
 // 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, pin: null, sort: 'near', calM: 9, calD: null };
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all' };
 const SRC = { base: '기본', prev: '지난번 문제', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -63,7 +63,8 @@ function sortTasks(s, t, mode = 'near') {
   return [...t].sort((a, b) => backFirst(a, b) || (mode === 'date' ? date(a, b) || near(a, b) : near(a, b)));
 }
 // 임시 사진 — 공장 건물 그림 (실제 사진이 들어갈 자리)
-const PHOTO = { daesung: ['#cfdbea', '#7f94b3'], hanbit: ['#d6e5d3', '#7e9d79'], dongbang: ['#eadfce', '#a88f6c'], taegwang: ['#dcd9ec', '#8b84b5'] };
+const PHOTO = { daesung: ['#cfdbea', '#7f94b3'], hanbit: ['#d6e5d3', '#7e9d79'], dongbang: ['#eadfce', '#a88f6c'], taegwang: ['#dcd9ec', '#8b84b5'],
+  saehan: ['#d3e3ec', '#6f97ad'], ujin: ['#ece0e6', '#b0879a'], seongwon: ['#e4e4dc', '#9a9a7c'], donghwa: ['#dfe7f2', '#8a9fc0'], hangyeol: ['#e3eadf', '#8fa482'], mirae: ['#efe6d8', '#b59a73'] };
 function facPhoto(fid) {
   const [sky, wall] = PHOTO[fid] || ['#dde3ea', '#98a3b3'];
   return `<svg class="fph" viewBox="0 0 120 88" role="img" aria-label="공장 사진 (임시)"><rect width="120" height="88" fill="${sky}"/>
@@ -173,6 +174,42 @@ function calScreen(s) {
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 
+/* ---------- G8 공장 (하단바, 2026-09-22 사용자 요청) ----------
+   우리 조 권역의 공장 전부 — 할 일이 없는 곳(점검 끝난 곳, 이번에 배정 안 된 곳)도 나온다. 홈은 "할 일"만.
+   찾기 · 권역 · 할 일 있음/없음으로 거르고, 가까운 순. 누르면 회사 창. */
+const mdNum = (d) => { const m = String(d || '').match(/(\d+)\/(\d+)/); return m ? +m[1] * 100 + +m[2] : 0; };
+const lastIns = (s, fid) => s.inspections.filter((i) => i.fid === fid).sort((a, b) => mdNum(b.date) - mdNum(a.date))[0];
+function facRow(s, fid, tk) {
+  const f = FACTORIES[fid], li = lastIns(s, fid);
+  const now = tk.map((x) => (x.kind === 'back' ? '반려' : x.kind === 're' ? `재점검 ${x.n}개` : '첫 점검')).join(', ');
+  return `<button class="fcard fall" data-go="pre/${fid}">
+    <span class="fphw">${facPhoto(fid)}</span>
+    <span class="fbody"><span class="fname">${f.name}</span><span class="floc">화성시 ${f.dong}</span><span class="fmeta">${kmTo(f.ll).toFixed(1)}km</span>
+      <span class="fwhen${li ? '' : ' none'}">${li ? `마지막 점검 ${li.date} · ${ST_WORD[li.st || 'ok']}` : '점검 기록 없음'}</span>
+      ${now ? `<span class="fwhen now">지금 할 일 · ${now}</span>` : ''}</span>
+    <span class="gchev">${I('chevron', 18)}</span></button>`;
+}
+function factoriesScreen(s) {
+  locate();
+  const t = tasks(s), tk = (fid) => t.filter((x) => x.fid === fid);
+  const inTeam = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area) && (!UI.area || FACTORIES[fid].area === UI.area));
+  const nTodo = inTeam.filter((f) => tk(f).length).length;
+  const q = UI.fq.trim();
+  const list = inTeam.filter((f) => (UI.fst === 'todo' ? tk(f).length : UI.fst === 'none' ? !tk(f).length : true))
+    .filter((f) => !q || FACTORIES[f].name.includes(q) || FACTORIES[f].dong.includes(q))
+    .sort((a, b) => kmTo(FACTORIES[a].ll) - kmTo(FACTORIES[b].ll));
+  return `${sbar('지킴이')}<div class="scr"><div class="bd">
+    ${head('공장', '', `<span class="small">${TEAM.name}</span>`)}
+    <input class="input" id="fq" type="search" placeholder="공장 이름이나 동으로 찾기" value="${esc(UI.fq)}" autocomplete="off">
+    <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
+    <div class="fst">${[['all', `전체 ${inTeam.length}`], ['todo', `할 일 있음 ${nTodo}`], ['none', `할 일 없음 ${inTeam.length - nTodo}`]].map(([k, w]) => `<button class="${UI.fst === k ? 'on' : ''}" data-act="fst" data-v="${k}">${w}</button>`).join('')}</div>
+    ${list.map((fid) => facRow(s, fid, tk(fid))).join('') || `<div class="cnone">${q ? `"${esc(q)}"에 맞는 공장이 없어요` : '공장이 없어요'}</div>`}
+  </div></div>`;
+}
+// 찾기 칸 — 한글을 조합하는 동안에는 다시 그리지 않는다 (그리면 글자가 끊긴다)
+document.addEventListener('input', (e) => { if (e.target.id === 'fq' && !e.isComposing) { UI.fq = e.target.value; render(); } });
+document.addEventListener('compositionend', (e) => { if (e.target.id === 'fq') { UI.fq = e.target.value; render(); } });
+
 /* ---------- 지도 (하단바) — 예전 내 할 일의 지도 보기를 옮겼다 ---------- */
 function mapScreen(s) {
   const list = sortTasks(s, tasks(s)).filter((x) => !UI.area || FACTORIES[x.fid].area === UI.area);
@@ -183,7 +220,7 @@ function mapScreen(s) {
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 // 하단바 — 첫 단계 화면에만 붙는다 (점검 도중에는 없음)
-const NAV = [['', '홈', 'home'], ['cal', '캘린더', 'calendar'], ['map', '지도', 'pin'], ['weekly', '주간 보고', 'list'], ['soon/me', '내 정보', 'user']];
+const NAV = [['', '홈', 'home'], ['cal', '캘린더', 'calendar'], ['map', '지도', 'pin'], ['factories', '공장', 'factory'], ['weekly', '주간 보고', 'list']];  // 내 정보는 머리글 "김지킴 ›"로 (2026-09-22)
 const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, ic]) => `<button class="${on === go ? 'on' : ''}" data-go="${go}"${on === go ? ' aria-current="page"' : ''}>${I(ic, 22)}<span>${w}</span></button>`).join('')}</nav>`;
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
@@ -601,6 +638,7 @@ function render() {
   if (p[0] === 'todo') { R.go(''); return; }  // 옛 주소 — 내 할 일은 홈 목록이 되었다 (2026-09-22)
   else if (p[0] === 'map') html = mapScreen(s);
   else if (p[0] === 'cal') html = calScreen(s);
+  else if (p[0] === 'factories') html = factoriesScreen(s);
   else if (p[0] === 'pre') html = pre(s, p[1]);
   else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
   else if (p[0] === 'photo') html = photo(s);
@@ -615,14 +653,15 @@ function render() {
   else if (p[0] === 'records') html = records(s);
   else if (p[0] === 'soon') html = soon(s, p[1]);
   else html = home(s);
-  const keep = document.activeElement && document.activeElement.id;
-  const val = keep && document.activeElement.value;
+  const ae = document.activeElement, keep = ae && ae.id, val = keep && ae.value;
+  // 입력 중에 다시 그리면 커서가 맨 앞으로 간다 — 자리를 기억해 되살린다 (찾기 칸에서 "정공"이 "공정"이 되던 것)
+  const caret = keep && typeof ae.selectionStart === 'number' ? [ae.selectionStart, ae.selectionEnd] : null;
   const top = p.join('/');
-  if (['', 'cal', 'map', 'weekly', 'soon/me'].includes(top)) html += gnav(top);  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
+  if (['', 'cal', 'map', 'factories', 'weekly'].includes(top)) html += gnav(top);  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
   $('#app').innerHTML = html;
   if (NV.st === 'ready') nvMount();
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
-  if (keep && $('#' + keep)) { $('#' + keep).value = val; $('#' + keep).focus(); }
+  if (keep && $('#' + keep)) { const el = $('#' + keep); el.value = val; el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
 }
 let lastHash = null;
 function sheet(v) { UI.sheet = v; render(); }
@@ -703,6 +742,7 @@ const ACTS = {
   area({ v }) { UI.area = v === '전체' ? null : v; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
   calDay({ v }) { UI.calD = +v; render(); },
+  fst({ v }) { UI.fst = v; render(); },
   calM({ v }) { UI.calM = Math.min(12, Math.max(1, UI.calM + +v)); UI.calD = null; render(); },
   pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },
   pickResult({ v }) { DB.act((s) => { s.draft.result = v; }); },

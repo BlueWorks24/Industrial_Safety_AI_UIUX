@@ -37,6 +37,13 @@ const FACTORIES = {
   hanbit:   { name: '한빛화학', area: '향남', dong: '향남읍', ll: [126.93302, 37.11831], type: '화학', workers: 18 , roman: 'Hanbit Chemical' },
   dongbang: { name: '동방금속', area: '봉담', dong: '봉담읍', ll: [126.9341, 37.2072], type: '금속가공', workers: 11 , roman: 'Dongbang Metal' },
   taegwang: { name: '태광기계', area: '우정', dong: '우정읍', ll: [126.79918, 37.07409], type: '기계', workers: 9 , roman: 'Taegwang Machinery' },
+  // 지킴이 "공장" 목록을 채우려고 더한 가상 공장 (2026-09-22) — 센서 없음, 할 일 없음. 좌표는 그 읍·면·동 안쪽의 가짜
+  saehan:   { name: '새한테크', area: '동탄', dong: '동탄5동', ll: [127.1256, 37.21133], type: '전자부품', workers: 23, roman: 'Saehan Tech' },
+  ujin:     { name: '우진산업', area: '동탄', dong: '동탄8동', ll: [127.10885, 37.15597], type: '플라스틱', workers: 14, roman: 'Ujin Industry' },
+  seongwon: { name: '성원금속', area: '향남', dong: '향남읍', ll: [126.90702, 37.10231], type: '금속가공', workers: 12, roman: 'Seongwon Metal' },
+  donghwa:  { name: '동화정공', area: '향남', dong: '향남읍', ll: [126.94502, 37.10431], type: '기계', workers: 7, roman: 'Donghwa Precision' },
+  hangyeol: { name: '한결화성', area: '봉담', dong: '봉담읍', ll: [126.9511, 37.1892], type: '화학', workers: 16, roman: 'Hangyeol Chemical' },
+  mirae:    { name: '미래이엔지', area: '우정', dong: '우정읍', ll: [126.77718, 37.09209], type: '기계', workers: 10, roman: 'Mirae Eng' },
 };
 
 // 업종 × 분야 기본 체크리스트 (운영자 판) — 지킴이는 자기 조(전기) 칸만 받는다
@@ -167,6 +174,10 @@ const SEED = {
   visits: { daesung: '오늘 10:00', hanbit: '9/18(금) 14:00', dongbang: null, taegwang: null },
   inspections: [
     daesungInspection(),
+    // 할 일이 없는 공장의 지난 점검 (2026-09-22) — 다른 조원이 한 것이라 "최근 방문한 곳"에는 안 나온다
+    ...[['seongwon', '9/03', '박지킴'], ['saehan', '8/25', '최지킴'], ['hangyeol', '9/10', '이조장']].map(([fid, date, by]) => ({
+      id: 'i' + fid, fid, date, by, locked: true, st: 'ok', result: '점검완료',
+      items: BASE_ITEMS['금속가공'].map((t, i) => ({ id: fid + i, text: t, src: 'base', answer: 'ok' })) })),
     { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '점검완료', items: [
       { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블',
         log: [ { t: 'fix', at: '8/30', note: '케이블 걸이 설치' } ] },
