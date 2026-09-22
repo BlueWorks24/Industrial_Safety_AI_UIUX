@@ -464,7 +464,6 @@ svg.i{flex:none;vertical-align:-.18em}
 .gtabs{display:flex;margin:6px -16px 0;padding:0 16px;border-bottom:1px solid var(--line)}
 .gtab{flex:1;min-height:48px;border:none;border-bottom:3px solid transparent;margin-bottom:-1px;background:none;font:inherit;font-size:16px;font-weight:700;color:var(--soft);cursor:pointer}
 .gtab.on{color:var(--ink);border-bottom-color:var(--brand)}
-.gsub{font-size:13px;color:var(--mid);margin-top:2px}
 /* 공장 카드 — 왼쪽 사진, 오른쪽 이름·위치·거리·단추 */
 .fcard{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--line2);border-radius:14px;padding:14px}
 .fphw{flex:none;width:104px;height:78px;padding:0;border:none;border-radius:10px;overflow:hidden;background:none;cursor:pointer}

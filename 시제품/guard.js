@@ -41,7 +41,6 @@ function locate() {
     () => { HERE.st = 'fail'; render(); },
     { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 });
 }
-const originWord = () => (HERE.st === 'ok' ? '내 위치' : HERE.st === 'asking' ? '위치 찾는 중 · 진흥원(봉담)' : ORIGIN.name);
 function kmTo([x, y]) {
   const R = 6371, rad = Math.PI / 180, [x0, y0] = HERE.st === 'ok' ? HERE.ll : ORIGIN.ll;
   const a = Math.sin(((y - y0) * rad) / 2) ** 2 + Math.cos(y0 * rad) * Math.cos(y * rad) * Math.sin(((x - x0) * rad) / 2) ** 2;
@@ -106,8 +105,6 @@ function home(s) {
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
-    <div class="gsub">${UI.sort === 're' ? `재점검 ${t.length}곳 · 공장주가 "고쳤어요"를 누른 곳 · ${originWord()}에서 가까운 순`
-      : UI.sort === 'date' ? `할 일 ${t.length}곳 · 방문 날짜가 가까운 순 · 날짜 안 정한 곳은 맨 아래` : `할 일 ${t.length}곳 · ${originWord()}에서 가까운 순`}</div>
     ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.sort === 're' ? '다시 볼 곳이 없어요' : '할 일이 없어요'}</div></div>`}
     <div class="proto">시제품 · 가상 데이터 · 사진은 임시</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
