@@ -28,19 +28,40 @@ const unsentN = (s) => s.outbox.guard.length;
 /* ---------- G1 홈 = 공장 목록 (2026-09-22, 사용자가 준 세차장 예약 앱 구성을 참고) ----------
    머리글 아래 프로필과 인삿말 → 정렬 탭(급한 순·거리순·방문일순) → 공장 카드(사진·이름·위치·거리·단추) → 아래에 하단바.
    예전의 "내 할 일" 화면과 2×2 메뉴는 이 목록과 하단바로 합쳐졌다. 사진은 임시 그림이다. */
-// 거리 기준 — 화성산업진흥원(봉담) 근처의 대략 좌표. 실제 앱은 지금 위치로 잰다 (가설)
+// 거리 기준 — 폰의 지금 위치. 못 받으면(https가 아님·거절·8초 안에 못 잡음) 화성산업진흥원(봉담) 근처의 대략 좌표 (2026-09-22 사용자 결정).
+// 위치는 이 폰 안에서 거리만 재는 데 쓰고 서버로 보내지 않는다.
 const ORIGIN = { name: '진흥원(봉담)', ll: [126.955, 37.214] };
+const HERE = { st: 'none', ll: null };  // none · asking · ok · fail
+function locate() {
+  if (HERE.st !== 'none') return;
+  if (!navigator.geolocation || !window.isSecureContext) { HERE.st = 'fail'; return; }
+  HERE.st = 'asking';
+  navigator.geolocation.getCurrentPosition(
+    (p) => { HERE.st = 'ok'; HERE.ll = [p.coords.longitude, p.coords.latitude]; render(); },
+    () => { HERE.st = 'fail'; render(); },
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 });
+}
+const originWord = () => (HERE.st === 'ok' ? '내 위치' : HERE.st === 'asking' ? '위치 찾는 중 · 진흥원(봉담)' : ORIGIN.name);
 function kmTo([x, y]) {
-  const R = 6371, rad = Math.PI / 180, [x0, y0] = ORIGIN.ll;
+  const R = 6371, rad = Math.PI / 180, [x0, y0] = HERE.st === 'ok' ? HERE.ll : ORIGIN.ll;
   const a = Math.sin(((y - y0) * rad) / 2) ** 2 + Math.cos(y0 * rad) * Math.cos(y * rad) * Math.sin(((x - x0) * rad) / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
-// 탭 둘 — 거리순(할 일 전체) · 재점검(공장주가 고쳤다고 한 곳만). 참고 앱의 "거리순 · 선호매장" 짜임 (2026-09-22 사용자 결정)
-const SORTS = [['near', '거리순'], ['re', '재점검']];
-// 가까운 순 — 다만 반려된 점검은 거리와 상관없이 맨 위 (가장 먼저 처리할 일이 아래로 묻히지 않게)
-function sortTasks(s, t) {
+// 탭 셋 — 거리순(할 일 전체) · 일정순(방문 날짜가 가까운 순) · 재점검(공장주가 고쳤다고 한 곳만) (2026-09-22 사용자 결정)
+const SORTS = [['near', '거리순'], ['date', '일정순'], ['re', '재점검']];
+// 방문 일정을 셀 수 있게 — 오늘(이야기 속 9/17)부터, 같은 날이면 시간 순, 날짜 안 정함은 맨 뒤
+function whenKey(v) {
+  if (!v) return Infinity;
+  const m = v.match(/(\d+)\/(\d+)/), day = v.startsWith('오늘') ? 917 : m ? +m[1] * 100 + +m[2] : 99999;
+  const hm = v.match(/(\d+):(\d+)/), min = hm ? +hm[1] * 60 + +hm[2] : /오후/.test(v) ? 13 * 60 : 9 * 60;
+  return day * 10000 + min;
+}
+// 반려된 점검은 어느 탭에서든 맨 위 (가장 먼저 처리할 일이 아래로 묻히지 않게)
+function sortTasks(s, t, mode = 'near') {
   const backFirst = (a, b) => (b.kind === 'back') - (a.kind === 'back');
-  return [...t].sort((a, b) => backFirst(a, b) || kmTo(FACTORIES[a.fid].ll) - kmTo(FACTORIES[b.fid].ll));
+  const near = (a, b) => kmTo(FACTORIES[a.fid].ll) - kmTo(FACTORIES[b.fid].ll);
+  const date = (a, b) => { const x = whenKey(s.visits[a.fid]), y = whenKey(s.visits[b.fid]); return x === y ? 0 : x < y ? -1 : 1; };
+  return [...t].sort((a, b) => backFirst(a, b) || (mode === 'date' ? date(a, b) || near(a, b) : near(a, b)));
 }
 // 임시 사진 — 공장 건물 그림 (실제 사진이 들어갈 자리)
 const PHOTO = { daesung: ['#cfdbea', '#7f94b3'], hanbit: ['#d6e5d3', '#7e9d79'], dongbang: ['#eadfce', '#a88f6c'], taegwang: ['#dcd9ec', '#8b84b5'] };
@@ -74,8 +95,9 @@ function fcard(s, x) {
     </div></div>`;
 }
 function home(s) {
+  locate();
   const all = tasks(s), nToday = all.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).length;
-  const t = sortTasks(s, UI.sort === 're' ? all.filter((x) => x.kind === 're') : all);
+  const t = sortTasks(s, UI.sort === 're' ? all.filter((x) => x.kind === 're') : all, UI.sort);
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
     <div class="ghello"><span class="gav">${I('user', 30)}</span><div><b>안녕하세요, ${ME}님</b>
@@ -84,7 +106,8 @@ function home(s) {
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
-    <div class="gsub">${UI.sort === 're' ? `재점검 ${t.length}곳 · 공장주가 "고쳤어요"를 누른 곳` : `할 일 ${t.length}곳`} · ${ORIGIN.name}에서 가까운 순<span class="hyp">가설</span></div>
+    <div class="gsub">${UI.sort === 're' ? `재점검 ${t.length}곳 · 공장주가 "고쳤어요"를 누른 곳 · ${originWord()}에서 가까운 순`
+      : UI.sort === 'date' ? `할 일 ${t.length}곳 · 방문 날짜가 가까운 순 · 날짜 안 정한 곳은 맨 아래` : `할 일 ${t.length}곳 · ${originWord()}에서 가까운 순`}</div>
     ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.sort === 're' ? '다시 볼 곳이 없어요' : '할 일이 없어요'}</div></div>`}
     <div class="proto">시제품 · 가상 데이터 · 사진은 임시</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
