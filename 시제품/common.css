@@ -454,10 +454,30 @@ svg.i{flex:none;vertical-align:-.18em}
 .gav{flex:none;width:56px;height:56px;border-radius:50%;background:#e5e7eb;color:#9ca3af;display:grid;place-items:center}
 .ghello > div{flex:1;min-width:0}
 .ghello b{display:block;font-size:20px;font-weight:800;letter-spacing:-.03em}
-/* 인삿말 위 날짜 · 아래 오늘 방문 알약 (2026-09-22 사용자: 한 줄로 잇지 말고 나눠서, 조 이름은 빼고) */
+/* 인삿말 위 날짜 (2026-09-22 사용자: 한 줄로 잇지 말고 나눠서, 조 이름은 빼고) */
 .ghello .ghdate{display:block;font-size:13px;font-weight:600;color:var(--mid);margin-bottom:1px}
-.ghtoday{display:inline-flex;align-items:center;gap:4px;margin-top:6px;min-height:30px;padding:0 8px 0 10px;border:none;border-radius:999px;background:var(--brand-l);color:var(--brand);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
-.ghtoday.none{background:#f1f2f4;color:var(--mid)}
+/* 오늘 할 일 카드 — 공장 카드와 같은 흰 칸·테두리, 줄마다 시간 · 공장 (2026-09-22) */
+.gtd{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:6px 14px;margin:4px 0 10px}
+/* 아코디언 — 행 높이 0fr ↔ 1fr로 미끄러지게 (2026-09-22 사용자 지시) */
+.gtdl{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .25s ease,opacity .2s ease}
+.gtd.open .gtdl{grid-template-rows:1fr;opacity:1}
+.gtdl > div{overflow:hidden;min-height:0}
+.gtdl > div::before{content:"";display:block;height:6px}
+.gtdh{display:flex;align-items:center;gap:8px;min-height:48px}
+.gtdtg{flex:1;min-width:0;display:flex;align-items:center;gap:8px;min-height:48px;padding:0;border:none;background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+span.gtdtg{cursor:default}
+.gtdar{display:inline-grid;place-items:center;color:var(--mid);transform:rotate(90deg);transition:transform .15s}
+.gtdar.on{transform:rotate(-90deg)}
+.gtdh em.none{background:#f1f2f4;color:var(--mid)}
+.gtdh b{font-size:18px;font-weight:800;letter-spacing:-.03em}
+.gtdh em{font-style:normal;font-size:13px;font-weight:800;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px}
+.gtdcal{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:32px;padding:0 4px;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer}
+.gtdr{display:flex;align-items:center;gap:12px;width:100%;padding:12px 0;border:none;border-top:1px solid var(--line);background:none;font:inherit;text-align:left;color:var(--ink);cursor:pointer}
+.gtdt{flex:none;min-width:64px;padding:8px 0;border-radius:10px;background:var(--brand-l);color:var(--brand);font-size:16px;font-weight:800;text-align:center}
+.gtdn{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.gtdn b{font-size:17px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gtdn small{font-size:13px;color:var(--mid)}
+.gtdr > svg{flex:none;color:var(--soft)}
 .ghello .live{flex:none}
 /* 정렬 탭 — 밑줄 */
 .gtabs{display:flex;margin:6px -16px 0;padding:0 16px;border-bottom:1px solid var(--line)}
@@ -476,6 +496,8 @@ svg.i{flex:none;vertical-align:-.18em}
 .fwhen{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink)}
 .fwhen.now{color:var(--brand)}
 .fwhen.none{color:var(--soft);font-weight:500}
+.fwhen.wait{color:var(--brand);font-weight:700}
+.fwhen.no{color:var(--amber);font-weight:700}
 .fwhen.note{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:500;color:var(--mid)}
 .fbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .fbtns .fbtn{margin-top:0}
@@ -516,27 +538,20 @@ svg.i{flex:none;vertical-align:-.18em}
 .cwd{text-align:center;font-size:12px;font-weight:700;color:var(--mid);padding:4px 0}
 .cwd.sun,.cday.sun .cn{color:#d14343}
 .cwd.sat,.cday.sat .cn{color:var(--brand)}
+/* 오늘 칸은 .ctoday — .today는 홈 인삿말 줄에 이미 있어(margin-top:14px) 17일이 아래로 내려갔다 (2026-09-22) */
 .cday{height:50px;min-width:0;border:none;border-radius:10px;background:none;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;padding:6px 0 0;font:inherit;cursor:pointer}
 .cday.blank{cursor:default}
 .cday .cn{font-size:14px;font-weight:700;color:var(--ink);width:26px;height:26px;border-radius:50%;display:grid;place-items:center}
-.cday.today .cn{box-shadow:inset 0 0 0 2px var(--ink)}
+.cday.ctoday .cn{box-shadow:inset 0 0 0 2px var(--ink)}
 .cday.sel{background:#eef2fb}
-.cday.sel .cn{background:var(--ink);color:#fff}
+.cday.sel .cn{background:var(--brand);color:#fff}
 .cdots{display:flex;gap:2px;align-items:center;min-height:6px}
 .cdots i{width:14px;height:4px;border-radius:2px;display:block}
-.cdots i.k-prev{background:var(--amber)}
 .cdots i.k-visit{background:var(--brand)}
 .cdots em{font-style:normal;font-size:10px;font-weight:800;color:var(--mid)}
 .cdh{display:flex;align-items:baseline;gap:8px;margin-top:8px;font-size:16px;font-weight:800;letter-spacing:-.02em}
 .cdh em{font-style:normal;font-size:13px;font-weight:700;color:var(--mid)}
 .cnone{padding:18px;text-align:center;font-size:14px;color:var(--soft);background:#fff;border:1px dashed var(--line2);border-radius:12px}
-.cund{background:#fff;border:1px solid var(--line2);border-radius:14px;overflow:hidden}
-.cundr{display:flex;align-items:center;gap:10px;padding:10px 14px}
-.cundr + .cundr{border-top:1px solid var(--line)}
-.cundr span{flex:1;min-width:0;display:flex;flex-direction:column}
-.cundr b{font-size:15px;font-weight:800}
-.cundr small{font-size:13px;color:var(--mid)}
-.cundr .fbtn{margin:0;min-height:36px;font-size:14px}
 /* 하단바가 여섯 칸이 되어 작은 폰에서는 글자를 줄인다 */
 .gnav button span{white-space:nowrap;font-size:11px;letter-spacing:-.03em}  /* 여섯 칸이라 한 칸이 좁다 — "점검 기록"이 두 줄로 꺾이지 않게 */
 @media (max-width:379px){.gnav{margin:0 8px 8px;padding:4px}.gnav button{min-height:52px}.gnav button span{font-size:10.5px}}
@@ -561,7 +576,6 @@ svg.i{flex:none;vertical-align:-.18em}
 .gtg.s-wait{background:#eef2fb;color:var(--brand)}
 .gtg.s-back{background:var(--amber-l);color:var(--amber)}
 .cdh .gtg{margin-left:2px}
-.cundr .gtg{margin-top:3px;align-self:flex-start}
 .gul{margin:0;padding:12px 16px 12px 34px;font-size:14px;color:var(--ink);line-height:1.6}
 .gstack{display:flex;flex-direction:column;gap:8px}
 /* ===== 방문일 정하기 창 — 달력 (2026-09-22) ===== */
@@ -572,9 +586,14 @@ svg.i{flex:none;vertical-align:-.18em}
 .cday.dis .cn{color:#c4cad3 !important}
 .dpick{display:flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;background:var(--brand-l);color:var(--brand);font-size:15px;font-weight:800}
 .dpick.none{background:#f3f4f6;color:var(--mid);font-weight:600}
-.tgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-.tgrid button{min-height:44px;border:1px solid var(--line2);border-radius:var(--r-s);background:var(--surface);color:var(--mid);font-size:15px;font-weight:700;cursor:pointer}
-.tgrid button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+/* 시·분 바퀴 — 세 칸이 보이고 가운데 띠가 고른 값 */
+.twheel{position:relative;flex-shrink:0;display:flex;justify-content:center;align-items:center;gap:4px;height:132px;border-radius:12px;background:var(--surface);border:1px solid var(--line2);overflow:hidden}
+.twheel::before{content:"";position:absolute;left:10px;right:10px;top:44px;height:44px;border-radius:10px;background:var(--brand-l);pointer-events:none}
+.wcol{position:relative;width:76px;height:132px;overflow-y:auto;scroll-snap-type:y mandatory;padding:44px 0;box-sizing:border-box;scrollbar-width:none;overscroll-behavior:contain}
+.wcol::-webkit-scrollbar{display:none}
+.wcol b{display:flex;align-items:center;justify-content:center;height:44px;scroll-snap-align:center;font-size:20px;font-weight:600;color:#b3bac5;cursor:pointer}
+.wcol b.on{color:var(--brand);font-weight:800;font-size:22px}
+.wsep{position:relative;font-size:22px;font-weight:800;color:var(--brand)}
 /* ===== 홈 찾기 · 권역 토글 · 공장 전체보기 (2026-09-22) — 공장 탭을 없애고 홈으로 옮김 ===== */
 .hall{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:50px;margin-top:4px;border:1px solid var(--line2);border-radius:12px;background:#fff;font:inherit;font-size:15px;font-weight:800;color:var(--ink);cursor:pointer}
 .hall em{font-style:normal;font-size:13px;font-weight:700;color:var(--mid)}
@@ -592,3 +611,60 @@ svg.i{flex:none;vertical-align:-.18em}
 .arow.on{border-color:var(--brand);background:var(--brand-l)}
 .arow.on .achk{background:var(--brand);border-color:var(--brand)}
 
+/* ===== 공장 창의 점검 이력 (2026-09-22) — 오늘 할 일 카드와 같은 흰 칸, 줄마다 날짜 · 결과 · 점검자 · 꼬리표 ===== */
+.ghist{margin-top:6px;background:#fff;border:1px solid var(--line2);border-radius:14px;padding:0 14px;overflow:hidden}
+.ghr{display:flex;align-items:center;gap:8px;width:100%;padding:12px 0;border:none;border-bottom:1px solid var(--line);background:none;font:inherit;text-align:left;color:var(--ink);cursor:pointer}
+.ghd{flex:none;min-width:52px;padding:6px 0;border-radius:8px;background:var(--brand-l);color:var(--brand);font-size:15px;font-weight:800;text-align:center}
+.ghn{flex:1;min-width:0;display:flex;flex-direction:column}
+.ghn b{font-size:15px;font-weight:800}
+.ghn small{font-size:12px;color:var(--mid)}
+.ghr .gtg{flex:none}
+.ghall{display:flex;align-items:center;justify-content:center;gap:2px;width:100%;min-height:46px;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--brand);cursor:pointer}
+/* ===== 공장 창 — 지난번 미흡 항목 (2026-09-22) — 개수를 머리에 크게, 항목마다 지나온 일을 세로 줄로 ===== */
+.gpv{display:flex;flex-direction:column;gap:8px}
+.gpvh{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:12px;background:var(--amber-l);color:var(--amber)}
+.gpvh b{flex:1;font-size:16px;font-weight:800;color:var(--ink)}
+.gpvh em{font-style:normal;font-size:15px;font-weight:900;color:#fff;background:var(--amber);border-radius:999px;padding:2px 11px}
+.gpvq .t{margin-bottom:10px}
+.gtl{list-style:none;margin:0;padding:0}
+.gtl li{position:relative;display:flex;gap:12px;padding:0 0 14px 20px}
+.gtl li:last-child{padding-bottom:0}
+.gtl li::before{content:"";position:absolute;left:3px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--amber)}
+.gtl li::after{content:"";position:absolute;left:7px;top:17px;bottom:1px;width:2px;background:var(--line2)}
+.gtl li:last-child::after{display:none}
+.gtl li.fix::before{background:var(--brand)}
+.gtl li.none::before{background:#c4cad3}
+.gtl li.next::before{background:#fff;box-shadow:inset 0 0 0 2px var(--brand)}
+.gtlw{flex:none;width:58px;font-size:14px;font-weight:800;color:var(--ink);display:flex;flex-direction:column;line-height:1.3}
+.gtlw i{font-style:normal;font-size:12px;font-weight:600;color:var(--mid)}
+.gtlx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.gtlx b{font-size:14px;font-weight:700}
+.gtlx small{font-size:13px;color:var(--mid)}
+.gtl li.none .gtlx b{color:var(--mid);font-weight:600}
+.gtl li.next .gtlw,.gtl li.next .gtlx b{color:var(--brand)}
+/* ===== 낸 점검 다시 보기 (2026-09-22) — 답은 누를 수 없는 꼬리표 하나 ===== */
+.ginsp{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-height:44px;margin-top:4px;border:none;border-top:1px solid var(--line);background:none;font:inherit;font-size:14px;font-weight:700;color:var(--brand);cursor:pointer}
+.glock{display:flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;background:#f1f2f4;color:var(--mid);font-size:14px;font-weight:700}
+.rlist{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:0 14px}
+.vrow{display:flex;align-items:flex-start;gap:10px;padding:13px 0}
+.vrow + .vrow{border-top:1px solid var(--line)}
+.rno{flex:none;width:20px;font-size:14px;font-weight:700;color:var(--soft);line-height:1.45}
+.rtx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.rtx .t{font-size:15px;font-weight:600;line-height:1.45;color:var(--ink)}
+.rtx small{font-size:13px;color:var(--mid);line-height:1.4}
+.rans{flex:none;display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:600;white-space:nowrap;color:var(--mid);line-height:1.6}
+.rans.bad{color:var(--amber);font-weight:800}
+.gview-t{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;font-weight:800;color:var(--mid)}
+.gview-t .ok{color:var(--green)}
+.gview-t .bad{color:var(--amber)}
+/* 최근 센서 이상 기록 — 지난번 미흡처럼 머리 칸에 개수, 아래는 날짜·시각 | 무엇이 · 어떻게 끝났나 (2026-09-22) */
+.gpvh.sen{background:#eef2fb;color:var(--brand)}
+.gpvh.sen em{background:var(--brand)}
+.gsw{flex:none;width:52px;display:flex;flex-direction:column;font-size:14px;font-weight:800;color:var(--ink);line-height:1.45}
+.gsw i{font-style:normal;font-size:12px;font-weight:600;color:var(--mid)}
+/* 공장 창 아래 단추 둘 — 예약 | 점검 시작. 잠긴 점검 시작은 회색 + 자물쇠, 누르면 까닭을 알림 (2026-09-22) */
+.gft2{display:flex;gap:8px}
+.gft2 .btn{flex:1;min-width:0}
+.gft2 .btn.ghost{flex:0 0 40%}
+.btn.glocked{background:#e5e7eb;color:#8a93a3;box-shadow:none}
+.btn.glocked:active{background:#dcdfe4;transform:none}

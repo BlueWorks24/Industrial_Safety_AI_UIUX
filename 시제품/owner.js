@@ -52,6 +52,7 @@ function now(s) {
   const bad = items.length, fixed = cnt('fixed');
   const ended = all.filter((a) => !SIM.live(a));
   return frame('', `
+    ${bookCard(s)}
     ${verdict}
     ${alarmCards ? `<div class="kgrid">${alarmCards}</div>` : ''}
     <div class="kgrid">
@@ -64,6 +65,16 @@ function now(s) {
     </div>
     ${sensorCard(s)}
     <div class="proto">시제품 · 가상 데이터</div>`, true);
+}
+
+// 지킴이 방문 예약 요청 — 승인하면 방문일이 잡히고 지킴이 캘린더에 오른다 (2026-09-22 사용자 결정, 가설)
+function bookCard(s) {
+  const b = bookOf(s, FID);
+  if (!b || b.st !== 'wait') return '';
+  return `<div class="kcard bookreq"><div class="kt">📅 지킴이 방문 예약 요청</div>
+    <div class="bkv"><b>${esc(b.v)}</b> 방문해도 될까요?</div>
+    <div class="small">${esc(b.by)} 지킴이 · ${TEAM.name} · ${b.at} 요청${s.visits[FID] ? ` · 지금 잡힌 방문 ${esc(s.visits[FID])}을 바꾸는 요청이에요` : ''}</div>
+    <div class="row"><button class="btn inl" data-act="bookOk">승인</button><button class="btn ghost inl" data-act="bookNo">거절</button></div></div>`;
 }
 
 /* ---------- O2 센서 이상 기록 ---------- */
@@ -168,6 +179,8 @@ const ACTS = {
   menu() { UI.menu = !UI.menu; render(); },
   ack({ id }) { DB.act((s) => SIM.ack(s, id, ME)); toast('조치 완료를 보냈어요 · 근로자 화면에도 보여요'); },
   fault() { toast('센서 고장 신고는 시제품 다음 차례에 만들어요 (시안 O1-마)'); },
+  bookOk() { const b = bookOf(DB.s, FID); DB.act((s) => bookApprove(s, FID, ME)); toast(`${b.v} 방문을 승인했어요 · 지킴이 캘린더에 올라가요`); },
+  bookNo() { DB.act((s) => bookReject(s, FID, ME)); toast('예약을 거절했어요 · 지킴이가 다른 날로 다시 요청해요'); },
   openInsp({ id }) { UI.openInsp = id; render(); },
   toggleOk() { UI.showOk = !UI.showOk; render(); },
   fix({ ins, id }) { UI.dlg = { ins, id, photo: false }; render(); setTimeout(() => $('#fixNote') && $('#fixNote').focus(), 50); },
@@ -179,7 +192,7 @@ const ACTS = {
     UI.dlg = null;
     DB.act((s) => {
       const it = s.inspections.find((i) => i.id === d.ins).items.find((x) => x.id === d.id);
-      it.log.push({ t: 'fix', at: '9/17', note, photo: d.photo });
+      it.log.push({ t: 'fix', at: '9/17', tm: hm(s.clock), note, photo: d.photo });
       if (!s.visits[FID]) s.visits[FID] = null;
       DB.log(`박대표 고쳤어요 · ${it.text}`);
     });

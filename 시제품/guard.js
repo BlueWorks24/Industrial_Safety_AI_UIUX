@@ -1,7 +1,7 @@
 // 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all' };
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -76,16 +76,17 @@ function facPhoto(fid) {
 }
 // 공장 카드 — 사진 · 이름 + 상태 · 위치 · 거리 · 방문일 · 그 상태에 맞는 단추 하나
 function fcard(s, x) {
-  const f = FACTORIES[x.fid], v = s.visits[x.fid];
+  const f = FACTORIES[x.fid], v = s.visits[x.fid], b = bookOf(s, x.fid);
   const go = `${I('chevron', 16)}`;
   const btn = x.kind === 'back' ? `<button class="fbtn" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기 ${go}</button>`
-    : !v ? `<button class="fbtn line" data-act="date" data-fid="${x.fid}">방문일 정하기 ${go}</button>`
-    // 방문일이 있으면 "일정 변경"을 점검 시작 옆에 나란히 — 날짜 줄 끝의 글자 링크는 단추로 안 보였다 (2026-09-22 사용자 지시)
+    // 공장주가 승인해야 방문일이 생긴다 — 그전엔 예약 단추만 (2026-09-22 사용자 결정)
+    : !v ? `<button class="fbtn line" data-act="date" data-fid="${x.fid}">${b ? b.st === 'no' ? '다시 예약하기' : '예약 변경' : '예약하기'} ${go}</button>`
+    // 방문일이 있으면 "예약 변경"을 점검 시작 옆에 나란히 — 날짜 줄 끝의 글자 링크는 단추로 안 보였다 (2026-09-22 사용자 지시)
     : `<div class="fbtns"><button class="fbtn" data-act="newDraft" data-fid="${x.fid}">점검 시작 ${go}</button>
-      <button class="fbtn line fsub" data-act="date" data-fid="${x.fid}">${I('calendar', 15)} 일정 변경</button></div>`;
+      <button class="fbtn line fsub" data-act="date" data-fid="${x.fid}">${I('calendar', 15)} 예약 변경</button></div>`;
+  const req = !b ? '' : b.st === 'no' ? `<div class="fwhen no">${b.v} 예약 거절됨</div>` : `<div class="fwhen wait">${b.v} 공장주 승인 기다림</div>`;
   const when = x.kind === 'back' ? `<div class="fwhen">${x.ins.back.at} 운영자 반려</div><div class="fwhen note">${esc(x.ins.back.note)}</div>`
-    : v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문</div>`
-    : '<div class="fwhen none">방문일 안 정함</div>';
+    : (v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문</div>` : b ? '' : '<div class="fwhen none">예약 안 함</div>') + req;
   return `<div class="fcard">
     <button class="fphw" data-go="pre/${x.fid}" aria-label="${f.name} 자세히">${facPhoto(x.fid)}</button>
     <div class="fbody">
@@ -97,26 +98,40 @@ function fcard(s, x) {
 }
 function home(s) {
   locate();
-  const all = tasks(s), nToday = all.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).length;
+  const all = tasks(s);
   const t = sortTasks(s, all.filter((x) => inAreas(x.fid) && matchQ(x.fid)), UI.sort);
   const nAll = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area)).length;
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
     <div class="ghello"><span class="gav">${I('user', 30)}</span><div>
-      <span class="ghdate">9월 17일 목요일</span><b>안녕하세요, ${ME}님</b>
-      <button class="ghtoday${nToday ? '' : ' none'}" data-act="calToday">${I('calendar', 14)} ${nToday ? `오늘 방문 ${nToday}곳` : '오늘 방문 없음'} ${I('chevron', 14)}</button></div>
+      <span class="ghdate">9월 17일 목요일</span><b>안녕하세요, ${ME}님</b></div>
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
+    ${todayCard(s, all)}
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
     ${findRow('home')}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
-    ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}
+    <div id="fres">${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}</div>
     <button class="hall" data-go="factories">${I('factory', 18)} 공장 전체보기<em>${nAll}곳</em>${I('chevron', 18)}</button>
     <div class="proto">가상 데이터와 임시 사진으로 만든 시제품이에요</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }
 
 // 최근 방문한 곳 — 참고 앱의 "최근방문매장" 자리. 내가 마지막으로 점검한 곳과 그 점검의 상태 (2026-09-22)
+// 오늘 할 일 — 인삿말 아래 카드. 공장주가 승인해 오늘로 잡힌 방문을 시간 순으로 (2026-09-22 사용자 지시: "오늘 방문 n곳" 알약 → 우리 카드 모양으로)
+// 제목 줄만 늘 보이고 목록은 눌러서 펼친다 (같은 날 사용자 지시). 오늘 방문이 없으면 펼칠 것이 없어 "없음"만
+function todayCard(s, all) {
+  const l = all.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).sort((a, b) => whenKey(s.visits[a.fid]) - whenKey(s.visits[b.fid]));
+  const open = UI.today && l.length;
+  const head = l.length
+    ? `<button class="gtdtg" data-act="todayTg" aria-expanded="${!!open}"><b>오늘 할 일</b><em>${l.length}곳</em><span class="gtdar${open ? ' on' : ''}">${I('chevron', 16)}</span></button>`
+    : `<span class="gtdtg"><b>오늘 할 일</b><em class="none">없음</em></span>`;
+  // 목록은 늘 그려 두고 접힌 칸에 숨긴다 — 여닫을 때 높이가 미끄러지게 (todayTg가 다시 그리지 않고 칸만 바꾼다)
+  return `<div class="gtd${open ? ' open' : ''}"><div class="gtdh">${head}
+      <button class="gtdcal" data-act="calToday">${I('calendar', 15)} 캘린더 ${I('chevron', 14)}</button></div>
+    ${l.length ? `<div class="gtdl"${open ? '' : ' inert'}><div>${l.map((x) => { const f = FACTORIES[x.fid]; return `<button class="gtdr" data-go="pre/${x.fid}">
+      <span class="gtdt">${visitDay(s.visits[x.fid]).tm}</span><span class="gtdn"><b>${f.name}</b><small>화성시 ${f.dong}</small></span>${I('chevron', 18)}</button>`; }).join('')}</div></div>` : ''}</div>`;
+}
 function recentVisit(s) {
   const ins = s.inspections.find((i) => i.by === ME);
   if (!ins) return `<div class="gvisit"><div class="gvt">최근 방문한 곳</div><div class="gvsub">아직 점검한 곳이 없어요</div>${homeActs(s)}</div>`;
@@ -132,15 +147,17 @@ function recentVisit(s) {
 // 파란 칸 아래쪽의 작은 단추 둘 — 보고서 쓰기 · 점검 결과 보기 (가로로 나란히)
 function homeActs(s) {
   const done = (s.weekly || {})[WEEK.key];
-  const mine = s.inspections.filter((i) => i.by === ME), n = (st) => mine.filter((i) => (i.st || 'ok') === st).length;
+  // 점검 결과 보기는 최근 방문한 그 공장의 기록만 연다 (2026-09-22 사용자 지시)
+  const last = s.inspections.find((i) => i.by === ME);
+  const mine = last ? facInsp(s, last.fid).filter((i) => i.by === ME) : [], n = (st) => mine.filter((i) => (i.st || 'ok') === st).length;
   const badge = n('back') ? `<em class="warn">반려 ${n('back')}</em>` : n('wait') ? `<em>대기 ${n('wait')}</em>` : '';
   return `<div class="gacts">
     <button class="gact" data-go="weekly">${I('list', 17)}${done ? '주간 보고 냄' : '주간 보고 쓰기'}</button>
-    <button class="gact" data-go="records">${I('folder', 17)}점검 결과 보기${badge}</button></div>`;
+    <button class="gact" data-go="${last ? `records/${last.fid}` : 'records'}">${I('folder', 17)}점검 결과 보기${badge}</button></div>`;
 }
 
 /* ---------- G10 캘린더 (2026-09-22 사용자 요청) ----------
-   따로 예약 목록을 두지 않고 방문일(s.visits)에서 바로 그린다 — 홈이든 여기든 날짜를 정하면 그 칸에 저절로 올라간다.
+   따로 예약 목록을 두지 않고 방문일(s.visits)에서 바로 그린다 — 공장주가 예약을 승인하면 그 칸에 저절로 올라간다.
    반려는 방문이 아니라서 달력에 올리지 않는다. 이야기 속 오늘은 2026-09-17(목). */
 const TODAY = { y: 2026, m: 9, d: 17 };
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -161,22 +178,17 @@ function calScreen(s) {
   const cells = [...Array(first).fill(''), ...Array.from({ length: days }, (_, i) => i + 1)].map((d, i) => {
     if (!d) return '<span class="cday blank"></span>';
     const l = byDay[d] || [], dow = i % 7;
-    return `<button class="cday${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}${m === TODAY.m && d === TODAY.d ? ' today' : ''}${d === sel ? ' sel' : ''}" data-act="calDay" data-v="${d}" aria-label="${m}월 ${d}일${l.length ? ` 점검 ${l.length}곳` : ''}">
-      <span class="cn">${d}</span><span class="cdots">${l.slice(0, 3).map((x) => `<i class="k-${x.prev ? 'prev' : 'visit'}"></i>`).join('')}${l.length > 3 ? `<em>+${l.length - 3}</em>` : ''}</span></button>`;
+    return `<button class="cday${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}${m === TODAY.m && d === TODAY.d ? ' ctoday' : ''}${d === sel ? ' sel' : ''}" data-act="calDay" data-v="${d}" aria-label="${m}월 ${d}일${l.length ? ` 점검 ${l.length}곳` : ''}">
+      <span class="cn">${d}</span><span class="cdots">${l.slice(0, 3).map(() => '<i class="k-visit"></i>').join('')}${l.length > 3 ? `<em>+${l.length - 3}</em>` : ''}</span></button>`;
   }).join('');
   const day = byDay[sel] || [], dow = new Date(y, m - 1, sel).getDay();
-  const undated = t.filter((x) => !s.visits[x.fid]);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('캘린더', '', `<span class="small">${TEAM.name}</span>`)}
     <div class="calh"><button class="cmv" data-act="calM" data-v="-1" aria-label="이전 달">${I('back', 20)}</button><b>${y}년 ${m}월</b>
       <button class="cmv nx" data-act="calM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
     <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
-    <div class="gleg"><span><i class="k-prev"></i>미흡 확인 있음</span><span><i class="k-visit"></i>점검</span></div>
     <div class="cdh">${m}월 ${sel}일 ${WD[dow]}요일${m === TODAY.m && sel === TODAY.d ? tg('오늘', 'now') : ''}<em>${day.length}곳</em></div>
     ${day.map((x) => fcard(s, x)).join('') || '<div class="cnone">이 날 잡힌 점검이 없어요</div>'}
-    ${undated.length ? `<div class="cdh">날짜 안 정한 곳<em>${undated.length}곳</em></div>
-      <div class="cund">${undated.map((x) => `<div class="cundr"><span><b>${FACTORIES[x.fid].name}</b><small>화성시 ${FACTORIES[x.fid].dong}</small>${x.prev ? tg(`미흡 ${x.prev}`, 'warn') : ''}</span>
-        <button class="fbtn line" data-act="date" data-fid="${x.fid}">날짜 정하기</button></div>`).join('')}</div>` : ''}
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 
@@ -208,17 +220,18 @@ function factoriesScreen(s) {
     ${head('공장 전체보기', '', `<span class="small">${TEAM.name}</span>`)}
     ${findRow('fac')}
     <div class="fst">${[['all', `전체 ${inTeam.length}`], ['todo', `할 일 있음 ${nTodo}`], ['none', `할 일 없음 ${inTeam.length - nTodo}`]].map(([k, w]) => `<button class="${UI.fst === k ? 'on' : ''}" data-act="fst" data-v="${k}">${w}</button>`).join('')}</div>
-    ${list.map((fid) => facRow(s, fid, tk(fid))).join('') || `<div class="cnone">${q ? `"${esc(q)}"에 맞는 공장이 없어요` : '공장이 없어요'}</div>`}
+    <div id="fres">${list.map((fid) => facRow(s, fid, tk(fid))).join('') || `<div class="cnone">${q ? `"${esc(q)}"에 맞는 공장이 없어요` : '공장이 없어요'}</div>`}</div>
   </div></div>${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }
 // 찾기 칸과 권역 칩 — 홈과 공장 전체보기가 같이 쓴다 (2026-09-22 사용자 지시: 공장 탭을 없애고 찾기·권역을 홈으로).
 // 권역은 누를 때마다 켜고 끄는 토글이고 여러 개 켤 수 있다. 하나도 안 켜면 전체
 const inAreas = (fid) => !UI.areas.length || UI.areas.includes(FACTORIES[fid].area);
-const matchQ = (fid) => { const q = UI.fq.trim(); return !q || FACTORIES[fid].name.includes(q) || FACTORIES[fid].dong.includes(q); };
+// 공장 이름으로만 찾는다 — 동까지 보면 "동"만 쳐도 동탄2동의 대성정밀이 걸린다. 지역은 권역 단추로 (2026-09-22 사용자 지시)
+const matchQ = (fid) => { const q = UI.fq.trim(); return !q || FACTORIES[fid].name.includes(q); };
 // 찾기 칸 + 권역 단추 한 줄 — 권역은 칩을 늘어놓지 않고 단추 하나로, 누르면 화성시를 구별로 묶은 창에서 고른다 (2026-09-22 사용자 결정)
 const areaName = (a) => { const d = TEAM.dongs[a]; return d.length === 1 ? d[0] : d.every((x) => new RegExp(`^${a}\\d+동$`).test(x)) ? `${a} 1~${d.length}동` : `${a} 일대`; };
 const areaWord = () => (!UI.areas.length ? '권역 전체' : UI.areas.length === 1 ? areaName(UI.areas[0]) : `${areaName(UI.areas[0])} 외 ${UI.areas.length - 1}`);
-const findRow = (kind) => `<div class="hfrow"><input class="input" id="fq" type="search" placeholder="공장 이름이나 동으로 찾기" value="${esc(UI.fq)}" autocomplete="off">
+const findRow = (kind) => `<div class="hfrow"><input class="input" id="fq" type="search" placeholder="공장 이름으로 찾기" value="${esc(UI.fq)}" autocomplete="off">
   <button class="harea${UI.areas.length ? ' on' : ''}" data-act="areaOpen" data-v="${kind}">${areaWord()} ${I('chevron', 14)}</button></div>`;
 // 권역 고르기 창 — 화성시 구 → 우리 조 읍·면·동. 줄마다 할 일 수(홈) 또는 공장 수(공장 전체보기). 적용해야 목록이 바뀐다
 const GU_ORDER = ['만세구', '효행구', '병점구', '동탄구'];
@@ -234,9 +247,9 @@ function areaSheet(s) {
     <div class="row"><button class="btn ghost cxl" data-act="areaClear">모두 풀기</button><button class="btn" data-act="areaApply">${sh.pick.length ? `${sh.pick.length}곳 적용하기` : '전체 보기'}</button></div>
   </div>`;
 }
-// 찾기 칸 — 한글을 조합하는 동안에는 다시 그리지 않는다 (그리면 글자가 끊긴다)
-document.addEventListener('input', (e) => { if (e.target.id === 'fq' && !e.isComposing) { UI.fq = e.target.value; render(); } });
-document.addEventListener('compositionend', (e) => { if (e.target.id === 'fq') { UI.fq = e.target.value; render(); } });
+// 찾기 칸 — 글자마다 결과를 고치되 칸 자체는 다시 만들지 않는다 (render가 #fres만 바꾼다).
+// 칸을 새로 만들면 한글 조합이 끊겨 "동방"이 "동ㅏㅇ"·"ㄷㅗㅇㅂㅏㅇ"으로 들어갔다 (2026-09-22 사용자 제보)
+document.addEventListener('input', (e) => { if (e.target.id === 'fq') { UI.fq = e.target.value; render(); } });
 
 /* ---------- 지도 (하단바) — 예전 내 할 일의 지도 보기를 옮겼다 ---------- */
 function mapScreen(s) {
@@ -359,9 +372,39 @@ function nvMount() {
     NV.map.fitBounds(new N.LatLngBounds(new N.LatLng(b.s, b.w), new N.LatLng(b.n, b.e)), { top: 44, right: 20, bottom: 16, left: 20 });
   }
 }
-// 방문일 정하기 — 달력에서 날짜를 누르고 시간을 고른다 (2026-09-22 사용자 요청: 날짜 다섯 개 단추 → 달력, 오전/오후 → 정시 단추).
-// 지난 날은 못 고르고, 다른 공장 방문이 잡힌 날엔 막대가 뜬다. 저장하면 캘린더 탭에 바로 오른다(방문일에서 그리므로).
-const HOURS = Array.from({ length: 10 }, (_, i) => `${String(8 + i).padStart(2, '0')}:00`);  // 08:00~17:00
+// 방문 예약 — 달력에서 날짜를 누르고 시·분 바퀴를 굴려 시간을 고른다 (2026-09-22 사용자 요청: 날짜 다섯 개 단추 → 달력, 오전/오후 → 시·분 따로 스크롤, 방문일 정하기 → 예약).
+// 지난 날은 못 고르고, 다른 공장 방문이 잡힌 날엔 막대가 뜬다. 보내면 공장주에게 예약 요청이 가고, 승인되면 캘린더에 오른다.
+const P2 = (n) => String(n).padStart(2, '0');
+const WHEEL = { h: Array.from({ length: 24 }, (_, i) => P2(i)), m: Array.from({ length: 12 }, (_, i) => P2(i * 5)) };  // 분은 5분 단위
+const WH = 44;  // 바퀴 한 칸 높이(px) — CSS .wcol b 와 같게
+function wheelCol(k, cur) {
+  return `<div class="wcol" data-k="${k}">${WHEEL[k].map((v, i) => `<b class="${v === cur ? 'on' : ''}" data-act="wheel" data-i="${i}">${v}</b>`).join('')}</div>`;
+}
+// 다시 그리면 바퀴가 맨 위로 돌아간다 — 고른 값 자리로 되돌려 놓는다
+function syncWheels() {
+  if (!UI.sheet || UI.sheet.type !== 'date') return;
+  const [h, m] = UI.sheet.tm.split(':');
+  document.querySelectorAll('.wcol').forEach((c) => { c.scrollTop = WHEEL[c.dataset.k].indexOf(c.dataset.k === 'h' ? h : m) * WH; });
+}
+// 굴리기를 멈추면 가운데 칸을 값으로 — 다시 그리지 않고 요약 줄만 고친다 (그리면 굴리던 바퀴가 튄다)
+document.addEventListener('scroll', (e) => {
+  const c = e.target;
+  if (!c.classList || !c.classList.contains('wcol') || !UI.sheet) return;
+  clearTimeout(c._t);  // 바퀴마다 따로 기다린다 — 시를 굴리고 곧바로 분을 굴려도 둘 다 남게
+  c._t = setTimeout(() => {
+    const i = Math.max(0, Math.min(WHEEL[c.dataset.k].length - 1, Math.round(c.scrollTop / WH)));
+    const [h, m] = UI.sheet.tm.split(':');
+    UI.sheet.tm = c.dataset.k === 'h' ? `${WHEEL.h[i]}:${m}` : `${h}:${WHEEL.m[i]}`;
+    c.querySelectorAll('b').forEach((b, j) => b.classList.toggle('on', j === i));
+    const tt = document.querySelector('.dpick .tt'); if (tt) tt.textContent = UI.sheet.tm;
+  }, 120);
+}, true);
+// 저장된 방문 글에서 시각을 꺼낸다 — 예전 오전/오후 글은 10:00/13:00, 분은 5분 단위로 맞춘다
+function tmOf(v) {
+  const g = v && v.match(/(\d+):(\d+)/);
+  if (!g) return v && /오후/.test(v) ? '13:00' : '10:00';
+  return `${P2(+g[1])}:${P2(Math.min(55, Math.round(+g[2] / 5) * 5))}`;
+}
 function dateSheet(s) {
   const sh = UI.sheet, f = FACTORIES[sh.fid], y = TODAY.y, m = sh.m;
   const first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
@@ -370,19 +413,19 @@ function dateSheet(s) {
   const cells = [...Array(first).fill(0), ...Array.from({ length: days }, (_, i) => i + 1)].map((d, i) => {
     if (!d) return '<span class="cday blank"></span>';
     const past = m < TODAY.m || (m === TODAY.m && d < TODAY.d), dow = i % 7;
-    return `<button class="cday${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}${m === TODAY.m && d === TODAY.d ? ' today' : ''}${sh.pm === m && sh.d === d ? ' sel' : ''}${past ? ' dis' : ''}" data-act="pickD" data-v="${d}"${past ? ' disabled' : ''} aria-label="${m}월 ${d}일${booked[d] ? ` 다른 방문 ${booked[d]}곳` : ''}">
+    return `<button class="cday${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}${m === TODAY.m && d === TODAY.d ? ' ctoday' : ''}${sh.pm === m && sh.d === d ? ' sel' : ''}${past ? ' dis' : ''}" data-act="pickD" data-v="${d}"${past ? ' disabled' : ''} aria-label="${m}월 ${d}일${booked[d] ? ` 다른 방문 ${booked[d]}곳` : ''}">
       <span class="cn">${d}</span><span class="cdots">${Array.from({ length: Math.min(3, booked[d] || 0) }, () => '<i class="k-visit"></i>').join('')}</span></button>`;
   }).join('');
   const picked = sh.d ? `${sh.pm}월 ${sh.d}일 (${WD[new Date(y, sh.pm - 1, sh.d).getDay()]})` : '';
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet dsheet"><div class="grip"></div>
-    <div class="mid">${f.name} 방문 날짜</div>
+    <div class="mid">${f.name} 방문 예약</div>
     <div class="calh"><button class="cmv" data-act="sheetM" data-v="-1" aria-label="이전 달"${m <= TODAY.m ? ' disabled' : ''}>${I('back', 20)}</button><b>${y}년 ${m}월</b>
       <button class="cmv nx" data-act="sheetM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
     <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
     <div class="lbl">시간</div>
-    <div class="tgrid">${HOURS.map((d) => `<button class="${sh.tm === d ? 'on' : ''}" data-act="pickTm" data-v="${d}">${d}</button>`).join('')}</div>
-    <div class="dpick${picked ? '' : ' none'}">${picked ? `${I('calendar', 16)} ${picked} ${sh.tm} 방문` : '달력에서 날짜를 골라 주세요'}</div>
-    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveDate" ${sh.d ? '' : 'disabled'}>저장</button></div>
+    <div class="twheel">${wheelCol('h', sh.tm.slice(0, 2))}<span class="wsep">:</span>${wheelCol('m', sh.tm.slice(3))}</div>
+    <div class="dpick${picked ? '' : ' none'}">${picked ? `${I('calendar', 16)} ${picked} <span class="tt">${sh.tm}</span> 방문` : '달력에서 날짜를 골라 주세요'}</div>
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveDate" ${sh.d ? '' : 'disabled'}>예약 요청 보내기</button></div>
   </div>`;
 }
 
@@ -404,28 +447,55 @@ function miniMap(f) {
   </div>`;
 }
 // 지난번 미흡 항목 한 줄 설명 — 언제 문제였고, 그 뒤 공장주가 무엇을 했나
+// 미흡 항목이 지나온 일 — 날짜(·시간) 순 세로 줄. 점검에서 발견 → 공장주 고쳤어요(메모) / 점검에서 안 고쳐짐 → 이번 점검에서 확인 (2026-09-22 사용자 지시)
+function prevTimeline(e) {
+  const row = (when, what, sub = '', cls = '') => `<li class="${cls}"><span class="gtlw">${when}</span><span class="gtlx"><b>${what}</b>${sub ? `<small>${sub}</small>` : ''}</span></li>`;
+  const at = (l) => `${l.at}${l.tm ? `<i>${l.tm}</i>` : ''}`;
+  const rows = [row(e.ins.date, '점검에서 문제 발견', esc(e.ins.by))];
+  (e.it.log || []).forEach((l) => rows.push(l.t === 'fix'
+    ? row(at(l), '공장주가 고쳤다고 알림', l.note ? `"${esc(l.note)}"` : '', 'fix')
+    : row(at(l), l.result === 'fixed' ? '점검에서 고쳐짐 확인' : '점검에서 안 고쳐짐', l.reason ? esc(l.reason) : '', l.result === 'fixed' ? 'fix' : 'bad')));
+  if (!(e.it.log || []).length) rows.push(row('', '공장주가 아직 안 고침', '', 'none'));
+  rows.push(row('이번 점검', '고쳐졌는지 확인', '', 'next'));
+  return `<ol class="gtl">${rows.join('')}</ol>`;
+}
 function prevNote(e) {
   const last = (e.it.log || []).slice(-1)[0];
   const next = last ? (last.t === 'fix' ? `${last.at} 공장주 "고쳤어요"${last.note ? `<br>"${esc(last.note)}"` : ''}` : last.result === 'not' ? `${last.at} 점검에서 안 고쳐짐` : '') : '공장주가 아직 안 고침';
   return `${e.ins.date} 문제 있음${next ? '<br>' + next : ''}`;
 }
+// 공장 창의 점검 이력 — 최근 3건을 한 줄씩, 누르면 이 공장 점검 결과 화면 (2026-09-22 사용자 지시)
+function insHist(s, fid) {
+  const list = facInsp(s, fid);
+  if (!list.length) return `<div><div class="lbl">점검 이력</div><div class="cnone">아직 점검한 적이 없어요</div></div>`;
+  return `<div><div class="lbl">점검 이력 ${list.length}건</div>
+    <div class="ghist">${list.slice(0, 3).map((i) => { const st = i.st || 'ok', b = i.items.filter((x) => x.answer === 'bad').length;
+      return `<button class="ghr" data-go="records/${fid}/pre"><span class="ghd">${i.date}</span><span class="ghn"><b>${i.result || RESULTS[0]}</b><small>${i.by}</small></span>${b ? tg(`문제 ${b}`, 'warn') : ''}${tg(ST_WORD[st], 's-' + st)}</button>`; }).join('')}
+      <button class="ghall" data-go="records/${fid}/pre">점검 결과 전체 보기 ${I('chevron', 16)}</button></div></div>`;
+}
 function pre(s, fid) {
   const f = FACTORIES[fid], q = openIssues(s, fid);
   const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid).slice(0, 2);
   const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
+  // 아래 단추 둘 — 예약 | 점검 시작. 점검 시작은 공장주가 예약을 승인해야 열린다(날짜는 안 따짐).
+  // 잠긴 채로 두되 누르면 까닭을 알려 준다 (2026-09-22 사용자 결정 — AI 체크리스트 생성은 점검 시작 다음 화면에서)
+  const bk = bookOf(s, fid);
   return `${sbar(f.name)}<div class="scr"><div class="bd">
     ${head(f.name, '', `<span class="small">${q.length ? `지난번 미흡 ${q.length}개` : '점검'}</span>`)}
     ${miniMap(f)}
-    ${kv([['위치', `화성시 ${f.dong}`], ['업종', f.type], ['근로자', `${f.workers}명`], s.visits[fid] && ['방문', s.visits[fid]]])}
+    ${kv([['이름', f.name], ['위치', `화성시 ${f.dong}`], ['업종', f.type], ['근로자', `${f.workers}명`], s.visits[fid] && ['방문', s.visits[fid]], bookOf(s, fid) && ['예약 요청', `${bookOf(s, fid).v} ${bookOf(s, fid).st === 'no' ? '거절됨' : '승인 기다림'}`]])}
     <button class="maplink" data-act="openMap">${I('globe', 17)} 지도 앱으로 열기</button>
-    ${q.length ? `<div><div class="lbl">지난번 미흡 항목 ${q.length}개</div><div class="small">이번 점검에 같이 봐요</div>
-      ${q.map((e) => `<div class="q" style="margin-top:6px"><div class="t">${esc(e.it.text)}</div><div class="small">${prevNote(e)}</div></div>`).join('')}</div>`
+    ${q.length ? `<div class="gpv"><div class="gpvh">${I('alert', 18)}<b>지난번 미흡 항목</b><em>${q.length}개</em></div>
+      ${q.map((e) => `<div class="q gpvq"><div class="t">${esc(e.it.text)}</div>${prevTimeline(e)}</div>`).join('')}</div>`
       : ''}
-    ${hist.length ? `<div><div class="lbl">최근 센서 이상 기록 ${hist.length}건</div>
-      ${hist.map((a) => `<div class="q past" style="margin-top:6px"><div class="t">${a.day} ${esc(SIM.title(a))}</div><div class="small">${SIM.endWord(a)}${a.acks[0] ? `<br>울린 뒤 ${a.acks[0].at - a.start}분 만에 조치` : ''}</div></div>`).join('')}</div>` : ''}
+    ${hist.length ? `<div class="gpv"><div class="gpvh sen">${I('bell', 18)}<b>최근 센서 이상 기록</b><em>${hist.length}건</em></div>
+      <div class="rlist">${hist.map((a) => `<div class="vrow"><span class="gsw">${a.day}<i>${hm(a.start)}</i></span><div class="rtx"><div class="t">${esc(SIM.title(a))}</div>
+        <small>${a.acks[0] ? `울린 뒤 ${a.acks[0].at - a.start}분 만에 조치` : SIM.endWord(a)}</small></div></div>`).join('')}</div></div>` : ''}
+    ${insHist(s, fid)}
   </div><div class="ft">
-    <button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>
-    <button class="btn ghost" data-act="aiFirst" data-fid="${fid}">${I('sparkle', 17)} AI 체크리스트 생성</button>
+    <div class="gft2"><button class="btn ghost" data-act="date" data-fid="${fid}">${bk && bk.st === 'no' ? '다시 예약하기' : bk || s.visits[fid] ? '예약 변경' : '예약하기'}</button>
+    ${going || s.visits[fid] ? `<button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>`
+      : `<button class="btn glocked" data-act="lockedStart" data-fid="${fid}">${I('lock', 17)} 점검 시작</button>`}</div>
   </div></div>`;
 }
 
@@ -591,19 +661,63 @@ function sent(s, kind) {
 }
 
 const ST_WORD = { wait: '검사 대기', ok: '승인', back: '반려됨' };
-function records(s) {
+// 점검 기록 카드 하나 — 점검일 · 결과 · 항목 · 문제 · 처리 상태 (공장별 기록에선 점검자를, 전체 기록에선 공장 이름을 제목으로)
+function recCard(i, byFac, from = '') {
+  const bad = i.items.filter((x) => x.answer === 'bad'), st = i.st || 'ok';
+  // 문제 항목의 처리 상태를 상태마다 세어 보인다 (항목마다 한 줄씩 쓰면 같은 말이 되풀이된다)
+  const word = { todo: '고침 기다림', claimed: '다음 점검 때 확인', fixed: '고쳐짐', back: '다시 공장주에게' };
+  const cnt = bad.reduce((m, x) => { const w = word[itemState(x)]; m[w] = (m[w] || 0) + 1; return m; }, {});
+  const how = st === 'ok' ? Object.entries(cnt).map(([w, n]) => `${w} ${n}개`).join('<br>')
+    : st === 'wait' ? '운영자 검사를 기다려요' : '';
+  const mine = i.by === ME;
+  return `<div class="q${st === 'back' && mine ? ' now' : ''}"><div class="rowx"><span class="t">${byFac ? `${i.date} 점검` : FACTORIES[i.fid].name}</span><span class="stt s-${st}">${ST_WORD[st]}</span></div>
+    ${kv([!byFac && ['점검일', i.date], byFac && ['점검자', mine ? `${i.by} (나)` : i.by], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['항목', `${i.items.length}개`], ['문제', `${bad.length}개`], how && ['처리', how]])}
+    ${st === 'back' && mine ? `<div class="small ink">반려 사유: "${esc(i.back.note)}"</div><button class="btn ghost sm" data-act="redo" data-id="${i.id}">고쳐서 다시 내기</button>` : ''}
+    <button class="ginsp" data-go="insp/${i.id}${from ? '/' + from : ''}">${I('list', 16)} 점검 내용 보기 ${I('chevron', 16)}</button></div>`;
+}
+// 낸 점검 다시 보기 — 그때 답한 체크리스트를 그대로, 고칠 수 없게 (2026-09-22 사용자 지시)
+// 누를 단추를 두지 않고 답은 꼬리표 하나로 보인다. 묶음은 점검할 때와 같게(영역·출처마다)
+function inspView(s, id, from) {
+  const i = s.inspections.find((x) => x.id === id);
+  if (!i) return records(s);
+  const f = FACTORIES[i.fid], st = i.st || 'ok', n = (v) => i.items.filter((x) => x.answer === v).length;
+  // 묶음마다 흰 칸 하나에 줄로 — 왼쪽 색 띠·옅은 바탕 대신 오른쪽 답 글자와 아이콘으로 (2026-09-22 사용자: 색 띠가 너무 AI스럽다)
+  const groups = [];
+  i.items.forEach((x, k) => {
+    const g = gkey(x) || 'base';
+    if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g, l: [] });
+    groups[groups.length - 1].l.push([x, k]);
+  });
+  const ICO = { ok: I('check', 15), bad: I('alert', 15), na: '—' };
+  const rows = groups.map(({ g, l }) => `<div class="grp">${gname(g) || '점검 항목'}<span class="must">${l.length}개</span></div>
+    <div class="rlist">${l.map(([x, k]) => {
+      const a = x.answer || '';
+      const sub = [x.ref && x.reason ? `안 고쳐진 사정: ${esc(x.reason)}` : '', x.memo ? `메모: ${esc(x.memo)}` : '', x.shot ? '사진 1장' : ''].filter(Boolean).join('<br>');
+      return `<div class="vrow"><span class="rno">${k + 1}</span><div class="rtx"><div class="t">${esc(x.text)}</div>${sub ? `<small>${sub}</small>` : ''}</div><span class="rans ${a}">${ICO[a] || ''}${ANS[a] || '답 없음'}</span></div>`;
+    }).join('')}</div>`).join('');
+  return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
+    ${head(`${f.name} 점검 내용`, `records/${i.fid}${from ? '/' + from : ''}`)}
+    <div class="glock">${I('lock', 16)} 낸 점검이라 고칠 수 없어요</div>
+    ${kv([['점검일', i.date], ['점검자', i.by === ME ? `${i.by} (나)` : i.by], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['상태', tg(ST_WORD[st], 's-' + st)]])}
+    <div class="gview-t"><span class="ok">✓ ${ANS.ok} ${n('ok')}</span><span class="bad">⚠ ${ANS.bad} ${n('bad')}</span>${n('na') ? `<span class="na">— ${ANS.na} ${n('na')}</span>` : ''}</div>
+    ${rows}
+  </div></div>`;
+}
+// 한 공장의 점검 이력 — 우리 조가 그 공장에서 한 점검 전부, 최근 것부터 (2026-09-22 사용자 지시: 홈 "점검 결과 보기"와 공장 창에서 그 공장 것만)
+const facInsp = (s, fid) => s.inspections.filter((i) => i.fid === fid && TEAM.members.includes(i.by));
+function records(s, fid, from) {
+  if (fid && FACTORIES[fid]) {
+    const list = facInsp(s, fid), f = FACTORIES[fid];
+    return `${sbar(f.name)}<div class="scr"><div class="bd">
+      ${head(`${f.name} 점검 결과`, from === 'pre' ? `pre/${fid}` : '')}
+      ${list.map((i) => recCard(i, true, from)).join('') || '<div class="cnone">아직 이 공장 점검 기록이 없어요</div>'}
+      ${s.outbox.guard.filter((m) => m.data.fid === fid).map((m) => `<div class="q now"><div class="rowx"><span class="t">9/17 점검</span></div><div class="small">${I('clock', 14)} 휴대폰에 저장됨<br>전파가 잡히면 올라가요</div></div>`).join('')}
+    </div></div>`;
+  }
   const mine = s.inspections.filter((i) => i.by === ME);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('내 점검 기록')}${pageIntro('내 점검 기록')}
-    ${mine.map((i) => { const bad = i.items.filter((x) => x.answer === 'bad'), st = i.st || 'ok';
-      // 문제 항목의 처리 상태를 상태마다 세어 보인다 (항목마다 한 줄씩 쓰면 같은 말이 되풀이된다)
-      const word = { todo: '고침 기다림', claimed: '다음 점검 때 확인', fixed: '고쳐짐', back: '다시 공장주에게' };
-      const cnt = bad.reduce((m, x) => { const w = word[itemState(x)]; m[w] = (m[w] || 0) + 1; return m; }, {});
-      const how = st === 'ok' ? Object.entries(cnt).map(([w, n]) => `${w} ${n}개`).join('<br>')
-        : st === 'wait' ? '운영자 검사를 기다려요' : '';
-      return `<div class="q${st === 'back' ? ' now' : ''}"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span><span class="stt s-${st}">${ST_WORD[st]}</span></div>
-      ${kv([['점검일', i.date], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['항목', `${i.items.length}개`], ['문제', `${bad.length}개`], how && ['처리', how]])}
-      ${st === 'back' ? `<div class="small ink">반려 사유: "${esc(i.back.note)}"</div><button class="btn ghost sm" data-act="redo" data-id="${i.id}">고쳐서 다시 내기</button>` : ''}</div>`; }).join('')}
+    ${mine.map((i) => recCard(i, false)).join('')}
     ${s.outbox.guard.map((m) => `<div class="q now"><div class="rowx"><span class="t">${FACTORIES[m.data.fid].name}</span><span class="small">9/17</span></div><div class="small">${I('clock', 14)} 휴대폰에 저장됨<br>전파가 잡히면 올라가요</div></div>`).join('')}
   </div></div>`;
 }
@@ -636,6 +750,9 @@ function soon(s, w) {
 }
 
 /* ---------- 그리기 ---------- */
+// 날짜 표기 — 앱 전체에서 "8/20" → "08.20" (2026-09-22 사용자 지시). 저장된 값은 그대로 두고 그릴 때만 바꾼다.
+// 앞뒤가 숫자·글자·/·. 이면 날짜가 아니라고 본다 (주소 "records/..."나 "0 / 10장" 같은 것은 안 건드린다)
+const fmtDates = (h) => h.replace(/(?<![\w/.])(\d{1,2})\/(\d{1,2})(?![\w/])/g, (_, m, d) => `${m.padStart(2, '0')}.${d.padStart(2, '0')}`);
 function render() {
   const s = DB.s, p = R.path();
   const d = s.draft;
@@ -656,15 +773,23 @@ function render() {
   else if (p[0] === 're' || p[0] === 'resum') { R.go('pre/' + p[1]); return; }  // 옛 재점검 주소 — 회사 창으로
   else if (p[0] === 'sent') html = sent(s, p[1]);
   else if (p[0] === 'weekly') html = weekly(s);
-  else if (p[0] === 'records') html = records(s);
+  else if (p[0] === 'records') html = records(s, p[1], p[2]);
+  else if (p[0] === 'insp') html = inspView(s, p[1], p[2]);
   else if (p[0] === 'soon') html = soon(s, p[1]);
   else html = home(s);
   const ae = document.activeElement, keep = ae && ae.id, val = keep && ae.value;
   // 입력 중에 다시 그리면 커서가 맨 앞으로 간다 — 자리를 기억해 되살린다 (찾기 칸에서 "정공"이 "공정"이 되던 것)
   const caret = keep && typeof ae.selectionStart === 'number' ? [ae.selectionStart, ae.selectionEnd] : null;
   const top = p.join('/');
+  html = fmtDates(html);
   if (['', 'cal', 'map', 'weekly', 'soon/me'].includes(top)) html += gnav(top);  // 공장 전체보기는 홈에서 들어가는 안쪽 화면  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
+  // 찾기 칸에 입력 중이면 결과 목록만 갈아 끼운다 — 칸을 건드리지 않아야 한글 조합이 이어진다
+  if (keep === 'fq' && location.hash === lastHash && !UI.sheet && $('#fres')) {
+    const tmp = document.createElement('div'); tmp.innerHTML = html;
+    const nr = tmp.querySelector('#fres'); if (nr) { $('#fres').replaceWith(nr); return; }
+  }
   $('#app').innerHTML = html;
+  syncWheels();
   if (NV.st === 'ready') nvMount();
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
   if (keep && $('#' + keep)) { const el = $('#' + keep); el.value = val; el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
@@ -683,23 +808,23 @@ function startDraft(fid) {
 const ACTS = {
   closeSheet() { sheet(null); },
   date({ fid }) {
-    const v = DB.s.visits[fid], d = visitDay(v);  // 이미 잡힌 날이 있으면 그 달·그 날을 골라 둔 채로 연다
-    sheet({ type: 'date', fid, m: d ? d.m : TODAY.m, pm: d ? d.m : null, d: d ? d.d : null, tm: (v && v.match(/\d+:\d+/)?.[0].padStart(5, '0')) || (v && /오후/.test(v) ? '13:00' : '10:00') });
+    const b = bookOf(DB.s, fid), v = (b && b.v) || DB.s.visits[fid], d = visitDay(v);  // 보낸 요청이나 잡힌 날이 있으면 그 달·그 날을 골라 둔 채로 연다
+    sheet({ type: 'date', fid, m: d ? d.m : TODAY.m, pm: d ? d.m : null, d: d ? d.d : null, tm: tmOf(v) });
   },
   pickD({ v }) { UI.sheet.pm = UI.sheet.m; UI.sheet.d = +v; render(); },
   sheetM({ v }) { UI.sheet.m = Math.min(12, Math.max(TODAY.m, UI.sheet.m + +v)); render(); },
-  pickTm({ v }) { UI.sheet.tm = v; render(); },
+  wheel({ i }, el) { el.parentElement.scrollTo({ top: +i * WH, behavior: 'smooth' }); },  // 칸을 누르면 그 칸이 가운데로
   saveDate() {
     const sh = UI.sheet, isToday = sh.pm === TODAY.m && sh.d === TODAY.d;
     const v = isToday ? `오늘 ${sh.tm}` : `${sh.pm}/${sh.d}(${WD[new Date(TODAY.y, sh.pm - 1, sh.d).getDay()]}) ${sh.tm}`;
-    DB.act((s) => { s.visits[sh.fid] = v; });
-    const d = visitDay(v);  // 캘린더에서 정했으면 그 날짜로 옮겨 방금 올라간 점검을 보여 준다
-    if (d && R.path()[0] === 'cal') { UI.calM = d.m; UI.calD = d.d; }
-    UI.sheet = null; toast(`${v} 방문을 캘린더에 올렸어요`); render();
+    DB.act((s) => bookRequest(s, sh.fid, v, ME));  // 방문일은 공장주가 승인할 때 들어간다
+    UI.sheet = null; toast(`${FACTORIES[sh.fid].name}에 예약 요청을 보냈어요. 공장주가 승인하면 캘린더에 올라가요`); render();
   },
   newDraft({ fid }) { startDraft(fid); R.go('pick'); },
-  // 회사 창에서 AI부터 받는다. 기본 체크리스트는 그대로 있고 제안만 먼저 채운다.
-  aiFirst({ fid }) { startDraft(fid); R.go('photo'); },
+  lockedStart({ fid }) {
+    const b = bookOf(DB.s, fid);
+    toast(!b ? '예약하고 공장주가 승인하면 점검할 수 있어요' : b.st === 'no' ? '예약이 거절됐어요. 다시 예약해 주세요' : `공장주 승인을 기다리고 있어요 (${fmtDates(b.v)})`);
+  },
   openMap() { toast('실제 앱은 여기서 지도 앱으로 넘어가요'); },
   goPhoto() { R.go('photo'); },
   addPhoto() { DB.act((s) => { s.draft.photos = Math.min(10, s.draft.photos + 1); }); },
@@ -752,6 +877,13 @@ const ACTS = {
   sort({ v }) { UI.sort = v; render(); },
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
+  todayTg(d, el) {  // 다시 그리면 애니메이션이 안 보여서 칸의 표시만 바꾼다
+    UI.today = !UI.today;
+    const c = el.closest('.gtd'), l = c.querySelector('.gtdl');
+    c.classList.toggle('open', UI.today); el.setAttribute('aria-expanded', UI.today);
+    c.querySelector('.gtdar').classList.toggle('on', UI.today);
+    if (l) l.inert = !UI.today;
+  },
   fst({ v }) { UI.fst = v; render(); },
   areaOpen({ v }) { sheet({ type: 'area', v, pick: [...UI.areas] }); },
   areaPick({ v }) { const p = UI.sheet.pick; UI.sheet.pick = p.includes(v) ? p.filter((a) => a !== v) : [...p, v]; render(); },

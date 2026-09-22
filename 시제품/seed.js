@@ -138,9 +138,9 @@ function daesungInspection() {
     id: 'i0828', fid: 'daesung', date: '8/28', by: '김지킴', locked: true, st: 'ok', result: '점검완료',
     items: [
       { id: 'dp', text: '분전반 앞에 물건이 쌓여 있지 않나?', src: 'prev', answer: 'bad', memo: '분전반 앞에 상자 적재',
-        log: [ { t: 'fix', at: '9/5', note: '상자 창고로 옮김' } ] },
+        log: [ { t: 'fix', at: '9/5', tm: '16:40', note: '상자 창고로 옮김' } ] },
       { id: 'da1', text: '전선 피복이 벗겨진 곳이 없나?', src: 'ai', answer: 'bad', memo: '바닥에 늘어진 전선 피복이 벗겨짐',
-        log: [ { t: 'fix', at: '9/5', note: '' } ] },
+        log: [ { t: 'fix', at: '9/5', tm: '16:42', note: '' } ] },
       { id: 'da2', text: '분전반 문이 닫혀 있고 잠겨 있나?', src: 'ai', answer: 'ok' },
       { id: 'da3', text: '이동식 전선 릴에 과열 흔적이 없나?', src: 'ai', answer: 'ok' },
       ...base,
@@ -180,7 +180,7 @@ const SEED = {
       items: BASE_ITEMS['금속가공'].map((t, i) => ({ id: fid + i, text: t, src: 'base', answer: 'ok' })) })),
     { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '점검완료', items: [
       { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블',
-        log: [ { t: 'fix', at: '8/30', note: '케이블 걸이 설치' } ] },
+        log: [ { t: 'fix', at: '8/30', tm: '14:20', note: '케이블 걸이 설치' } ] },
       ...BASE_ITEMS['금속가공'].map((t, i) => ({ id: 'b' + (i + 2), text: t, src: 'base', answer: 'ok' })),
     ] },
   ],

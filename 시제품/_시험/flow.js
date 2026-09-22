@@ -46,8 +46,21 @@ const B = 'http://127.0.0.1:8765/';
   // 지킴이 — 지난번 미흡이 있는 공장 점검 (재점검을 따로 두지 않고 미흡 항목이 체크리스트에 붙는다, 2026-09-22)
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_home');
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_todo');  // 내 할 일은 홈 목록이 되었다 (2026-09-22)
-  await G.locator('[data-act="date"][data-fid="taegwang"]').click(); await G.locator('.sheet [data-act="pickD"][data-v="23"]').click(); await G.locator('.sheet [data-act="pickTm"][data-v="14:00"]').click(); await shot(G, 'g_date');
-  await G.locator('[data-act="saveDate"]').click();
+  await G.locator('[data-act="date"][data-fid="taegwang"]').click(); await G.locator('.sheet [data-act="pickD"][data-v="23"]').click(); await G.locator('.wcol[data-k="h"] [data-i="14"]').click(); await G.locator('.wcol[data-k="m"] [data-i="6"]').click(); await G.waitForTimeout(800);
+  if (!/14:30/.test(await G.locator('.dpick').innerText())) errs.push('시·분 바퀴가 14:30을 못 골랐다'); await shot(G, 'g_date');
+  await G.locator('[data-act="saveDate"]').click(); await G.waitForTimeout(300);
+  // 방문 예약 (2026-09-22) — 요청만 가고, 공장주가 승인해야 방문일이 생긴다
+  if (await G.evaluate(() => DB.s.visits.taegwang)) errs.push('승인 전에 방문일이 들어갔다');
+  if (!/공장주 승인 기다림/.test(await G.locator('.fcard', { hasText: '태광기계' }).innerText())) errs.push('카드에 승인 기다림이 없다');
+  await shot(G, 'g_book_wait');
+  await ctl(G, 'bookOk', '[data-f="taegwang"]'); await G.waitForTimeout(300);
+  if (await G.evaluate(() => DB.s.visits.taegwang) !== '9/23(수) 14:30') errs.push('조작판 승인 뒤 방문일이 안 들어갔다');
+  await G.locator('[data-act="date"][data-fid="daesung"]').click(); await G.locator('.sheet [data-act="pickD"][data-v="24"]').click(); await G.locator('[data-act="saveDate"]').click();
+  await O.goto(B + 'web.html#/'); await O.waitForSelector('.bookreq'); await shot(O, 'o_bookreq');
+  await O.locator('[data-act="bookOk"]').click(); await O.waitForTimeout(1500);
+  if (!/^9\/24/.test(await G.evaluate(() => DB.s.visits.daesung))) errs.push('공장주 승인 뒤 대성정밀 방문일이 안 바뀌었다');
+  await G.goto(B + 'guard.html#/cal'); await G.locator('[data-act="calDay"][data-v="24"]').click(); await shot(G, 'g_book_cal');
+  await G.goto(B + 'guard.html#/');
   await G.locator('[data-go="pre/daesung"]').first().click(); await shot(G, 'g_pre');
   await G.locator('.ft [data-act="newDraft"]').click(); await shot(G, 'g_re');
   await click(G, '개로 점검 시작');

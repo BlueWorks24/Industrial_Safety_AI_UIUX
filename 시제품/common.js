@@ -213,6 +213,12 @@ function openIssues(s, fid) {
 }
 // 그중 공장주가 "고쳤어요"를 누른 것 — 이게 있으면 다시 가 볼 공장이 된다
 const recheckQueue = (s, fid) => openIssues(s, fid).filter((e) => itemState(e.it) === 'claimed');
+// 방문 예약 (2026-09-22 사용자 결정, 가설: 기존 웹의 사전조사를 공장주와 맞추는 예약으로 본다)
+// 지킴이가 날짜·시간을 골라 요청 → 공장주가 승인하면 그때 방문일(s.visits)에 들어간다. 거절하면 지킴이가 다시 예약한다.
+const bookOf = (s, fid) => (s.books || {})[fid] || null;
+function bookRequest(s, fid, v, by) { s.books = s.books || {}; s.books[fid] = { v, st: 'wait', by, at: hm(s.clock) }; DB.log(`${by} 방문 예약 요청 · ${FACTORIES[fid].name} ${v}`); }
+function bookApprove(s, fid, by) { const b = bookOf(s, fid); if (!b) return; s.visits[fid] = b.v; delete s.books[fid]; DB.log(`${by} 방문 예약 승인 · ${FACTORIES[fid].name} ${b.v}`); }
+function bookReject(s, fid, by) { const b = bookOf(s, fid); if (!b) return; b.st = 'no'; b.noAt = hm(s.clock); DB.log(`${by} 방문 예약 거절 · ${FACTORIES[fid].name} ${b.v}`); }
 // 운영자가 점검을 승인할 때 — 붙었던 미흡 항목의 답을 원래 항목에 적는다 (이상 없음 = 고쳐짐, 문제 있음 = 안 고쳐짐)
 function settlePrev(s, ins) {
   ins.items.filter((x) => x.ref && (x.answer === 'ok' || x.answer === 'bad')).forEach((x) => {
@@ -308,6 +314,10 @@ function drawCtl() {
   ${s.inspections.filter((i) => i.st === 'wait').map((i) => `<div class="al"><b>${esc(FACTORIES[i.fid].name)}</b> · ${esc(i.by)} · ${i.sentAt || i.date} 냄<br>
      <button class="cb" data-c="approve" data-id="${i.id}">승인</button>
      <button class="cb" data-c="reject" data-id="${i.id}">반려</button></div>`).join('') || '<div class="small">검사 기다리는 점검 없음</div>'}
+  <h3>공장주 방문 예약 승인 (계정 없는 공장 흉내)</h3>
+  ${Object.entries(s.books || {}).filter(([, b]) => b.st === 'wait').map(([f, b]) => `<div class="al"><b>${esc(FACTORIES[f].name)}</b> · ${esc(b.v)} · ${esc(b.by)} 요청<br>
+     <button class="cb" data-c="bookOk" data-f="${f}">승인</button>
+     <button class="cb" data-c="bookNo" data-f="${f}">거절</button></div>`).join('') || '<div class="small">승인 기다리는 예약 없음</div>'}
   <h3>근로자 의견 (공장주 화면이 생기기 전 흉내)</h3>
   <button class="cb" data-c="vread">최근 의견 · 대표님 읽음</button>
   <button class="cb" data-c="vreply">최근 의견 · 대표님 답</button>
@@ -341,6 +351,8 @@ document.addEventListener('click', (e) => {
     if (ins && c === 'approve') { ins.st = 'ok'; ins.locked = true; ins.okAt = '9/17'; settlePrev(s, ins); DB.log(`운영자 점검 승인 · ${FACTORIES[ins.fid].name}`); }
     // 반려 사유는 예시다 — 기존 웹에 사유 칸이 있는지 아직 모른다 (가설)
     if (ins && c === 'reject') { ins.st = 'back'; ins.back = { at: '9/17', note: '문제 항목의 메모가 짧아요. 무엇이 어떻게 문제인지 적어 다시 내 주세요.' }; DB.log(`운영자 점검 반려 · ${FACTORIES[ins.fid].name}`); }
+    if (c === 'bookOk') bookApprove(s, b.dataset.f, OWNER_NAME[b.dataset.f] || '공장주');
+    if (c === 'bookNo') bookReject(s, b.dataset.f, OWNER_NAME[b.dataset.f] || '공장주');
     const v = (s.voices || [])[0];
     if (v && c === 'vread') { v.readAt = '9/17'; DB.log('대표님 의견 읽음'); }
     if (v && c === 'vreply') {
