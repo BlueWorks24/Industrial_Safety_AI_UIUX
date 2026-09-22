@@ -99,8 +99,9 @@ function home(s) {
   const t = sortTasks(s, UI.sort === 're' ? all.filter((x) => x.kind === 're') : all, UI.sort);
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
-    <div class="ghello"><span class="gav">${I('user', 30)}</span><div><b>안녕하세요, ${ME}님</b>
-      <span class="ghsub">9월 17일 목요일 · ${TEAM.name}${nToday ? ` · 오늘 방문 ${nToday}곳` : ''}</span></div>
+    <div class="ghello"><span class="gav">${I('user', 30)}</span><div>
+      <span class="ghdate">9월 17일 목요일</span><b>안녕하세요, ${ME}님</b>
+      <button class="ghtoday${nToday ? '' : ' none'}" data-act="calToday">${I('calendar', 14)} ${nToday ? `오늘 방문 ${nToday}곳` : '오늘 방문 없음'} ${I('chevron', 14)}</button></div>
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
@@ -742,6 +743,7 @@ const ACTS = {
   area({ v }) { UI.area = v === '전체' ? null : v; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
   calDay({ v }) { UI.calD = +v; render(); },
+  calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
   fst({ v }) { UI.fst = v; render(); },
   calM({ v }) { UI.calM = Math.min(12, Math.max(1, UI.calM + +v)); UI.calD = null; render(); },
   pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },

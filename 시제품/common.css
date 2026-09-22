@@ -457,8 +457,10 @@ svg.i{flex:none;vertical-align:-.18em}
 .gav{flex:none;width:56px;height:56px;border-radius:50%;background:#e5e7eb;color:#9ca3af;display:grid;place-items:center}
 .ghello > div{flex:1;min-width:0}
 .ghello b{display:block;font-size:20px;font-weight:800;letter-spacing:-.03em}
-/* 아래 줄만 — 프로필 동그라미(.gav)도 span이라 넓게 걸면 가운데 맞춤이 풀린다 */
-.ghello .ghsub{display:block;font-size:14px;color:var(--mid);margin-top:2px}
+/* 인삿말 위 날짜 · 아래 오늘 방문 알약 (2026-09-22 사용자: 한 줄로 잇지 말고 나눠서, 조 이름은 빼고) */
+.ghello .ghdate{display:block;font-size:13px;font-weight:600;color:var(--mid);margin-bottom:1px}
+.ghtoday{display:inline-flex;align-items:center;gap:4px;margin-top:6px;min-height:30px;padding:0 8px 0 10px;border:none;border-radius:999px;background:var(--brand-l);color:var(--brand);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.ghtoday.none{background:#f1f2f4;color:var(--mid)}
 .ghello .live{flex:none}
 /* 정렬 탭 — 밑줄 */
 .gtabs{display:flex;margin:6px -16px 0;padding:0 16px;border-bottom:1px solid var(--line)}
