@@ -46,9 +46,9 @@ function kmTo([x, y]) {
   const a = Math.sin(((y - y0) * rad) / 2) ** 2 + Math.cos(y0 * rad) * Math.cos(y * rad) * Math.sin(((x - x0) * rad) / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
-// 탭 셋 — 거리순(할 일 전체) · 일정순(방문 날짜가 가까운 순) · 미흡 있음(지난번 미흡이 남은 곳만) (2026-09-22 사용자 결정)
-// 셋째 탭은 처음 "재점검"이었는데 재점검을 따로 두지 않기로 하면서 이름을 바꿨다
-const SORTS = [['near', '거리순'], ['date', '일정순'], ['prev', '미흡 있음']];
+// 탭 둘 — 거리순 · 일정순 (2026-09-22 사용자 결정). 셋째 탭("재점검" → "미흡 있음")은 뺐다:
+// 재점검을 따로 두지 않아 미흡은 점검 때 저절로 붙고, 미흡이 남은 곳은 공장 탭과 회사 창에서 보인다
+const SORTS = [['near', '거리순'], ['date', '일정순']];
 // 방문 일정을 셀 수 있게 — 오늘(이야기 속 9/17)부터, 같은 날이면 시간 순, 날짜 안 정함은 맨 뒤
 function whenKey(v) {
   if (!v) return Infinity;
@@ -98,7 +98,7 @@ function fcard(s, x) {
 function home(s) {
   locate();
   const all = tasks(s), nToday = all.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).length;
-  const t = sortTasks(s, UI.sort === 'prev' ? all.filter((x) => x.prev) : all, UI.sort);
+  const t = sortTasks(s, all, UI.sort);
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
     <div class="ghello"><span class="gav">${I('user', 30)}</span><div>
@@ -108,7 +108,7 @@ function home(s) {
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
-    ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.sort === 'prev' ? '지난번 미흡이 남은 곳이 없어요' : '할 일이 없어요'}</div></div>`}
+    ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">할 일이 없어요</div></div>`}
     <div class="proto">가상 데이터와 임시 사진으로 만든 시제품이에요</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
