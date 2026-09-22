@@ -129,17 +129,73 @@ function taskMap(s, list, cardOf) {
       && !pinBox.some(([a0, b0, a1, b1]) => l + 6 > a0 && l - 6 < a1 && t + 3.5 > b0 && t - 3.5 < b1));
     return spot ? `<span class="glab" style="left:${spot[0]}%;top:${spot[1]}%">${a}</span>` : '';
   }).join('');
-  const today = (fid) => (s.visits[fid] || '').startsWith('오늘');
-  const pins = list.map((x) => {
-    const [l, t] = pct(FACTORIES[x.fid].ll);
-    return `<button class="gpin k-${x.kind}${today(x.fid) ? ' today' : ''}${UI.pin === x.fid ? ' sel' : ''}" style="left:${l}%;top:${t}%" data-act="pin" data-fid="${x.fid}" aria-label="${FACTORIES[x.fid].name} ${KIND[x.kind]}">
-      <i>${KIND[x.kind]}</i><b>${FACTORIES[x.fid].name}</b></button>`;
-  }).join('');
+  const pins = list.map((x) => { const [l, t] = pct(FACTORIES[x.fid].ll); return pinHtml(s, x, `left:${l}%;top:${t}%`); }).join('');
   const sel = list.find((x) => x.fid === UI.pin);
-  return `<div class="gmap"><svg viewBox="${vx.toFixed(1)} ${vy.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${shapes}</svg>${labels}${pins}</div>
-    <div class="gleg"><span><i class="k-back"></i>반려</span><span><i class="k-re"></i>재점검</span><span><i class="k-first"></i>새로 갈 곳</span><span><i class="today"></i>오늘 방문</span></div>
+  const tail = `<div class="gleg"><span><i class="k-back"></i>반려</span><span><i class="k-re"></i>재점검</span><span><i class="k-first"></i>새로 갈 곳</span><span><i class="today"></i>오늘 방문</span></div>
     ${sel ? cardOf(sel) : `<div class="small">${list.length ? `핀을 누르면 그 공장이 아래에 나와요 · ${UI.area || '우리 조 권역'} ${list.length}곳` : `${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요`}</div>`}
     <div class="small gsrc">경계: 통계청 SGIS · vuski/admdongkor (CC BY 4.0)</div>`;
+  nvLoad();
+  if (NV.st === 'ready') { UI.nvArgs = { list, focus }; return `<div class="gmap nv" id="nvSlot"></div>${tail}`; }
+  return `${NV.st === 'fail' ? '<div class="small">네이버 지도를 불러오지 못해 그림 지도로 보여요</div>' : ''}<div class="gmap"><svg viewBox="${vx.toFixed(1)} ${vy.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${shapes}</svg>${labels}${pins}</div>
+    ${tail}`;
+}
+// 핀 하나 — 그림 지도에서는 자리(style)를 받아 버튼으로, 네이버 지도에서는 마커 속 내용으로 쓴다
+function pinHtml(s, x, style) {
+  const f = FACTORIES[x.fid], cls = `gpin k-${x.kind}${(s.visits[x.fid] || '').startsWith('오늘') ? ' today' : ''}${UI.pin === x.fid ? ' sel' : ''}`;
+  const inner = `<i>${KIND[x.kind]}</i><b>${f.name}</b>`;
+  return style ? `<button class="${cls}" style="${style}" data-act="pin" data-fid="${x.fid}" aria-label="${f.name} ${KIND[x.kind]}">${inner}</button>`
+    : `<div class="nvpin"><span class="${cls}">${inner}</span></div>`;
+}
+
+/* ---------- 네이버 지도 (2026-09-22) — mapkey.js에 Client ID가 있으면 그림 지도 대신 깐다 ----------
+   못 불러오거나(신호 없음) 인증이 막히면 그림 지도로 남는다. 지도 한 벌을 계속 다시 쓴다 —
+   화면을 새로 그릴 때마다 지도를 새로 만들면 깜박이고 사용량이 는다. */
+const NV = { st: 'none', el: null, map: null, marks: [], fit: null };  // st: none · loading · ready · fail
+function nvLoad() {
+  if (!window.NAVER_MAP_KEY || NV.st !== 'none') return;
+  NV.st = 'loading';
+  window.navermap_authFailure = () => { NV.st = 'fail'; render(); };
+  const sc = document.createElement('script');
+  sc.src = 'https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=' + encodeURIComponent(window.NAVER_MAP_KEY);
+  sc.onload = () => { if (NV.st === 'loading') NV.st = window.naver && naver.maps ? 'ready' : 'fail'; render(); };
+  sc.onerror = () => { NV.st = 'fail'; render(); };
+  document.head.appendChild(sc);
+}
+function bboxLL(names) {
+  let w = 1e9, s = 1e9, e = -1e9, n = -1e9;
+  HWASEONG.filter((h) => names.includes(h.name)).forEach((h) => mainPolys(h).forEach((p) => p[0].forEach(([x, y]) => {
+    w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y); })));
+  return { w, s, e, n };
+}
+function nvMount() {
+  const slot = $('#nvSlot'); if (!slot || !UI.nvArgs) return;
+  const N = naver.maps, { list, focus } = UI.nvArgs;
+  const area = (nm) => TEAM.areas.find((a) => TEAM.dongs[a].includes(nm)) || '';
+  if (!NV.map) {
+    NV.el = document.createElement('div'); NV.el.className = 'nvmap'; slot.appendChild(NV.el);
+    NV.map = new N.Map(NV.el, { mapDataControl: false, scaleControl: false, zoomControl: true,
+      zoomControlOptions: { position: N.Position.TOP_RIGHT, style: N.ZoomControlStyle.SMALL } });
+    NV.map.data.addGeoJson({ type: 'FeatureCollection', features: HWASEONG.map((d) => ({ type: 'Feature',
+      properties: { name: d.name, area: area(d.name) }, geometry: { type: 'MultiPolygon', coordinates: d.polys } })) });
+    NV.map.data.addListener('click', (e) => { const a = e.feature.getProperty('area'); if (a) ACTS.area({ v: a }); });
+  } else { slot.appendChild(NV.el); NV.map.refresh(true); }
+  NV.map.data.setStyle((f) => {
+    const a = f.getProperty('area'), on = a && (!UI.area || UI.area === a);
+    return a ? { fillColor: '#2458d6', fillOpacity: on ? 0.14 : 0.05, strokeColor: '#2458d6', strokeWeight: on ? 3 : 1.5, strokeOpacity: on ? 0.95 : 0.5, clickable: true }
+      : { fillOpacity: 0, strokeColor: '#6b7789', strokeWeight: 1, strokeOpacity: 0.45, clickable: false };
+  });
+  NV.marks.forEach((m) => m.setMap(null));
+  NV.marks = list.map((x) => {
+    const f = FACTORIES[x.fid];
+    const m = new N.Marker({ map: NV.map, position: new N.LatLng(f.ll[1], f.ll[0]), title: f.name, icon: { content: pinHtml(DB.s, x) } });
+    N.Event.addListener(m, 'click', () => ACTS.pin({ fid: x.fid }));
+    return m;
+  });
+  const key = UI.area || '전체';  // 권역을 바꿀 때만 범위를 다시 맞춘다 — 핀을 누를 때마다 지도가 튀지 않게
+  if (NV.fit !== key) {
+    NV.fit = key; const b = bboxLL(focus);
+    NV.map.fitBounds(new N.LatLngBounds(new N.LatLng(b.s, b.w), new N.LatLng(b.n, b.e)), { top: 44, right: 20, bottom: 16, left: 20 });
+  }
 }
 function dateSheet(s) {
   const sh = UI.sheet, f = FACTORIES[sh.fid];
@@ -464,6 +520,7 @@ function render() {
   const keep = document.activeElement && document.activeElement.id;
   const val = keep && document.activeElement.value;
   $('#app').innerHTML = html;
+  if (NV.st === 'ready') nvMount();
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
   if (keep && $('#' + keep)) { $('#' + keep).value = val; $('#' + keep).focus(); }
 }

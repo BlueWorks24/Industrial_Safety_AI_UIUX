@@ -446,3 +446,7 @@ svg.i{flex:none;vertical-align:-.18em}
 .gleg i.k-first{background:var(--brand)}
 .gleg i.today{background:#fff;outline:2px solid #111;outline-offset:1px}
 .gsrc{font-size:11px;color:var(--soft)}
+/* 네이버 지도를 깔 때 (2026-09-22) — 핀은 마커 속 내용으로, 바닥 가운데가 좌표에 오게 */
+.gmap.nv .nvmap{position:absolute;inset:0}
+.nvpin{position:absolute;left:0;top:0;transform:translate(-50%,-100%)}
+.nvpin .gpin{position:static;transform:none;cursor:pointer}
