@@ -88,6 +88,13 @@ const B = 'http://127.0.0.1:8765/';
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_home_unsent');
   await ctl(G, 'net', '[data-w="guard"]'); await shot(G, 'g_home_uploaded');
   await G.goto(B + 'guard.html#/records'); await shot(G, 'g_records');
+  // 운영자 제출 검사 (조작판 흉내) — 반려 → 고쳐서 다시 내기 → 승인 (2026-09-22)
+  await ctl(G, 'reject'); await G.goto(B + 'guard.html#/todo'); await shot(G, 'g_todo_back');
+  await click(G, '고쳐서 다시 내기'); await shot(G, 'g_redo');
+  await G.locator('.ft [data-act="submitFirst"]').click(); await shot(G, 'g_sent_redo');
+  await ctl(G, 'approve'); await G.goto(B + 'guard.html#/records'); await shot(G, 'g_records_ok');
+  await G.goto(B + 'guard.html#/weekly'); await shot(G, 'g_weekly');
+  await G.locator('[data-act="sendWeekly"]').click(); await shot(G, 'g_weekly_sent');
   await O.goto(B + 'web.html#/'); await O.waitForSelector('.wtop'); await shot(O, 'o_home_end');
   await O.setViewportSize({ width: 1100, height: 800 }); await O.goto(B + 'web.html#/rec/insp'); await O.waitForSelector('.wtop'); await shot(O, 'o_insp_pc');
   // 다른 기기(따로 연 브라우저)로 운영자·다른 공장주 로그인 — 같은 DB를 본다

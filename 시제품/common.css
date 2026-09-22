@@ -418,3 +418,8 @@ svg.i{flex:none;vertical-align:-.18em}
 .place b{font-size:15px}
 .place .small{display:flex;align-items:center;gap:5px}
 .maplink{min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:var(--r-s);background:var(--brand-l);color:var(--brand);font-size:15px;font-weight:700;cursor:pointer}
+/* 지킴이 점검 상태 — 운영자 제출 검사 (2026-09-22) */
+.stt{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;white-space:nowrap;vertical-align:1px}
+.stt.s-wait{background:#eef2fb;color:var(--brand)}
+.stt.s-ok{background:var(--green-l);color:var(--green)}
+.stt.s-back{background:var(--amber-l);color:var(--amber)}

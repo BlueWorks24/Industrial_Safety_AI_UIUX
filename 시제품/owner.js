@@ -24,7 +24,7 @@ const STATE_WORD = { todo: '아직 안 고침', claimed: '고쳤어요 표시함
 
 function myItems(s) {
   const out = [];
-  s.inspections.filter((i) => i.fid === FID).forEach((ins) => ins.items.filter((x) => x.answer === 'bad').forEach((it) => out.push({ ins, it, st: itemState(it) })));
+  s.inspections.filter((i) => i.fid === FID && APPROVED(i)).forEach((ins) => ins.items.filter((x) => x.answer === 'bad').forEach((it) => out.push({ ins, it, st: itemState(it) })));
   return out;
 }
 
@@ -34,7 +34,7 @@ function now(s) {
   const items = myItems(s);
   const cnt = (k) => items.filter((e) => e.st === k).length;
   const open = live.filter((a) => a.status !== 'watch').length;
-  const last = s.inspections.find((i) => i.fid === FID);
+  const last = s.inspections.find((i) => i.fid === FID && APPROVED(i));
   const verdict = live.length
     ? `<div class="verdict bad"><span class="ic">⚠</span><div><div class="v">경보 ${live.length}건</div><div class="small">${open ? `조치 안 됨 ${open}건 · ` : ''}근로자 앱으로도 같은 경보가 가요</div></div></div>`
     : `<div class="verdict"><span class="ic">✓</span><div><div class="v">지금 이상 없음</div><div class="small">센서 ${SITE_SENSORS(FID).length}대 감시 중 · ${hm(s.clock)} 확인</div></div></div>`;
@@ -80,7 +80,7 @@ function sensorRec(s) {
 
 /* ---------- O3 지킴이 점검 · 고칠 것 ---------- */
 function inspRec(s) {
-  const list = s.inspections.filter((i) => i.fid === FID);
+  const list = s.inspections.filter((i) => i.fid === FID && APPROVED(i));  // 공장주는 승인된 점검만 본다 (2026-09-22)
   const ins = list.find((i) => i.id === UI.openInsp) || list[0];
   if (!ins) return frame('rec', `${subTabs('insp')}<div class="kcard"><div class="kt">아직 지킴이 점검 기록이 없어요</div><div class="small">지킴이가 점검 결과를 내면 여기에 보여요.</div></div>`);
   const order = { back: 0, todo: 1, claimed: 2, fixed: 3 };

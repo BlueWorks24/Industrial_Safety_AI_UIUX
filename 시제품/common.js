@@ -200,9 +200,11 @@ function itemState(it) {
   if (last.t === 'fix') return 'claimed';
   return last.result === 'fixed' ? 'fixed' : 'back';
 }
+// 운영자가 승인한 점검만 공장주에게 가고 재점검 목록에 오른다 (2026-09-22, 흐름도 B⑥-1). 상태가 없는 옛 기록은 승인된 것으로 읽는다.
+const APPROVED = (ins) => (ins.st || 'ok') === 'ok';
 function recheckQueue(s, fid) {
   const out = [];
-  s.inspections.filter((i) => i.fid === fid).forEach((ins) =>
+  s.inspections.filter((i) => i.fid === fid && APPROVED(i)).forEach((ins) =>
     ins.items.filter((it) => it.answer === 'bad' && itemState(it) === 'claimed').forEach((it) => out.push({ ins, it })));
   return out;
 }
@@ -290,6 +292,10 @@ function drawCtl() {
   ${live.map((a) => `<div class="al"><b>${esc(FACTORIES[alarmFid(a)].name + ' ' + SIM.title(a))}</b> · ${a.status === 'open' ? '조치 안 됨' : a.status === 'watch' ? '지켜보는 중 → ' + hm(a.remindAt) : '다시 알림 중'} · 미룸 ${a.snoozes}<br>
      <button class="cb" data-c="normal" data-id="${a.id}">센서 정상으로</button>
      <button class="cb" data-c="other" data-id="${a.id}">${OWNER_NAME[alarmFid(a)]}가 조치 완료</button></div>`).join('') || '<div class="small">없음</div>'}
+  <h3>운영자 제출 검사 (운영자 웹이 생기기 전 흉내)</h3>
+  ${s.inspections.filter((i) => i.st === 'wait').map((i) => `<div class="al"><b>${esc(FACTORIES[i.fid].name)}</b> · ${esc(i.by)} · ${i.sentAt || i.date} 냄<br>
+     <button class="cb" data-c="approve" data-id="${i.id}">승인</button>
+     <button class="cb" data-c="reject" data-id="${i.id}">반려</button></div>`).join('') || '<div class="small">검사 기다리는 점검 없음</div>'}
   <h3>근로자 의견 (공장주 화면이 생기기 전 흉내)</h3>
   <button class="cb" data-c="vread">최근 의견 · 대표님 읽음</button>
   <button class="cb" data-c="vreply">최근 의견 · 대표님 답</button>
@@ -319,6 +325,10 @@ document.addEventListener('click', (e) => {
     if (c === 'normal') SIM.normal(s, b.dataset.id);
     if (c === 'other') SIM.ack(s, b.dataset.id, OWNER_NAME[alarmFid(SIM.get(s, b.dataset.id))]);
     if (c === 'ai') s.aiDown = !s.aiDown;
+    const ins = (c === 'approve' || c === 'reject') && s.inspections.find((i) => i.id === b.dataset.id);
+    if (ins && c === 'approve') { ins.st = 'ok'; ins.locked = true; ins.okAt = '9/17'; DB.log(`운영자 점검 승인 · ${FACTORIES[ins.fid].name}`); }
+    // 반려 사유는 예시다 — 기존 웹에 사유 칸이 있는지 아직 모른다 (가설)
+    if (ins && c === 'reject') { ins.st = 'back'; ins.back = { at: '9/17', note: '문제 항목의 메모가 짧아요. 무엇이 어떻게 문제인지 적어 다시 내 주세요.' }; DB.log(`운영자 점검 반려 · ${FACTORIES[ins.fid].name}`); }
     const v = (s.voices || [])[0];
     if (v && c === 'vread') { v.readAt = '9/17'; DB.log('대표님 의견 읽음'); }
     if (v && c === 'vreply') {
@@ -349,7 +359,14 @@ function flushOutbox(s, who) {
 // 지킴이 점검·재점검 결과를 서버에 반영 (guard.js가 만든 묶음)
 function applyInspection(s, d) {
   if (d.kind === 'first') {
-    s.inspections.unshift({ id: 'i' + Date.now().toString(36), fid: d.fid, date: '9/17', by: '김지킴', locked: true, items: d.items });
+    const again = d.redo && s.inspections.find((i) => i.id === d.redo);
+    if (again) {  // 반려된 점검을 고쳐 다시 냈다 — 같은 기록에 덮고, 반려 이력은 남긴다
+      Object.assign(again, { items: d.items, result: d.result, st: 'wait', sentAt: '9/17' });
+      again.backs = [...(again.backs || []), again.back]; again.back = null;
+    } else {
+      s.inspections.unshift({ id: 'i' + Date.now().toString(36), fid: d.fid, date: '9/17', by: d.by || '김지킴', team: d.team, ver: d.ver,
+        result: d.result, st: 'wait', sentAt: '9/17', locked: false, items: d.items });
+    }
   } else {
     d.results.forEach((r) => {
       const ins = s.inspections.find((i) => i.id === r.insId);

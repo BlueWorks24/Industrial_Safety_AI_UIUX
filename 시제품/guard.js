@@ -1,10 +1,14 @@
-// 지킴이 앱 — 시안 G1~G7. 로그인한 사람은 김지킴(전기 조)이다.
+// 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
+// 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {} };
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null };
 const SRC = { base: '기본', prev: '지난번 문제', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
   const t = [];
+  // 반려된 점검이 맨 위 — 고쳐서 다시 내야 한다 (2026-09-22). 다시 낸 것이 아직 안 올라갔으면 빼 둔다
+  s.inspections.filter((i) => i.st === 'back' && TEAM.members.includes(i.by)
+    && !s.outbox.guard.some((m) => m.data.redo === i.id)).forEach((ins) => t.push({ fid: ins.fid, kind: 'back', ins }));
   ['daesung', 'dongbang'].forEach((fid) => {
     const q = recheckQueue(s, fid);
     const waiting = s.outbox.guard.some((m) => m.data.kind === 're' && m.data.fid === fid);
@@ -30,18 +34,21 @@ function todayPlan(s, t) {
 }
 function home(s) {
   const t = tasks(s);
-  const noDate = t.filter((x) => !s.visits[x.fid]).length;
+  const noDate = t.filter((x) => x.kind !== 'back' && !s.visits[x.fid]).length;
+  const nBack = t.filter((x) => x.kind === 'back').length;
+  const nWait = s.inspections.filter((i) => i.st === 'wait' && i.by === ME).length;
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
-    <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">전기 조</span></div>${bar()}</div>
-    <div class="today"><div><b>9월 17일 목요일</b><span>전기 조 · 담당 12곳</span></div>
+    <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
+    <div class="today"><div><b>9월 17일 목요일</b><span>${TEAM.name} · 권역 ${TEAM.areas.join('·')}</span></div>
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${kcard({ t: '할 일', v: t.length, unit: '곳', go: 'todo', more: '내 할 일 보기',
-      rows: [['재점검', t.filter((x) => x.kind === 're').length + '곳'], ['새로 갈 곳', t.filter((x) => x.kind === 'first').length + '곳'], ['날짜 안 정함', noDate + '곳']] })}
+      rows: [...(nBack ? [['반려됨 · 다시 내기', nBack + '곳']] : []), ['재점검', t.filter((x) => x.kind === 're').length + '곳'], ['새로 갈 곳', t.filter((x) => x.kind === 'first').length + '곳'], ['날짜 안 정함', noDate + '곳']] })}
     ${todayPlan(s, t)}
     <div class="tiles">
-      <button class="tile" data-go="records"><span class="ic">${I('folder', 24)}</span><b>내 점검 기록</b></button>
-      <button class="tile" data-go="soon/factories"><span class="ic">${I('factory', 24)}</span><b>담당 공장</b></button>
+      <button class="tile" data-go="records"><span class="ic">${I('folder', 24)}</span><b>내 점검 기록${nWait ? `<br><span class="stt s-wait">검사 대기 ${nWait}</span>` : ''}</b></button>
+      <button class="tile" data-go="weekly"><span class="ic">${I('list', 24)}</span><b>주간 보고</b></button>
+      <button class="tile" data-go="soon/factories"><span class="ic">${I('factory', 24)}</span><b>우리 권역</b></button>
     </div>
     <div class="proto">시제품 · 가상 데이터</div>
   </div></div>`;
@@ -62,12 +69,22 @@ function todo(s) {
           : `<button class="btn ghost sm" data-act="date" data-fid="${x.fid}">${I('calendar', 18)} 날짜 정하기</button>`}
     </div>`;
   };
-  const re = t.filter((x) => x.kind === 're'), fr = t.filter((x) => x.kind === 'first');
+  const backCard = (x) => `<div class="task re">
+      <div class="nm"><b>${FACTORIES[x.fid].name}</b><span class="stt s-back">반려됨</span></div>
+      <div class="small">${x.ins.date} 점검 · ${x.ins.back.at} 운영자 반려</div>
+      <div class="small ink">"${esc(x.ins.back.note)}"</div>
+      <button class="btn sm" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기</button>
+    </div>`;
+  // 권역(읍·면·동)으로 걸러 본다 — 조가 맡은 공장이 많아지면 이것부터 쓴다
+  const inArea = (x) => !UI.area || FACTORIES[x.fid].area === UI.area;
+  const bk = t.filter((x) => x.kind === 'back' && inArea(x)), re = t.filter((x) => x.kind === 're' && inArea(x)), fr = t.filter((x) => x.kind === 'first' && inArea(x));
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('내 할 일', '', `<span class="small">${t.length}곳</span>`)}${pageIntro('내 할 일')}
-    ${re.length ? `<div class="lbl">재점검이 위에</div>${re.map(card).join('')}` : ''}
-    ${fr.length ? `<div class="lbl">새로 갈 곳 · 9월 배정</div>${fr.map(card).join('')}` : ''}
-    ${t.length ? '' : '<div class="stat"><div class="mid">할 일이 없어요</div></div>'}
+    ${head('내 할 일', '', `<span class="small">${TEAM.name} · ${t.length}곳</span>`)}${pageIntro('내 할 일')}
+    <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
+    ${bk.length ? `<div class="lbl">반려됨 · 고쳐서 다시 내요</div>${bk.map(backCard).join('')}` : ''}
+    ${re.length ? `<div class="lbl">재점검</div>${re.map(card).join('')}` : ''}
+    ${fr.length ? `<div class="lbl">새로 갈 곳 · 우리 조 권역</div>${fr.map(card).join('')}` : ''}
+    ${bk.length + re.length + fr.length ? '' : `<div class="stat"><div class="mid">${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요</div></div>`}
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 function dateSheet(s) {
@@ -80,7 +97,7 @@ function dateSheet(s) {
     <div class="seg">${days.map((d) => `<button class="${sh.day === d ? 'on' : ''}" data-act="pickDay" data-v="${d}">${d}</button>`).join('')}</div>
     <div class="lbl">시간</div>
     <div class="seg">${tms.map((d) => `<button class="${sh.tm === d ? 'on' : ''}" data-act="pickTm" data-v="${d}">${d}</button>`).join('')}</div>
-    <div class="small">공장주에게도 보여요<span class="hyp">가설</span></div>
+    <div class="small">우리 조와 공장주에게 보여요<span class="hyp">가설</span></div>
     <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveDate" ${sh.day ? '' : 'disabled'}>저장</button></div>
   </div>`;
 }
@@ -155,15 +172,15 @@ function aiWait(s) {
 }
 function pickScreen(s) {
   const d = s.draft, f = FACTORIES[d.fid];
-  const base = BASE_ITEMS[f.type] || BASE_ITEMS['금속가공'];
+  const nBase = CHECKLIST.areas.reduce((n, a) => n + a.items.length, 0);
   const nSel = d.ai.filter((x) => x.sel).length;
-  const total = base.length + nSel + d.self.length;
+  const total = nBase + nSel + d.self.length;
   const asked = d.aiState === 'done';
   const answered = d.items.some((x) => x.answer);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
     ${head('점검 중 · ' + f.name, 'pre/' + d.fid)}
-    <div class="grp">업종별 기본 체크리스트<span class="must">고르지 않아도 전부 점검</span></div>
-    ${base.map((t) => `<div class="item"><div class="bul">✓</div><div><div class="t">${esc(t)}</div><div class="why">${f.type} × 전기 기본 항목</div></div></div>`).join('')}
+    <div class="grp">기본 체크리스트 · ${CHECKLIST.ver}<span class="must">${nBase}문항 · 고르지 않아도 전부 점검</span></div>
+    ${CHECKLIST.areas.map((a) => `<div class="item"><div class="bul">✓</div><div><div class="t">${a.no} ${a.name}</div><div class="why">${a.common ? '공통' : '설비별 · 없는 설비는 해당 없음'} · ${a.items.length}문항</div></div></div>`).join('')}
     <div class="grp">AI 제안 · 원할 때만<span class="must">${asked ? `${d.ai.length}개 중 ${nSel}개 고름` : '아직 안 받음'}</span></div>
     ${asked ? `
     <div class="small"><b class="ink">사진 속 것만 봐요</b> · 틀릴 수 있어요</div>
@@ -203,26 +220,33 @@ function selfSheet() {
 /* ---------- G5 점검 — 목록 한 장에서 줄마다 바로 답하기 (2026-09-18 사용자 결정) ---------- */
 const ANS = { ok: '이상 없음', bad: '문제 있음', na: '해당 없음' };
 const GRP = { base: '기본 체크리스트', ai: 'AI 제안', self: '직접 추가' };
+// 묶음 — 기본 체크리스트는 영역(01~05)마다, 나머지는 출처마다 (2026-09-22)
+const AREA = Object.fromEntries(CHECKLIST.areas.map((a) => [a.key, a]));
+const gkey = (x) => (x.src === 'base' ? x.area || 'base' : x.src);
+const gname = (k) => (AREA[k] ? `${AREA[k].no} ${AREA[k].name}` : GRP[k] || SRC[k]);
 function checkList(s) {
   const d = s.draft, f = FACTORIES[d.fid];
+  const redo = d.redo && s.inspections.find((i) => i.id === d.redo);
   const n = (v) => d.items.filter((x) => x.answer === v).length;
   const nOk = n('ok'), nBad = n('bad'), nNa = n('na');
   const done = nOk + nBad + nNa, left = d.items.length - done;
   const bad = d.items.filter((x) => x.answer === 'bad');
   const only = UI.only && left;
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
-  const top = `<div class="apptop">${band('점검 중 · ' + f.name, 'pick')}${bar()}
-    <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)}</span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
+  const top = `<div class="apptop">${band((redo ? '고쳐 내기 · ' : '점검 중 · ') + f.name, redo ? 'todo' : 'pick')}${bar()}
+    <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} <span class="small">· ${CHECKLIST.ver}</span></span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
     <div class="prog">${['ok', 'bad', 'na'].map((v) => `<i class="${v}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div>
     <div class="tally"><span class="ok">✓ ${ANS.ok} ${nOk}</span><span class="bad">⚠ ${ANS.bad} ${nBad}</span>${nNa ? `<span class="na">— ${ANS.na} ${nNa}</span>` : ''}${left ? `<span>안 본 것 ${left}</span>` : ''}</div></div></div>`;
-  let rows = '', lastSrc = null;
+  let rows = '', last = null;
   d.items.forEach((x, i) => {
-    if (x.src !== lastSrc) {  // 묶음 머리글 — 눌러서 접고 편다
-      lastSrc = x.src;
-      const g = d.items.filter((y) => y.src === x.src), rest = g.filter((y) => !y.answer).length;
-      rows += `<button class="grp gh" data-act="fold" data-k="${x.src}">${UI.fold[x.src] ? '▸' : '▾'} ${GRP[x.src] || SRC[x.src]}<span class="must">${g.length}개</span>${rest ? `<span class="rest">안 본 것 ${rest}</span>` : '<span class="small">다 답함</span>'}</button>`;
+    const k = gkey(x);
+    if (k !== last) {  // 묶음 머리글 — 눌러서 접고 편다
+      last = k;
+      const g = d.items.filter((y) => gkey(y) === k), rest = g.filter((y) => !y.answer).length;
+      const tag = AREA[k] ? `<span class="must">${AREA[k].common ? '공통' : '설비별'}</span>` : '';
+      rows += `<button class="grp gh" data-act="fold" data-k="${k}">${UI.fold[k] ? '▸' : '▾'} ${gname(k)}${tag}<span class="must">${g.length}개</span>${rest ? `<span class="rest">안 본 것 ${rest}</span>` : '<span class="small">다 답함</span>'}</button>`;
     }
-    if (UI.fold[x.src] || (only && x.answer)) return;
+    if (UI.fold[k] || (only && x.answer)) return;
     const st = x.answer || '';
     const mark = [x.memo ? '메모: ' + esc(x.memo) : '', x.shot ? '사진 1장' : ''].filter(Boolean).join(' · ');
     rows += `<div class="crow ${st}">
@@ -235,14 +259,18 @@ function checkList(s) {
       ${st === 'bad' && mark ? `<div class="cmemo">${mark}</div>` : ''}
     </div>`;
   });
+  const res = d.result || RESULTS[0];
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
+    ${redo && redo.back ? `<div class="warnbar"><span class="ic">${I('alert', 22)}</span><div><div class="mid">운영자가 반려했어요 · ${redo.back.at}</div><div class="small ink">"${esc(redo.back.note)}"</div></div></div>` : ''}
     ${left ? `<div class="seg"><button class="${UI.only ? '' : 'on'}" data-act="only" data-v="0">전체 ${d.items.length}</button><button class="${UI.only ? 'on' : ''}" data-act="only" data-v="1">안 본 것 ${left}</button></div>` : ''}
     ${rows}
     ${bad.length ? `<div class="grp">문제로 찍은 항목<span class="must">${bad.length}개</span></div>
       <div class="q">${bad.map((x) => `<div class="small">· ${esc(x.text)}</div>`).join('')}</div>` : ''}
-    ${left ? '' : `<div class="warnbar"><span class="ic">${I('lock', 22)}</span><div class="small ink">내고 나면 고칠 수 없어요.<br>공장주와 운영자가 바로 봐요.</div></div>`}
+    ${left ? '' : `<div class="lbl">점검 결과<span class="hyp">가설</span></div>
+      <div class="seg">${RESULTS.map((r) => `<button class="${res === r ? 'on' : ''}" data-act="pickResult" data-v="${r}">${r}</button>`).join('')}</div>
+      <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">운영자가 검사해요. 반려되면 고쳐서 다시 낼 수 있어요.<br>승인되면 문제 항목이 공장주에게 개선 요청으로 가요.</div></div>`}
   </div><div class="ft">
-    ${left ? `<button class="btn ghost" data-act="only" data-v="1">안 본 항목 ${left}개 보기</button>` : `<button class="btn" data-act="submitFirst">점검 결과 내기</button>`}
+    ${left ? `<button class="btn ghost" data-act="only" data-v="1">안 본 항목 ${left}개 보기</button>` : `<button class="btn" data-act="submitFirst">${redo ? '고쳐서 다시 내기' : '점검 결과 내기'}</button>`}
   </div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}`;
 }
 function badSheet(s) {
@@ -303,26 +331,57 @@ function reSum(s, fid) {
 }
 
 /* ---------- 낸 뒤 ---------- */
-function sent(s) {
-  const wait = unsentN(s);
+function sent(s, kind) {
+  const wait = unsentN(s), first = kind === 'first';
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="donemark" style="${wait ? 'border-style:dashed' : ''}">${wait ? I('clock', 38) : I('check', 40)}</div>
     <div class="center big">${wait ? '휴대폰에 저장됐어요' : '올라갔어요'}</div>
-    <div class="center small ink">${wait ? '전파가 없어요. <b>연결되면 저절로 올라가요.</b><br>앱을 지우거나 로그아웃하지 마세요.' : '공장주와 운영자가 지금 볼 수 있어요.'}</div>
+    <div class="center small ink">${wait ? '전파가 없어요. <b>연결되면 저절로 올라가요.</b><br>앱을 지우거나 로그아웃하지 마세요.' : (first ? '운영자가 검사해요. 승인되면 공장주에게 개선 요청이 가요.<br>반려되면 내 할 일 맨 위에 다시 올라와요.' : '공장주와 운영자가 지금 볼 수 있어요.')}</div>
   </div><div class="ft"><button class="btn" data-go="">홈으로</button></div></div>`;
 }
 
+const ST_WORD = { wait: '검사 대기', ok: '승인', back: '반려됨' };
 function records(s) {
   const mine = s.inspections.filter((i) => i.by === ME);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('내 점검 기록')}${pageIntro('내 점검 기록')}
-    ${mine.map((i) => { const bad = i.items.filter((x) => x.answer === 'bad'); return `<div class="q"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span><span class="small">${i.date}</span></div>
-      <div class="small">${i.items.length}항목 · 문제 ${bad.length}개${bad.length ? ' · ' + bad.map((x) => ({ todo: '고침 기다림', claimed: '재점검 기다림', fixed: '고쳐짐', back: '다시 공장주에게' }[itemState(x)])).join(', ') : ''}</div></div>`; }).join('')}
+    ${mine.map((i) => { const bad = i.items.filter((x) => x.answer === 'bad'), st = i.st || 'ok';
+      const how = st === 'ok' ? (bad.length ? ' · ' + bad.map((x) => ({ todo: '고침 기다림', claimed: '재점검 기다림', fixed: '고쳐짐', back: '다시 공장주에게' }[itemState(x)])).join(', ') : '')
+        : st === 'wait' ? ' · 운영자 검사를 기다려요' : '';
+      return `<div class="q${st === 'back' ? ' now' : ''}"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span><span class="stt s-${st}">${ST_WORD[st]}</span></div>
+      <div class="small">${i.date} · ${i.result || RESULTS[0]}${i.ver ? ' · ' + i.ver : ''} · ${i.items.length}항목 · 문제 ${bad.length}개${how}</div>
+      ${st === 'back' ? `<div class="small ink">반려 사유: "${esc(i.back.note)}"</div><button class="btn ghost sm" data-act="redo" data-id="${i.id}">고쳐서 다시 내기</button>` : ''}</div>`; }).join('')}
     ${s.outbox.guard.map((m) => `<div class="q now"><div class="t">${FACTORIES[m.data.fid].name} · 9/17</div><div class="small">${I('clock', 14)} 휴대폰에 저장됨 · 아직 안 올라감</div></div>`).join('')}
   </div></div>`;
 }
+/* ---------- G9 주간 보고 (2026-09-22 — 기존 웹 "주간점검"의 칸을 따른다: 점검조·작성자·점검 기업 수·결과별 수) ---------- */
+const WEEK = { key: '9/15', label: '9/15(월) ~ 9/19(금)', days: ['9/15', '9/16', '9/17', '9/18', '9/19'] };
+function weekCounts(s) {
+  const ins = s.inspections.filter((i) => WEEK.days.includes(i.date) && TEAM.members.includes(i.by));
+  // 우리 재점검(고쳤나 다시 보러 간 것)은 기존 칸의 "재점검"으로 센다 (가설 — 기존 "재점검"의 뜻을 아직 모른다)
+  const reF = [...new Set(s.inspections.flatMap((i) => i.items.some((it) => (it.log || []).some((l) => l.t === 'recheck' && WEEK.days.includes(l.at))) ? [i.fid] : []))];
+  const c = Object.fromEntries(RESULTS.map((r) => [r, ins.filter((i) => (i.result || RESULTS[0]) === r).length]));
+  c['재점검'] += reF.length;
+  return { firms: new Set([...ins.map((i) => i.fid), ...reF]).size, c, ins, reF };
+}
+function weekly(s) {
+  const w = weekCounts(s), done = (s.weekly || {})[WEEK.key];
+  const lines = [...w.ins.map((i) => `${FACTORIES[i.fid].name} · ${i.date} ${i.result || RESULTS[0]} · ${ST_WORD[i.st || 'ok']}`),
+    ...w.reF.map((fid) => `${FACTORIES[fid].name} · 재점검(고쳤나 다시 봄)`)];
+  return `${sbar('지킴이')}<div class="scr"><div class="bd">
+    ${head('주간 보고', '', `<span class="small">${TEAM.name}</span>`)}
+    <div class="today"><div><b>${WEEK.label}</b><span>${TEAM.name} · 조장 ${TEAM.lead} · 조원 ${TEAM.members.filter((m) => m !== TEAM.lead).join('·')}</span></div></div>
+    <div class="lbl">이번 주 실적 · 점검 기록에서 저절로 셉니다</div>
+    <div class="q"><div class="rowx"><span class="t">점검 기업</span><b>${w.firms}곳</b></div>
+      ${RESULTS.map((r) => `<div class="rowx"><span class="small">${r}</span><span class="small ink">${w.c[r]}건</span></div>`).join('')}</div>
+    ${lines.length ? `<div class="lbl">이번 주 점검</div><div class="q">${lines.map((l) => `<div class="small">· ${esc(l)}</div>`).join('')}</div>` : ''}
+    ${done ? `<div class="stat"><div class="ck">${I('check', 26)}</div><div><div class="mid">${done.at} ${esc(done.by)} 냄</div><div class="small ink">${done.memo ? '특이 사항: ' + esc(done.memo) : '특이 사항 없음'}</div></div></div>`
+      : `<div class="lbl">특이 사항 (안 써도 돼요)</div><textarea class="input" id="wkMemo" placeholder="예: 향남 공장 한 곳이 점검을 거부함"></textarea>`}
+    <div class="small">작성자 ${ME} · 조장이 확인하는지는 아직 몰라요<span class="hyp">가설</span></div>
+  </div><div class="ft">${done ? '<button class="btn ghost" data-go="">홈으로</button>' : '<button class="btn" data-act="sendWeekly">주간 보고 내기</button>'}</div></div>`;
+}
 function soon(s, w) {
-  return `${sbar('지킴이')}<div class="scr"><div class="bd">${head({ me: '내 정보 (시안 G1-나)', factories: '담당 공장 (시안 G8)' }[w] || '준비 중')}
+  return `${sbar('지킴이')}<div class="scr"><div class="bd">${head({ me: '내 정보 (시안 G1-나)', factories: '우리 권역 (시안 G8)' }[w] || '준비 중')}
     <div class="stat"><div><div class="mid">시제품 다음 차례에 만들어요</div><div class="small">모양은 HTML 시안을 보세요.</div></div></div></div></div>`;
 }
 
@@ -343,7 +402,8 @@ function render() {
   else if (p[0] === 'ans' || p[0] === 'sum') { R.go('list'); return; }
   else if (p[0] === 're') { html = reList(s, p[1]); if (!html) return; }
   else if (p[0] === 'resum') html = reSum(s, p[1]);
-  else if (p[0] === 'sent') html = sent(s);
+  else if (p[0] === 'sent') html = sent(s, p[1]);
+  else if (p[0] === 'weekly') html = weekly(s);
   else if (p[0] === 'records') html = records(s);
   else if (p[0] === 'soon') html = soon(s, p[1]);
   else html = home(s);
@@ -360,7 +420,7 @@ function sheet(v) { UI.sheet = v; render(); }
 function startDraft(fid) {
   DB.act((s) => {
     if (s.draft && s.draft.kind === 'first' && s.draft.fid === fid) return;
-    s.draft = { kind: 'first', fid, photos: 0, ai: [], self: [], items: [], aiState: null };
+    s.draft = { kind: 'first', fid, photos: 0, ai: [], self: [], items: [], aiState: null, result: RESULTS[0] };
   });
 }
 
@@ -411,8 +471,8 @@ const ACTS = {
   },
   startAnswer() {
     DB.act((s) => {
-      const d = s.draft, f = FACTORIES[d.fid];
-      const base = (BASE_ITEMS[f.type] || BASE_ITEMS['금속가공']).map((t, i) => ({ id: 'n' + i, text: t, src: 'base' }));
+      const d = s.draft;
+      const base = CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => ({ id: `c${a.key}-${i}`, text: t, src: 'base', area: a.key })));
       const ai = d.ai.filter((x) => x.sel).map((x) => ({ id: 'a' + x.idx, text: AI_SUGGEST[x.idx].text, src: 'ai', photo: x.photo }));
       const self = d.self.map((t, i) => ({ id: 's' + i, text: t, src: 'self' }));
       const old = Object.fromEntries(d.items.map((x) => [x.id, x]));
@@ -423,6 +483,22 @@ const ACTS = {
   ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; }); },
   ansBad({ n }) { sheet({ type: 'bad', n: +n, photo: !!DB.s.draft.items[+n].shot }); },
   fold({ k }) { UI.fold[k] = !UI.fold[k]; render(); },
+  area({ v }) { UI.area = v === '전체' ? null : v; render(); },
+  pickResult({ v }) { DB.act((s) => { s.draft.result = v; }); },
+  // 반려된 점검을 연다 — 답은 그대로 두고 고친다 (2026-09-22)
+  redo({ id }) {
+    DB.act((s) => {
+      const ins = s.inspections.find((i) => i.id === id);
+      s.draft = { kind: 'first', fid: ins.fid, redo: id, result: ins.result || RESULTS[0], photos: 0, ai: [], self: [], aiState: null,
+        items: ins.items.map((x) => Object.assign({}, x)) };
+    });
+    UI.only = false; R.go('list');
+  },
+  sendWeekly() {
+    const memo = ($('#wkMemo') ? $('#wkMemo').value : '').trim(), w = weekCounts(DB.s);
+    DB.act((s) => { s.weekly = s.weekly || {}; s.weekly[WEEK.key] = { by: ME, at: '9/17', memo, firms: w.firms, c: w.c }; DB.log(`${TEAM.name} 주간 보고 냄`); });
+    toast('주간 보고를 냈어요');
+  },
   only({ v }) { UI.only = v === '1'; render(); },
   sheetPhoto() { UI.sheet.photo = true; render(); },
   saveBad() {
@@ -432,13 +508,14 @@ const ACTS = {
   },
   submitFirst() {
     const d = DB.s.draft;
-    const data = { kind: 'first', fid: d.fid, items: d.items.map((x) => ({ id: x.id, text: x.text, src: x.src, answer: x.answer, memo: x.memo || '', log: [] })) };
+    const data = { kind: 'first', fid: d.fid, redo: d.redo || null, by: ME, team: TEAM.name, ver: CHECKLIST.ver, result: d.result || RESULTS[0],
+      items: d.items.map((x) => ({ id: x.id, text: x.text, src: x.src, area: x.area, answer: x.answer, memo: x.memo || '', log: [] })) };
     DB.act((s) => {
       if (s.net.guard) applyInspection(s, data); else s.outbox.guard.push({ type: 'inspection', data });
-      DB.log(`지킴이 첫 점검 냄 · ${FACTORIES[d.fid].name}`);
+      DB.log(`지킴이 ${d.redo ? '반려된 점검 다시 냄' : '첫 점검 냄'} · ${FACTORIES[d.fid].name}`);
       s.draft = null;
     });
-    R.go('sent');
+    R.go('sent/first');
   },
   reFixed({ id }) { DB.act((s) => { s.draft.res[id] = { result: 'fixed' }; }); },
   reNot({ id }) { sheet({ type: 'not', id, reason: null, photo: false }); },
@@ -453,7 +530,7 @@ const ACTS = {
       s.visits[fid] = null; s.draft = null;
       DB.log(`지킴이 재점검 냄 · ${FACTORIES[fid].name}`);
     });
-    R.go('sent');
+    R.go('sent/re');
   },
 };
 wire(ACTS, render);

@@ -18,9 +18,9 @@ const OPER = (() => {
   function summary(s, fid) {
     const live = alarmsOf(s, fid).filter(SIM.live);
     const items = [];
-    s.inspections.filter((i) => i.fid === fid).forEach((ins) => ins.items.filter((x) => x.answer === 'bad').forEach((it) => items.push({ ins, it, st: itemState(it) })));
+    s.inspections.filter((i) => i.fid === fid && APPROVED(i)).forEach((ins) => ins.items.filter((x) => x.answer === 'bad').forEach((it) => items.push({ ins, it, st: itemState(it) })));
     const n = (k) => items.filter((e) => e.st === k).length;
-    const last = s.inspections.find((i) => i.fid === fid);
+    const last = s.inspections.find((i) => i.fid === fid && APPROVED(i));
     return { fid, f: FACTORIES[fid], live, esc: live.filter((a) => a.escalated), open: live.filter((a) => a.status !== 'watch'),
       todo: n('todo'), back: n('back'), claimed: n('claimed'), fixed: n('fixed'), last, visit: s.visits[fid], items };
   }
