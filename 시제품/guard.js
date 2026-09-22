@@ -359,8 +359,9 @@ function nvMount() {
     NV.map.fitBounds(new N.LatLngBounds(new N.LatLng(b.s, b.w), new N.LatLng(b.n, b.e)), { top: 44, right: 20, bottom: 16, left: 20 });
   }
 }
-// 방문일 정하기 — 달력에서 날짜를 누르고 오전/오후를 고른다 (2026-09-22 사용자 요청: 날짜 다섯 개 단추 → 달력).
+// 방문일 정하기 — 달력에서 날짜를 누르고 시간을 고른다 (2026-09-22 사용자 요청: 날짜 다섯 개 단추 → 달력, 오전/오후 → 정시 단추).
 // 지난 날은 못 고르고, 다른 공장 방문이 잡힌 날엔 막대가 뜬다. 저장하면 캘린더 탭에 바로 오른다(방문일에서 그리므로).
+const HOURS = Array.from({ length: 10 }, (_, i) => `${String(8 + i).padStart(2, '0')}:00`);  // 08:00~17:00
 function dateSheet(s) {
   const sh = UI.sheet, f = FACTORIES[sh.fid], y = TODAY.y, m = sh.m;
   const first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
@@ -379,7 +380,7 @@ function dateSheet(s) {
       <button class="cmv nx" data-act="sheetM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
     <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
     <div class="lbl">시간</div>
-    <div class="seg">${['오전', '오후'].map((d) => `<button class="${sh.tm === d ? 'on' : ''}" data-act="pickTm" data-v="${d}">${d}</button>`).join('')}</div>
+    <div class="tgrid">${HOURS.map((d) => `<button class="${sh.tm === d ? 'on' : ''}" data-act="pickTm" data-v="${d}">${d}</button>`).join('')}</div>
     <div class="dpick${picked ? '' : ' none'}">${picked ? `${I('calendar', 16)} ${picked} ${sh.tm} 방문` : '달력에서 날짜를 골라 주세요'}</div>
     <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveDate" ${sh.d ? '' : 'disabled'}>저장</button></div>
   </div>`;
@@ -683,7 +684,7 @@ const ACTS = {
   closeSheet() { sheet(null); },
   date({ fid }) {
     const v = DB.s.visits[fid], d = visitDay(v);  // 이미 잡힌 날이 있으면 그 달·그 날을 골라 둔 채로 연다
-    sheet({ type: 'date', fid, m: d ? d.m : TODAY.m, pm: d ? d.m : null, d: d ? d.d : null, tm: v && /1[2-9]:|오후/.test(v) ? '오후' : '오전' });
+    sheet({ type: 'date', fid, m: d ? d.m : TODAY.m, pm: d ? d.m : null, d: d ? d.d : null, tm: (v && v.match(/\d+:\d+/)?.[0].padStart(5, '0')) || (v && /오후/.test(v) ? '13:00' : '10:00') });
   },
   pickD({ v }) { UI.sheet.pm = UI.sheet.m; UI.sheet.d = +v; render(); },
   sheetM({ v }) { UI.sheet.m = Math.min(12, Math.max(TODAY.m, UI.sheet.m + +v)); render(); },
