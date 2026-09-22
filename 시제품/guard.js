@@ -1,7 +1,7 @@
 // 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, pin: null, sort: 'urgent' };
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, pin: null, sort: 'near' };
 const SRC = { base: '기본', prev: '지난번 문제', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -35,18 +35,12 @@ function kmTo([x, y]) {
   const a = Math.sin(((y - y0) * rad) / 2) ** 2 + Math.cos(y0 * rad) * Math.cos(y * rad) * Math.sin(((x - x0) * rad) / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(a));
 }
-const SORTS = [['urgent', '급한 순'], ['near', '거리순'], ['date', '방문일순']];
-// 방문일을 셀 수 있게 — 오늘 0, 9/18 → 1 … , 안 정함은 맨 뒤
-const dayKey = (v) => { if (!v) return 9999; if (v.startsWith('오늘')) return 0; const m = v.match(/(\d+)\/(\d+)/); return m ? +m[1] * 100 + +m[2] - 917 : 9998; };
+// 탭 둘 — 거리순(할 일 전체) · 재점검(공장주가 고쳤다고 한 곳만). 참고 앱의 "거리순 · 선호매장" 짜임 (2026-09-22 사용자 결정)
+const SORTS = [['near', '거리순'], ['re', '재점검']];
+// 가까운 순 — 다만 반려된 점검은 거리와 상관없이 맨 위 (가장 먼저 처리할 일이 아래로 묻히지 않게)
 function sortTasks(s, t) {
-  const today = (x) => (s.visits[x.fid] || '').startsWith('오늘');
-  const rank = (x) => (x.kind === 'back' ? 0 : today(x) ? 1 : x.kind === 're' ? 2 : 3);  // 반려 → 오늘 방문 → 재점검 → 새로 갈 곳
-  const by = {
-    urgent: (a, b) => rank(a) - rank(b) || dayKey(s.visits[a.fid]) - dayKey(s.visits[b.fid]),
-    near: (a, b) => kmTo(FACTORIES[a.fid].ll) - kmTo(FACTORIES[b.fid].ll),
-    date: (a, b) => dayKey(s.visits[a.fid]) - dayKey(s.visits[b.fid]) || rank(a) - rank(b),
-  }[UI.sort];
-  return [...t].sort(by);
+  const backFirst = (a, b) => (b.kind === 'back') - (a.kind === 'back');
+  return [...t].sort((a, b) => backFirst(a, b) || kmTo(FACTORIES[a.fid].ll) - kmTo(FACTORIES[b.fid].ll));
 }
 // 임시 사진 — 공장 건물 그림 (실제 사진이 들어갈 자리)
 const PHOTO = { daesung: ['#cfdbea', '#7f94b3'], hanbit: ['#d6e5d3', '#7e9d79'], dongbang: ['#eadfce', '#a88f6c'], taegwang: ['#dcd9ec', '#8b84b5'] };
@@ -80,8 +74,8 @@ function fcard(s, x) {
     </div></div>`;
 }
 function home(s) {
-  const t = sortTasks(s, tasks(s));
-  const nToday = t.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).length;
+  const all = tasks(s), nToday = all.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).length;
+  const t = sortTasks(s, UI.sort === 're' ? all.filter((x) => x.kind === 're') : all);
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
     <div class="ghello"><span class="gav">${I('user', 30)}</span><div><b>안녕하세요, ${ME}님</b>
@@ -90,8 +84,8 @@ function home(s) {
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
-    <div class="gsub">할 일 ${t.length}곳${UI.sort === 'near' ? ` · ${ORIGIN.name}에서 잰 거리<span class="hyp">가설</span>` : ''}</div>
-    ${t.map((x) => fcard(s, x)).join('') || '<div class="stat"><div class="mid">할 일이 없어요</div></div>'}
+    <div class="gsub">${UI.sort === 're' ? `재점검 ${t.length}곳 · 공장주가 "고쳤어요"를 누른 곳` : `할 일 ${t.length}곳`} · ${ORIGIN.name}에서 가까운 순<span class="hyp">가설</span></div>
+    ${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.sort === 're' ? '다시 볼 곳이 없어요' : '할 일이 없어요'}</div></div>`}
     <div class="proto">시제품 · 가상 데이터 · 사진은 임시</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
