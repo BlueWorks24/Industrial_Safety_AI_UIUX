@@ -85,14 +85,38 @@ function home(s) {
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
     <div class="ghello"><span class="gav">${I('user', 30)}</span><div><b>안녕하세요, ${ME}님</b>
-      <span>9월 17일 목요일 · ${TEAM.name}${nToday ? ` · 오늘 방문 ${nToday}곳` : ''}</span></div>
+      <span class="ghsub">9월 17일 목요일 · ${TEAM.name}${nToday ? ` · 오늘 방문 ${nToday}곳` : ''}</span></div>
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
+    ${recentVisit(s)}${homeActs(s)}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
     <div class="gsub">할 일 ${t.length}곳${UI.sort === 'near' ? ` · ${ORIGIN.name}에서 잰 거리<span class="hyp">가설</span>` : ''}</div>
     ${t.map((x) => fcard(s, x)).join('') || '<div class="stat"><div class="mid">할 일이 없어요</div></div>'}
     <div class="proto">시제품 · 가상 데이터 · 사진은 임시</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
+}
+
+// 최근 방문한 곳 — 참고 앱의 "최근방문매장" 자리. 내가 마지막으로 점검한 곳과 그 점검의 상태 (2026-09-22)
+function recentVisit(s) {
+  const ins = s.inspections.find((i) => i.by === ME);
+  if (!ins) return '';
+  const f = FACTORIES[ins.fid], st = ins.st || 'ok', bad = ins.items.filter((x) => x.answer === 'bad').length;
+  return `<div class="gvisit"><div class="gvt">최근 방문한 곳</div>
+    <div class="gvrow"><div class="gvtx">
+      <div class="gvkm">${I('pin', 15)} ${kmTo(f.ll).toFixed(1)}km</div>
+      <b>${f.name}</b><div class="gvsub">화성시 ${f.dong} · ${ins.date} 점검 · 문제 ${bad}개</div>
+      <div class="gvst"><span class="stt s-${st}">${ST_WORD[st]}</span></div>
+      <button class="fbtn gvbtn" data-go="pre/${ins.fid}">공장 보기 ${I('chevron', 16)}</button></div>
+      <button class="gvph" data-go="pre/${ins.fid}" aria-label="${f.name}">${facPhoto(ins.fid)}</button></div></div>`;
+}
+// 그 아래 할 일 단추 — 보고서 쓰기 · 점검 결과 보기
+function homeActs(s) {
+  const w = weekCounts(s), done = (s.weekly || {})[WEEK.key];
+  const mine = s.inspections.filter((i) => i.by === ME), n = (st) => mine.filter((i) => (i.st || 'ok') === st).length;
+  const res = [n('wait') ? `검사 대기 ${n('wait')}` : '', n('back') ? `반려 ${n('back')}` : '', `승인 ${n('ok')}`].filter(Boolean).join(' · ');
+  return `<div class="gacts">
+    <button class="gact${done ? ' done' : ''}" data-go="weekly">${I('list', 20)}<span><b>${done ? '이번 주 주간 보고를 냈어요' : '주간 보고 쓰기'}</b><small>${WEEK.label} · 점검 ${w.firms}곳</small></span>${I('chevron', 20)}</button>
+    <button class="gact line" data-go="records">${I('folder', 20)}<span><b>점검 결과 보기</b><small>${res}</small></span>${I('chevron', 20)}</button></div>`;
 }
 
 /* ---------- 지도 (하단바) — 예전 내 할 일의 지도 보기를 옮겼다 ---------- */

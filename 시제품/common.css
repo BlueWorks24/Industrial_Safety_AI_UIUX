@@ -457,7 +457,8 @@ svg.i{flex:none;vertical-align:-.18em}
 .gav{flex:none;width:56px;height:56px;border-radius:50%;background:#e5e7eb;color:#9ca3af;display:grid;place-items:center}
 .ghello > div{flex:1;min-width:0}
 .ghello b{display:block;font-size:20px;font-weight:800;letter-spacing:-.03em}
-.ghello span{display:block;font-size:14px;color:var(--mid);margin-top:2px}
+/* 아래 줄만 — 프로필 동그라미(.gav)도 span이라 넓게 걸면 가운데 맞춤이 풀린다 */
+.ghello .ghsub{display:block;font-size:14px;color:var(--mid);margin-top:2px}
 .ghello .live{flex:none}
 /* 정렬 탭 — 밑줄 */
 .gtabs{display:flex;margin:6px -16px 0;padding:0 16px;border-bottom:1px solid var(--line)}
@@ -488,3 +489,25 @@ svg.i{flex:none;vertical-align:-.18em}
 .gnav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;border:none;border-radius:20px;background:none;font:inherit;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer}
 .gnav button.on{background:#f1f2f4;color:var(--ink)}
 .scr:has(+ .gnav) .ft{bottom:84px}
+/* 최근 방문한 곳 — 폭 전체를 쓰는 칸, 오른쪽에 사진 (2026-09-22, 참고 앱의 "최근방문매장") */
+.gvisit{margin:4px -16px 0;padding:16px 16px 18px;background:#2b4c7e;color:#fff}
+.gvt{font-size:18px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px}
+.gvrow{display:flex;gap:14px;align-items:center}
+.gvtx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.gvkm{display:flex;align-items:center;gap:4px;font-size:13px;color:#d5def0}
+.gvtx b{font-size:20px;font-weight:800;letter-spacing:-.03em}
+.gvsub{font-size:13px;color:#d5def0}
+.gvst .stt{margin-top:2px}
+.gvbtn{background:#16284d}
+.gvph{flex:none;width:132px;height:96px;padding:0;border:none;border-radius:12px;overflow:hidden;background:none;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.gvph .fph{width:100%;height:100%}
+/* 할 일 단추 두 줄 — 주간 보고 쓰기 · 점검 결과 보기 */
+.gacts{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.gact{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:10px 14px 10px 16px;border:none;border-radius:12px;background:var(--brand);color:#fff;text-align:left;font:inherit;cursor:pointer}
+.gact span{flex:1;min-width:0;display:flex;flex-direction:column}
+.gact b{font-size:16px;font-weight:800}
+.gact small{font-size:13px;opacity:.85}
+.gact.done{background:#eef2fb;color:var(--brand)}
+.gact.line{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1px var(--line2)}
+.gact.line small{color:var(--mid);opacity:1}
+
