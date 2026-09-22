@@ -1,7 +1,7 @@
 // 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, view: 'list', pin: null };
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, pin: null, sort: 'urgent' };
 const SRC = { base: '기본', prev: '지난번 문제', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -25,70 +25,88 @@ const bar = () => appBar('안전지킴이', '산업안전지킴이', `<button cl
 const head = (title, go = '', end = '') => `<div class="apptop">${band(title, go, end)}${bar()}</div>`;
 const unsentN = (s) => s.outbox.guard.length;
 
-/* ---------- G1 홈 ---------- */
-function todayPlan(s, t) {
-  const today = t.filter((x) => (s.visits[x.fid] || '').startsWith('오늘'));
-  return `<div class="sect"><h2>오늘 일정</h2>${today.length ? today.map((x) => `<button class="frow" data-go="pre/${x.fid}">
-      <span class="fic">${I('pin', 18)}</span><span class="ftx"><b>${FACTORIES[x.fid].name} ${x.kind === 're' ? `재점검 ${x.n}개` : '첫 점검'}</b><small>${FACTORIES[x.fid].area}</small></span>
-      <span class="fd">${s.visits[x.fid].replace('오늘 ', '')}</span></button>`).join('') : '<p class="note">오늘 잡힌 방문이 없어요.</p>'}</div>`;
+/* ---------- G1 홈 = 공장 목록 (2026-09-22, 사용자가 준 세차장 예약 앱 구성을 참고) ----------
+   머리글 아래 프로필과 인삿말 → 정렬 탭(급한 순·거리순·방문일순) → 공장 카드(사진·이름·위치·거리·단추) → 아래에 하단바.
+   예전의 "내 할 일" 화면과 2×2 메뉴는 이 목록과 하단바로 합쳐졌다. 사진은 임시 그림이다. */
+// 거리 기준 — 화성산업진흥원(봉담) 근처의 대략 좌표. 실제 앱은 지금 위치로 잰다 (가설)
+const ORIGIN = { name: '진흥원(봉담)', ll: [126.955, 37.214] };
+function kmTo([x, y]) {
+  const R = 6371, rad = Math.PI / 180, [x0, y0] = ORIGIN.ll;
+  const a = Math.sin(((y - y0) * rad) / 2) ** 2 + Math.cos(y0 * rad) * Math.cos(y * rad) * Math.sin(((x - x0) * rad) / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+const SORTS = [['urgent', '급한 순'], ['near', '거리순'], ['date', '방문일순']];
+// 방문일을 셀 수 있게 — 오늘 0, 9/18 → 1 … , 안 정함은 맨 뒤
+const dayKey = (v) => { if (!v) return 9999; if (v.startsWith('오늘')) return 0; const m = v.match(/(\d+)\/(\d+)/); return m ? +m[1] * 100 + +m[2] - 917 : 9998; };
+function sortTasks(s, t) {
+  const today = (x) => (s.visits[x.fid] || '').startsWith('오늘');
+  const rank = (x) => (x.kind === 'back' ? 0 : today(x) ? 1 : x.kind === 're' ? 2 : 3);  // 반려 → 오늘 방문 → 재점검 → 새로 갈 곳
+  const by = {
+    urgent: (a, b) => rank(a) - rank(b) || dayKey(s.visits[a.fid]) - dayKey(s.visits[b.fid]),
+    near: (a, b) => kmTo(FACTORIES[a.fid].ll) - kmTo(FACTORIES[b.fid].ll),
+    date: (a, b) => dayKey(s.visits[a.fid]) - dayKey(s.visits[b.fid]) || rank(a) - rank(b),
+  }[UI.sort];
+  return [...t].sort(by);
+}
+// 임시 사진 — 공장 건물 그림 (실제 사진이 들어갈 자리)
+const PHOTO = { daesung: ['#cfdbea', '#7f94b3'], hanbit: ['#d6e5d3', '#7e9d79'], dongbang: ['#eadfce', '#a88f6c'], taegwang: ['#dcd9ec', '#8b84b5'] };
+function facPhoto(fid) {
+  const [sky, wall] = PHOTO[fid] || ['#dde3ea', '#98a3b3'];
+  return `<svg class="fph" viewBox="0 0 120 88" role="img" aria-label="공장 사진 (임시)"><rect width="120" height="88" fill="${sky}"/>
+    <rect x="96" y="12" width="7" height="24" fill="#6b7280"/><path d="M8 72V42l18-11v11l18-11v11l18-11v41z" fill="${wall}"/>
+    <rect x="62" y="32" width="46" height="40" fill="${wall}" opacity=".8"/>
+    ${[70, 82, 94].map((x) => `<rect x="${x}" y="40" width="8" height="8" fill="#fff" opacity=".75"/>`).join('')}
+    <rect x="18" y="56" width="16" height="16" fill="#fff" opacity=".55"/><rect x="0" y="72" width="120" height="16" fill="#b9bfc8"/></svg>`;
+}
+// 공장 카드 — 사진 · 이름 + 상태 · 위치 · 거리 · 방문일 · 그 상태에 맞는 단추 하나
+function fcard(s, x) {
+  const f = FACTORIES[x.fid], v = s.visits[x.fid];
+  const [tw, tc] = { back: ['반려', 't-back'], re: [`재점검 ${x.n || ''}`.trim(), 't-re'], first: ['첫 점검', 't-first'] }[x.kind];
+  const go = `${I('chevron', 16)}`;
+  const btn = x.kind === 'back' ? `<button class="fbtn" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기 ${go}</button>`
+    : !v ? `<button class="fbtn line" data-act="date" data-fid="${x.fid}">방문일 정하기 ${go}</button>`
+    : x.kind === 're' ? `<button class="fbtn" data-go="re/${x.fid}">재점검 시작 ${go}</button>`
+    : `<button class="fbtn" data-act="newDraft" data-fid="${x.fid}">점검 시작 ${go}</button>`;
+  const when = x.kind === 'back' ? `<div class="fwhen note">${x.ins.back.at} 반려 · ${esc(x.ins.back.note)}</div>`
+    : v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문<button class="fchg" data-act="date" data-fid="${x.fid}">바꾸기</button></div>`
+    : '<div class="fwhen none">방문일 안 정함</div>';
+  return `<div class="fcard">
+    <button class="fphw" data-go="pre/${x.fid}" aria-label="${f.name} 자세히">${facPhoto(x.fid)}</button>
+    <div class="fbody">
+      <div class="fnm"><button class="fname" data-go="pre/${x.fid}">${f.name}</button><span class="ftag ${tc}">${tw}</span></div>
+      <div class="floc">화성시 ${f.dong}</div>
+      <div class="fmeta">${kmTo(f.ll).toFixed(1)}km · ${f.type} · ${f.workers}명</div>
+      ${when}${btn}
+    </div></div>`;
 }
 function home(s) {
-  const t = tasks(s);
-  const noDate = t.filter((x) => x.kind !== 'back' && !s.visits[x.fid]).length;
-  const nBack = t.filter((x) => x.kind === 'back').length;
-  const nWait = s.inspections.filter((i) => i.st === 'wait' && i.by === ME).length;
+  const t = sortTasks(s, tasks(s));
+  const nToday = t.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).length;
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
-    <div class="today"><div><b>9월 17일 목요일</b><span>${TEAM.name} · 권역 ${TEAM.areas.join('·')}</span></div>
+    <div class="ghello"><span class="gav">${I('user', 30)}</span><div><b>안녕하세요, ${ME}님</b>
+      <span>9월 17일 목요일 · ${TEAM.name}${nToday ? ` · 오늘 방문 ${nToday}곳` : ''}</span></div>
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
-    ${kcard({ t: '할 일', v: t.length, unit: '곳', go: 'todo', more: '내 할 일 보기',
-      rows: [...(nBack ? [['반려됨 · 다시 내기', nBack + '곳']] : []), ['재점검', t.filter((x) => x.kind === 're').length + '곳'], ['새로 갈 곳', t.filter((x) => x.kind === 'first').length + '곳'], ['날짜 안 정함', noDate + '곳']] })}
-    ${todayPlan(s, t)}
-    <div class="tiles">
-      <button class="tile" data-go="records"><span class="ic">${I('folder', 24)}</span><b>내 점검 기록${nWait ? `<br><span class="stt s-wait">검사 대기 ${nWait}</span>` : ''}</b></button>
-      <button class="tile" data-go="weekly"><span class="ic">${I('list', 24)}</span><b>주간 보고</b></button>
-      <button class="tile" data-go="soon/factories"><span class="ic">${I('factory', 24)}</span><b>우리 권역</b></button>
-    </div>
-    <div class="proto">시제품 · 가상 데이터</div>
-  </div></div>`;
-}
-
-/* ---------- G2 내 할 일 ---------- */
-function todo(s) {
-  const t = tasks(s);
-  const card = (x) => {
-    const f = FACTORIES[x.fid], v = s.visits[x.fid];
-    const sub = x.kind === 're'
-      ? `${f.area} · 공장주가 "고쳤어요" 누름 · ${x.q.map((e) => e.it.log[e.it.log.length - 1].at).filter((v, i, a) => a.indexOf(v) === i).join(', ')}`
-      : `${f.area} · ${f.type} · ${f.workers}명`;
-    return `<div class="task${x.kind === 're' ? ' re' : ''}">
-      <button class="q" style="border:none;padding:0" data-go="pre/${x.fid}"><div class="nm"><b>${f.name}</b><span class="ans">${x.kind === 're' ? `재점검 ${x.n}개` : '첫 점검'} ›</span></div>
-      <div class="small">${sub}</div></button>
-      ${v ? `<div class="row"><span class="small ink" style="font-weight:700;flex:1;display:flex;align-items:center;gap:6px">${I('calendar', 17)} ${v} 방문</span><button class="btn ghost sm" style="flex:0 0 84px" data-act="date" data-fid="${x.fid}">바꾸기</button></div>`
-          : `<button class="btn ghost sm" data-act="date" data-fid="${x.fid}">${I('calendar', 18)} 날짜 정하기</button>`}
-    </div>`;
-  };
-  const backCard = (x) => `<div class="task re">
-      <div class="nm"><b>${FACTORIES[x.fid].name}</b><span class="stt s-back">반려됨</span></div>
-      <div class="small">${x.ins.date} 점검 · ${x.ins.back.at} 운영자 반려</div>
-      <div class="small ink">"${esc(x.ins.back.note)}"</div>
-      <button class="btn sm" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기</button>
-    </div>`;
-  // 권역(읍·면·동)으로 걸러 본다 — 조가 맡은 공장이 많아지면 이것부터 쓴다
-  const inArea = (x) => !UI.area || FACTORIES[x.fid].area === UI.area;
-  const bk = t.filter((x) => x.kind === 'back' && inArea(x)), re = t.filter((x) => x.kind === 're' && inArea(x)), fr = t.filter((x) => x.kind === 'first' && inArea(x));
-  return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('내 할 일', '', `<span class="small">${TEAM.name} · ${t.length}곳</span>`)}${pageIntro('내 할 일')}
-    <div class="seg">${[['list', '목록'], ['map', '지도']].map(([v, w]) => `<button class="${UI.view === v ? 'on' : ''}" data-act="view" data-v="${v}">${w}</button>`).join('')}</div>
-    <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
-    ${UI.view === 'map' ? taskMap(s, [...bk, ...re, ...fr], (x) => (x.kind === 'back' ? backCard(x) : card(x))) : `
-    ${bk.length ? `<div class="lbl">반려됨 · 고쳐서 다시 내요</div>${bk.map(backCard).join('')}` : ''}
-    ${re.length ? `<div class="lbl">재점검</div>${re.map(card).join('')}` : ''}
-    ${fr.length ? `<div class="lbl">새로 갈 곳 · 우리 조 권역</div>${fr.map(card).join('')}` : ''}
-    ${bk.length + re.length + fr.length ? '' : `<div class="stat"><div class="mid">${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요</div></div>`}`}
+    <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
+    <div class="gsub">할 일 ${t.length}곳${UI.sort === 'near' ? ` · ${ORIGIN.name}에서 잰 거리<span class="hyp">가설</span>` : ''}</div>
+    ${t.map((x) => fcard(s, x)).join('') || '<div class="stat"><div class="mid">할 일이 없어요</div></div>'}
+    <div class="proto">시제품 · 가상 데이터 · 사진은 임시</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
+
+/* ---------- 지도 (하단바) — 예전 내 할 일의 지도 보기를 옮겼다 ---------- */
+function mapScreen(s) {
+  const list = sortTasks(s, tasks(s)).filter((x) => !UI.area || FACTORIES[x.fid].area === UI.area);
+  return `${sbar('지킴이')}<div class="scr"><div class="bd">
+    ${head('지도', '', `<span class="small">${TEAM.name} · ${list.length}곳</span>`)}
+    <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
+    ${taskMap(s, list, (x) => fcard(s, x))}
+  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
+}
+// 하단바 — 첫 단계 화면에만 붙는다 (점검 도중에는 없음)
+const NAV = [['', '홈', 'home'], ['map', '지도', 'pin'], ['records', '점검 기록', 'folder'], ['weekly', '주간 보고', 'list'], ['soon/me', '내 정보', 'user']];
+const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, ic]) => `<button class="${on === go ? 'on' : ''}" data-go="${go}"${on === go ? ' aria-current="page"' : ''}>${I(ic, 22)}<span>${w}</span></button>`).join('')}</nav>`;
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
    신호가 약해도 테두리와 핀은 보이게 하려는 것이다. 핀은 할 일 종류마다 모양과 말이 다르다(색만으로 가르지 않는다). */
@@ -234,7 +252,7 @@ function pre(s, fid) {
   const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid).slice(0, 2);
   const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
   return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head(f.name, 'todo', `<span class="small">${q.length ? `재점검 ${q.length}개` : '첫 점검'}</span>`)}
+    ${head(f.name, '', `<span class="small">${q.length ? `재점검 ${q.length}개` : '첫 점검'}</span>`)}
     ${miniMap(f)}
     <div class="place"><b>${f.area} · ${f.type} · 근로자 ${f.workers}명</b>${s.visits[fid] ? `<span class="small">${I('calendar', 15)} ${s.visits[fid]} 방문</span>` : ''}</div>
     <button class="maplink" data-act="openMap">${I('globe', 17)} 지도 앱으로 열기</button>
@@ -343,7 +361,7 @@ function checkList(s) {
   const bad = d.items.filter((x) => x.answer === 'bad');
   const only = UI.only && left;
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
-  const top = `<div class="apptop">${band((redo ? '고쳐 내기 · ' : '점검 중 · ') + f.name, redo ? 'todo' : 'pick')}${bar()}
+  const top = `<div class="apptop">${band((redo ? '고쳐 내기 · ' : '점검 중 · ') + f.name, redo ? '' : 'pick')}${bar()}
     <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} <span class="small">· ${CHECKLIST.ver}</span></span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
     <div class="prog">${['ok', 'bad', 'na'].map((v) => `<i class="${v}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div>
     <div class="tally"><span class="ok">✓ ${ANS.ok} ${nOk}</span><span class="bad">⚠ ${ANS.bad} ${nBad}</span>${nNa ? `<span class="na">— ${ANS.na} ${nNa}</span>` : ''}${left ? `<span>안 본 것 ${left}</span>` : ''}</div></div></div>`;
@@ -502,9 +520,10 @@ function render() {
   let html;
   const needFirst = ['photo', 'ai', 'pick', 'list', 'ans', 'sum'].includes(p[0]);
   if (needFirst && !(d && d.kind === 'first')) { R.go(''); return; }
-  if (p[0] === 'todo') html = todo(s);
+  if (p[0] === 'todo') { R.go(''); return; }  // 옛 주소 — 내 할 일은 홈 목록이 되었다 (2026-09-22)
+  else if (p[0] === 'map') html = mapScreen(s);
   else if (p[0] === 'pre') html = pre(s, p[1]);
-  else if (p[0] === 'start') { R.go('todo'); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
+  else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
   else if (p[0] === 'photo') html = photo(s);
   else if (p[0] === 'ai') html = aiWait(s);
   else if (p[0] === 'pick') html = pickScreen(s);
@@ -519,6 +538,8 @@ function render() {
   else html = home(s);
   const keep = document.activeElement && document.activeElement.id;
   const val = keep && document.activeElement.value;
+  const top = p.join('/');
+  if (['', 'map', 'records', 'weekly', 'soon/me'].includes(top)) html += gnav(top);
   $('#app').innerHTML = html;
   if (NV.st === 'ready') nvMount();
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
@@ -595,7 +616,7 @@ const ACTS = {
   ansBad({ n }) { sheet({ type: 'bad', n: +n, photo: !!DB.s.draft.items[+n].shot }); },
   fold({ k }) { UI.fold[k] = !UI.fold[k]; render(); },
   area({ v }) { UI.area = v === '전체' ? null : v; UI.pin = null; render(); },
-  view({ v }) { UI.view = v; UI.pin = null; render(); },
+  sort({ v }) { UI.sort = v; render(); },
   pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },
   pickResult({ v }) { DB.act((s) => { s.draft.result = v; }); },
   // 반려된 점검을 연다 — 답은 그대로 두고 고친다 (2026-09-22)
