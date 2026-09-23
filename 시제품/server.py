@@ -1,8 +1,8 @@
 """시제품 서버 — 파일을 내주고, 임시 DB(SQLite)에 계정과 화면 데이터를 둔다.
 
 UI/UX 연구용이다. 진짜 서비스의 서버 구조가 아니다.
-- 계정: 공장주·운영자 아이디/비밀번호 (시험 편의 — 설계는 번호 인증), 근로자는 초대로 들어온다
-- 앱(근로자)과 웹(공장주·운영자)은 로그인 쿠키를 따로 쓴다 (asid / sid)
+- 계정: 공장주·운영자·지킴이 아이디/비밀번호 (시험 편의 — 공장주 설계는 번호 인증), 근로자는 초대로 들어온다
+- 근로자 앱·지킴이 앱·웹(공장주·운영자)은 로그인 쿠키를 따로 쓴다 (asid / gsid / sid)
 - 화면 데이터: 가짜 서버 상태 하나를 JSON 한 덩어리로 둔다. 버전 번호로 여러 기기의 쓰기를 맞춘다.
 
 사용: python3 server.py [--port 8765] [--reset]
@@ -25,12 +25,17 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(ROOT, 'data', 'proto.db')
 LOCK = threading.Lock()
 
-# 시험용 계정 — (아이디, 비밀번호, 역할, 이름, 공장, 소속)
+# 시험용 계정 — (아이디, 비밀번호, 역할, 이름, 공장, 소속). 지킴이의 소속은 조 이름이다
 SEED_ACCOUNTS = [
     ('daesung', '1234', 'owner', '박대표', 'daesung', '대성정밀'),
     ('hanbit', '1234', 'owner', '최대표', 'hanbit', '한빛화학'),
     ('admin', '1234', 'operator', '이운영', None, '산업안전지킴이 운영센터'),
+    ('guard1', '1234', 'guard', '김지킴', None, '전기 1조'),
+    ('guard2', '1234', 'guard', '이조장', None, '전기 1조'),
 ]
+# 로그인하는 곳마다 들어올 수 있는 역할과 쿠키 이름 (근로자는 초대로만 들어와 여기 없다)
+LOGIN_AT = {'web': (('owner', 'operator'), 'sid'), 'guard': (('guard',), 'gsid')}
+COOKIE = {'web': 'sid', 'app': 'asid', 'guard': 'gsid'}
 
 # 시험용 근로자 초대 — (코드, 이름, 공장, 언어, 일하는 곳, 상태)
 # open 초대는 시험을 여러 번 하도록 써도 닫지 않는다 (시험 편의). used·expired는 오류 화면 보기용.
@@ -60,7 +65,7 @@ def init_db(reset=False):
         con.executescript('''
         CREATE TABLE IF NOT EXISTS accounts (
           id INTEGER PRIMARY KEY, login TEXT UNIQUE NOT NULL, salt TEXT NOT NULL, pw TEXT NOT NULL,
-          role TEXT NOT NULL CHECK (role IN ('owner','operator','worker')), name TEXT NOT NULL, factory TEXT, org TEXT,
+          role TEXT NOT NULL CHECK (role IN ('owner','operator','worker','guard')), name TEXT NOT NULL, factory TEXT, org TEXT,
           lang TEXT, area TEXT);
         CREATE TABLE IF NOT EXISTS invites (
           code TEXT PRIMARY KEY, name TEXT NOT NULL, factory TEXT NOT NULL, lang TEXT, area TEXT,
@@ -70,8 +75,21 @@ def init_db(reset=False):
         CREATE TABLE IF NOT EXISTS state (
           id INTEGER PRIMARY KEY CHECK (id = 1), ver INTEGER NOT NULL, json TEXT, updated TEXT);
         ''')
-        if con.execute('SELECT COUNT(*) FROM accounts').fetchone()[0] == 0:
-            for login, pw, role, name, factory, org in SEED_ACCOUNTS:
+        # 지킴이 역할이 없던 옛 DB — 계정 표를 새 규칙으로 옮겨 담는다 (세션·화면 데이터는 그대로)
+        if "'guard'" not in con.execute("SELECT sql FROM sqlite_master WHERE name = 'accounts'").fetchone()[0]:
+            con.executescript('''
+            PRAGMA legacy_alter_table = ON;
+            ALTER TABLE accounts RENAME TO accounts_old;
+            CREATE TABLE accounts (
+              id INTEGER PRIMARY KEY, login TEXT UNIQUE NOT NULL, salt TEXT NOT NULL, pw TEXT NOT NULL,
+              role TEXT NOT NULL CHECK (role IN ('owner','operator','worker','guard')), name TEXT NOT NULL, factory TEXT, org TEXT,
+              lang TEXT, area TEXT);
+            INSERT INTO accounts SELECT * FROM accounts_old;
+            DROP TABLE accounts_old;
+            PRAGMA legacy_alter_table = OFF;
+            ''')
+        for login, pw, role, name, factory, org in SEED_ACCOUNTS:
+            if not con.execute('SELECT 1 FROM accounts WHERE login = ?', (login,)).fetchone():
                 salt = secrets.token_hex(8)
                 con.execute('INSERT INTO accounts (login,salt,pw,role,name,factory,org) VALUES (?,?,?,?,?,?,?)',
                             (login, salt, pw_hash(pw, salt), role, name, factory, org))
@@ -114,9 +132,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         n = int(self.headers.get('Content-Length') or 0)
         return json.loads(self.rfile.read(n) or b'{}')
 
-    def me(self, app=False):
+    def where(self, u):
+        # ?app=1 근로자 앱 · ?app=guard 지킴이 앱 · 없으면 웹
+        a = parse_qs(u.query).get('app', [''])[0]
+        return 'app' if a == '1' else 'guard' if a == 'guard' else 'web'
+
+    def me(self, where='web'):
         c = cookies.SimpleCookie(self.headers.get('Cookie') or '')
-        name = 'asid' if app else 'sid'
+        name = COOKIE[where]
         tok = c[name].value if name in c else None
         if not tok:
             return None
@@ -145,7 +168,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 rs = con.execute('SELECT * FROM invites WHERE factory = ? ORDER BY rowid DESC', (row['factory'],)).fetchall()
             return self.json_out(200, [dict(r) for r in rs])
         if u.path == '/api/me':
-            row = self.me(app=parse_qs(u.query).get('app') == ['1'])
+            row = self.me(self.where(u))
             return self.json_out(200, account_public(row)) if row else self.json_out(401, {'error': 'login'})
         if u.path == '/api/state':
             since = parse_qs(u.query).get('since', [None])[0]
@@ -161,13 +184,30 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         u = urlparse(self.path)
         if u.path == '/api/login':
             b = self.body()
+            roles, name = LOGIN_AT.get(self.where(u), LOGIN_AT['web'])
             with db() as con:
                 row = con.execute('SELECT * FROM accounts WHERE login = ?', ((b.get('login') or '').strip(),)).fetchone()
-                if not row or pw_hash(b.get('pw') or '', row['salt']) != row['pw']:
+                if not row or row['role'] not in roles or pw_hash(b.get('pw') or '', row['salt']) != row['pw']:
                     return self.json_out(401, {'error': '아이디 또는 비밀번호가 맞지 않아요'})
                 tok = secrets.token_urlsafe(24)
                 con.execute('INSERT INTO sessions VALUES (?,?,?)', (tok, row['id'], datetime.now().isoformat(timespec='seconds')))
-            return self.json_out(200, account_public(row), {'Set-Cookie': f'sid={tok}; Path=/; HttpOnly; SameSite=Lax'})
+            # 로그인 상태 유지를 고르면 30일 남고, 안 고르면 브라우저를 닫을 때 지워진다
+            age = '; Max-Age=2592000' if b.get('keep') else ''
+            return self.json_out(200, account_public(row), {'Set-Cookie': f'{name}={tok}; Path=/; HttpOnly; SameSite=Lax{age}'})
+        if u.path == '/api/password':
+            row = self.me(self.where(u))
+            if not row:
+                return self.json_out(401, {'error': 'login'})
+            b = self.body()
+            new = b.get('new') or ''
+            if pw_hash(b.get('old') or '', row['salt']) != row['pw']:
+                return self.json_out(400, {'error': '지금 비밀번호가 맞지 않아요', 'field': 'old'})
+            if len(new) < 4:
+                return self.json_out(400, {'error': '새 비밀번호는 4자 이상이어야 해요', 'field': 'new'})
+            salt = secrets.token_hex(8)
+            with db() as con:
+                con.execute('UPDATE accounts SET salt = ?, pw = ? WHERE id = ?', (salt, pw_hash(new, salt), row['id']))
+            return self.json_out(200, {'ok': True})
         if u.path == '/api/invite/create':
             row = self.me()
             if not row or row['role'] != 'owner':
@@ -206,8 +246,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 con.execute('INSERT INTO sessions VALUES (?,?,?)', (tok, row['id'], datetime.now().isoformat(timespec='seconds')))
             return self.json_out(200, account_public(row), {'Set-Cookie': f'asid={tok}; Path=/; HttpOnly; SameSite=Lax'})
         if u.path == '/api/logout':
-            app = parse_qs(u.query).get('app') == ['1']
-            name = 'asid' if app else 'sid'
+            name = COOKIE[self.where(u)]
             c = cookies.SimpleCookie(self.headers.get('Cookie') or '')
             if name in c:
                 with db() as con:

@@ -1,7 +1,8 @@
-// 지킴이 앱 — 시안 G1~G9. 로그인한 사람은 김지킴(전기 1조 조원)이다.
+// 지킴이 앱 — 시안 G1~G9. 아이디·비밀번호로 로그인한다 (2026-09-23, 시험 계정 guard1 김지킴·guard2 이조장, 둘 다 전기 1조).
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
-const ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false };
+let ACC = null;      // 로그인한 지킴이 { login, name, org }
+let ME = '김지킴';
+const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {} };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -18,7 +19,7 @@ function tasks(s) {
   return t;
 }
 // 앱 머리글 + 위치 띠 — 웹과 같은 결
-const bar = () => appBar('안전지킴이', '산업안전지킴이', `<button class="me" data-go="soon/me">${ME} ›</button>`);
+const bar = () => appBar('안전지킴이', '산업안전지킴이', `<button class="me" data-go="me">${ME} ›</button>`);
 const head = (title, go = '', end = '') => `<div class="apptop">${band(title, go, end)}${bar()}</div>`;
 const unsentN = (s) => s.outbox.guard.length;
 // 여러 정보를 "·"로 한 줄에 잇지 않는다 (2026-09-22 사용자 지시) — 이름표·값 두 칸 표와 작은 꼬리표로 나눠 보인다
@@ -63,18 +64,29 @@ function sortTasks(s, t, mode = 'near') {
   const date = (a, b) => { const x = whenKey(s.visits[a.fid]), y = whenKey(s.visits[b.fid]); return x === y ? 0 : x < y ? -1 : 1; };
   return [...t].sort((a, b) => backFirst(a, b) || (mode === 'date' ? date(a, b) || near(a, b) : near(a, b)));
 }
-// 임시 사진 — 공장 건물 그림 (실제 사진이 들어갈 자리)
-const PHOTO = { daesung: ['#cfdbea', '#7f94b3'], hanbit: ['#d6e5d3', '#7e9d79'], dongbang: ['#eadfce', '#a88f6c'], taegwang: ['#dcd9ec', '#8b84b5'],
-  saehan: ['#d3e3ec', '#6f97ad'], ujin: ['#ece0e6', '#b0879a'], seongwon: ['#e4e4dc', '#9a9a7c'], donghwa: ['#dfe7f2', '#8a9fc0'], hangyeol: ['#e3eadf', '#8fa482'], mirae: ['#efe6d8', '#b59a73'] };
-function facPhoto(fid) {
-  const [sky, wall] = PHOTO[fid] || ['#dde3ea', '#98a3b3'];
-  return `<svg class="fph" viewBox="0 0 120 88" role="img" aria-label="공장 사진 (임시)"><rect width="120" height="88" fill="${sky}"/>
-    <rect x="96" y="12" width="7" height="24" fill="#6b7280"/><path d="M8 72V42l18-11v11l18-11v11l18-11v41z" fill="${wall}"/>
-    <rect x="62" y="32" width="46" height="40" fill="${wall}" opacity=".8"/>
-    ${[70, 82, 94].map((x) => `<rect x="${x}" y="40" width="8" height="8" fill="#fff" opacity=".75"/>`).join('')}
-    <rect x="18" y="56" width="16" height="16" fill="#fff" opacity=".55"/><rect x="0" y="72" width="120" height="16" fill="#b9bfc8"/></svg>`;
+// 공장 자리 지도 — 공장이 있는 읍·면·동 테두리 + 핀 (2026-09-23 사용자 결정: 공장 사진은 찍어 모으기 어려워 첫 단계에서 못 한다 → 지도로).
+// 카드마다 네이버 지도를 부르면 목록이 느려지고 사용량이 늘어서, 가진 경계 자료(geo.js)로 직접 그린다. 공장마다 한 번 그려 둔다
+const MINI = {};
+function facMini(fid, AR = 4 / 3) {  // AR: 칸 가로:세로
+  const key = fid + AR;
+  if (MINI[key]) return MINI[key];
+  const f = FACTORIES[fid], d = HWASEONG.find((h) => h.name === f.dong);
+  const [px, py] = mxy(f.ll);
+  let x0 = px - 2500, x1 = px + 2500, y0 = py - 2000, y1 = py + 2000;  // 동을 못 찾으면 공장 둘레 몇 km
+  if (d) ({ x0, y0, x1, y1 } = bboxOf([d.name]));
+  let w = (x1 - x0) * 1.15, h = (y1 - y0) * 1.15;
+  if (w / h > AR) h = w / AR; else w = h * AR;
+  const vx = (x0 + x1) / 2 - w / 2, vy = (y0 + y1) / 2 - h / 2;
+  const path = (polys) => polys.map((p) => p.map((r) => 'M' + r.map((c) => mxy(c).map((v) => v.toFixed(0)).join(',')).join('L') + 'Z').join('')).join('');
+  // 둘레의 동은 화면에 걸치는 것만 그린다
+  const near = HWASEONG.filter((h2) => h2 !== d && h2.polys.some((p) => p[0].some((c) => { const [x, y] = mxy(c); return x > vx && x < vx + w && y > vy && y < vy + h; })));
+  const r = Math.min(w, h) * 0.065;
+  return (MINI[key] = `<svg class="fph fmini" viewBox="${vx.toFixed(0)} ${vy.toFixed(0)} ${w.toFixed(0)} ${h.toFixed(0)}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${f.name} 위치 지도">
+    <rect x="${vx}" y="${vy}" width="${w}" height="${h}" class="fmbg"/>${near.map((h2) => `<path d="${path(h2.polys)}"/>`).join('')}
+    ${d ? `<path class="own" d="${path(d.polys)}"/>` : ''}
+    <circle cx="${px}" cy="${py}" r="${r * 2}" class="halo"/><circle cx="${px}" cy="${py}" r="${r}" class="dot"/></svg>`);
 }
-// 공장 카드 — 사진 · 이름 + 상태 · 위치 · 거리 · 방문일 · 그 상태에 맞는 단추 하나
+// 공장 카드 — 위치 지도 · 이름 + 상태 · 위치 · 거리 · 방문일 · 그 상태에 맞는 단추 하나
 function fcard(s, x) {
   const f = FACTORIES[x.fid], v = s.visits[x.fid], b = bookOf(s, x.fid);
   const go = `${I('chevron', 16)}`;
@@ -88,7 +100,7 @@ function fcard(s, x) {
   const when = x.kind === 'back' ? `<div class="fwhen">${x.ins.back.at} 운영자 반려</div><div class="fwhen note">${esc(x.ins.back.note)}</div>`
     : (v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문</div>` : b ? '' : '<div class="fwhen none">예약 안 함</div>') + req;
   return `<div class="fcard">
-    <button class="fphw" data-go="pre/${x.fid}" aria-label="${f.name} 자세히">${facPhoto(x.fid)}</button>
+    <button class="fphw" data-go="pre/${x.fid}" aria-label="${f.name} 자세히">${facMini(x.fid)}</button>
     <div class="fbody">
       <div class="fnm"><button class="fname" data-go="pre/${x.fid}">${f.name}</button>${x.kind === 'back' ? '<span class="ftag t-back">반려</span>' : ''}</div>
       <div class="floc">화성시 ${f.dong}</div>
@@ -113,7 +125,7 @@ function home(s) {
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
     <div id="fres">${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}</div>
     <button class="hall" data-go="factories">${I('factory', 18)} 공장 전체보기<em>${nAll}곳</em>${I('chevron', 18)}</button>
-    <div class="proto">가상 데이터와 임시 사진으로 만든 시제품이에요</div>
+    <div class="proto">가상 데이터로 만든 시제품이에요</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }
 
@@ -142,7 +154,7 @@ function recentVisit(s) {
       <div class="gvkm">${I('pin', 15)} ${kmTo(f.ll).toFixed(1)}km</div>
       <b>${f.name}</b><div class="gvsub">화성시 ${f.dong}</div>
       <button class="fbtn gvbtn" data-go="pre/${ins.fid}">공장 보기 ${I('chevron', 16)}</button></div>
-      <button class="gvph" data-go="pre/${ins.fid}" aria-label="${f.name}">${facPhoto(ins.fid)}</button></div>${homeActs(s)}</div>`;
+      <button class="gvph" data-go="pre/${ins.fid}" aria-label="${f.name}">${facMini(ins.fid)}</button></div>${homeActs(s)}</div>`;
 }
 // 파란 칸 아래쪽의 작은 단추 둘 — 보고서 쓰기 · 점검 결과 보기 (가로로 나란히)
 function homeActs(s) {
@@ -203,7 +215,7 @@ function facRow(s, fid, tk) {
   const now = tk.map((x) => (x.kind === 'back' ? tg('반려', 'warn') : tg('점검 예정', 'now') + (x.prev ? tg(`미흡 ${x.prev}`, 'warn') : ''))).join('')
     || [s.visits[fid] ? tg('점검 예정', 'now') : '', q ? tg(`미흡 ${q}`, 'warn') : ''].join('');
   return `<button class="fcard fall" data-go="pre/${fid}">
-    <span class="fphw">${facPhoto(fid)}</span>
+    <span class="fphw">${facMini(fid)}</span>
     <span class="fbody"><span class="fname">${f.name}</span><span class="floc">화성시 ${f.dong}</span><span class="fmeta">${kmTo(f.ll).toFixed(1)}km</span>
       <span class="fwhen${li ? '' : ' none'}">${li ? `마지막 점검 ${li.date} ${tg(ST_WORD[li.st || 'ok'], 's-' + (li.st || 'ok'))}` : '점검 기록 없음'}</span>
       ${now ? `<span class="fwhen">${now}</span>` : ''}</span>
@@ -268,10 +280,10 @@ function mapScreen(s) {
     ${head('지도', '', `<span class="small">${list.length}곳</span>`)}
     <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
     ${taskMap(s, list, (x) => fcard(s, x))}
-  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
+  </div></div>${UI.mapFull ? UI.mapFullHtml : ''}${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 // 하단바 — 첫 단계 화면에만 붙는다 (점검 도중에는 없음)
-const NAV = [['', '홈', 'home'], ['cal', '캘린더', 'calendar'], ['map', '지도', 'pin'], ['weekly', '주간 보고', 'list'], ['soon/me', '내 정보', 'user']];  // 공장 탭은 빼고 홈의 "공장 전체보기"로 (2026-09-22)
+const NAV = [['', '홈', 'home'], ['cal', '캘린더', 'calendar'], ['map', '지도', 'pin'], ['weekly', '주간 보고', 'list'], ['me', '내 정보', 'user']];  // 공장 탭은 빼고 홈의 "공장 전체보기"로 (2026-09-22)
 const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, ic]) => `<button class="${on === go ? 'on' : ''}" data-go="${go}"${on === go ? ' aria-current="page"' : ''}>${I(ic, 22)}<span>${w}</span></button>`).join('')}</nav>`;
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
@@ -320,8 +332,18 @@ function taskMap(s, list, cardOf) {
     ${sel ? cardOf(sel) : `<div class="small">${list.length ? '핀을 누르면 그 공장이 아래에 나와요' : `${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요`}</div>`}
     <div class="small gsrc">경계 자료: 통계청 SGIS, vuski/admdongkor (CC BY 4.0)</div>`;
   nvLoad();
-  if (NV.st === 'ready') { UI.nvArgs = { list, focus }; return `<div class="gmap nv" id="nvSlot"></div>${tail}`; }
-  return `${NV.st === 'fail' ? '<div class="small">네이버 지도를 불러오지 못해 그림 지도로 보여요</div>' : ''}<div class="gmap"><svg viewBox="${vx.toFixed(1)} ${vy.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${shapes}</svg>${labels}${pins}</div>
+  const nv = NV.st === 'ready', full = `<button class="gfbtn" data-act="mapFull" aria-label="지도 전체화면">${I('expand', 20)}</button>`;
+  if (nv) UI.nvArgs = { list, focus };
+  const drawn = `<svg viewBox="${vx.toFixed(1)} ${vy.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${shapes}</svg>${labels}${pins}`;
+  // 전체화면이면 지도는 화면 틀 밖(mapScreen이 붙이는 칸)으로 가고 여기는 자리만 남는다. 고른 공장 카드는 전체화면 아래에 뜬다
+  if (UI.mapFull) {
+    UI.mapFullHtml = `<div class="gffull" role="dialog" aria-label="지도">${nv ? '<div class="gfslot gmap nv" id="nvSlot"></div>' : `<div class="gfslot gfdrawn"><div class="gmap">${drawn}</div></div>`}
+      <button class="gfbtn gfclose" data-act="mapClose">${I('close', 20)} 닫기</button>
+      ${sel ? `<div class="gfcard">${cardOf(sel)}</div>` : ''}</div>`;
+    return `<div class="gmap gfhold"></div>${tail}`;
+  }
+  if (nv) return `<div class="gmap nv" id="nvSlot">${full}</div>${tail}`;
+  return `${NV.st === 'fail' ? '<div class="small">네이버 지도를 불러오지 못해 그림 지도로 보여요</div>' : ''}<div class="gmap">${drawn}${full}</div>
     ${tail}`;
 }
 // 핀 하나 — 그림 지도에서는 자리(style)를 받아 버튼으로, 네이버 지도에서는 마커 속 내용으로 쓴다
@@ -363,7 +385,12 @@ function nvMount() {
     NV.map.data.addGeoJson({ type: 'FeatureCollection', features: HWASEONG.map((d) => ({ type: 'Feature',
       properties: { name: d.name, area: area(d.name) }, geometry: { type: 'MultiPolygon', coordinates: d.polys } })) });
     NV.map.data.addListener('click', (e) => { const a = e.feature.getProperty('area'); if (a) ACTS.area({ v: a }); });
-  } else { slot.appendChild(NV.el); NV.map.refresh(true); }
+  } else {
+    slot.appendChild(NV.el);
+    NV.map.setSize(new N.Size(slot.clientWidth, slot.clientHeight)); NV.map.refresh(true);
+    if (NV.full !== !!UI.mapFull) NV.fit = null;  // 전체화면을 열고 닫으면 크기가 바뀌니 범위를 다시 맞춘다
+  }
+  NV.full = !!UI.mapFull;
   NV.map.data.setStyle((f) => {
     const a = f.getProperty('area'), on = a && (!UI.area || UI.area === a);
     return a ? { fillColor: '#2458d6', fillOpacity: on ? 0.14 : 0.05, strokeColor: '#2458d6', strokeWeight: on ? 3 : 1.5, strokeOpacity: on ? 0.95 : 0.5, clickable: true }
@@ -441,20 +468,42 @@ function dateSheet(s) {
 
 /* ---------- G2-나 회사 창 (2026-09-20 — 점검 입구를 이 화면 하나로 모았다) ---------- */
 // 약도 — 실제 지도가 아니다. 큰길과 공장 자리만 보여 주는 그림이다.
-function miniMap(f) {
-  return `<div class="map">
-    <svg viewBox="0 0 320 150" aria-hidden="true">
-      <rect width="320" height="150" fill="#edf1ec"/>
-      <path d="M0 104h320" stroke="#d6dde6" stroke-width="20"/>
-      <path d="M252 0v150" stroke="#d6dde6" stroke-width="15"/>
-      <path d="M0 104h320" stroke="#fff" stroke-width="2" stroke-dasharray="11 11"/>
-      <rect x="26" y="30" width="56" height="44" rx="5" fill="#e0e6ee"/>
-      <rect x="276" y="26" width="40" height="50" rx="5" fill="#e0e6ee"/>
-      <rect x="40" y="120" width="78" height="26" rx="5" fill="#e0e6ee"/>
-      <rect x="120" y="28" width="76" height="52" rx="7" fill="#d5e2fb" stroke="#2458d6" stroke-width="2"/>
-    </svg>
-    <span class="pin">${I('pin', 20)}<b>${esc(f.name)}</b></span>
-  </div>`;
+// 공장 창 지도 — 네이버 지도가 되면 공장 자리에 핀 하나, 안 되면(키 없음·전파 없음) 카드와 같은 그림 지도 (2026-09-23)
+// 전체화면 (2026-09-23 사용자 요청 — 폰에서 작다): 지도 칸 왼쪽 위 단추로 열고, 화면 전체를 덮은 지도 왼쪽 위 닫기로 닫는다.
+// 전체화면 지도는 화면 틀(.scr) 밖에 붙인다 — 틀이 들어올 때 움직임(transform)이 있어 그 안에서는 화면 전체를 못 덮는다
+function miniMap(fid) {
+  nvLoad();
+  const nv = NV.st === 'ready';
+  if (nv) UI.nvFac = fid;
+  if (UI.mapFull) return `<div class="gfmap gfhold">${facMini(fid, 2)}</div>`;  // 지도는 전체화면 쪽에 가 있다
+  return `<div class="gfmap"${nv ? ' id="nvFac"' : ''}>${nv ? '' : facMini(fid, 2)}
+    <button class="gfbtn" data-act="mapFull" aria-label="지도 전체화면">${I('expand', 20)}</button></div>`;
+}
+function mapFullView(fid) {
+  if (!UI.mapFull) return '';
+  const f = FACTORIES[fid], nv = NV.st === 'ready';
+  return `<div class="gffull" role="dialog" aria-label="${esc(f.name)} 지도"><div class="gfslot"${nv ? ' id="nvFac"' : ''}>${nv ? '' : facMini(fid, Math.min(innerWidth, 420) / innerHeight)}</div>
+    <button class="gfbtn gfclose" data-act="mapClose">${I('close', 20)} 닫기</button>
+    <div class="gfname">${I('pin', 16)} ${esc(f.name)}<small>화성시 ${esc(f.dong)}</small></div></div>`;
+}
+// 공장 창 지도는 아래 지도 탭과 따로 한 벌을 두고 공장만 바꿔 다시 쓴다
+const NVF = { el: null, map: null, mark: null };
+function nvFacMount() {
+  const slot = $('#nvFac'); if (!slot || !UI.nvFac) return;
+  const N = naver.maps, f = FACTORIES[UI.nvFac], at = new N.LatLng(f.ll[1], f.ll[0]);
+  const icon = { content: `<div class="nvpin"><span class="gfpin">${I('pin', 22)}<b>${esc(f.name)}</b></span></div>` };
+  if (!NVF.map) {
+    NVF.el = document.createElement('div'); NVF.el.className = 'nvmap'; slot.appendChild(NVF.el);
+    NVF.map = new N.Map(NVF.el, { center: at, zoom: 15, mapDataControl: false, scaleControl: false, zoomControl: true,
+      zoomControlOptions: { position: N.Position.TOP_RIGHT, style: N.ZoomControlStyle.SMALL } });
+    NVF.mark = new N.Marker({ map: NVF.map, position: at, icon });
+  } else {
+    slot.appendChild(NVF.el);
+    NVF.map.setSize(new N.Size(slot.clientWidth, slot.clientHeight)); NVF.map.refresh(true);
+    if (NVF.fid !== UI.nvFac) { NVF.map.setCenter(at); NVF.map.setZoom(15); NVF.mark.setPosition(at); NVF.mark.setIcon(icon); }
+    else if (NVF.full !== !!UI.mapFull) NVF.map.setCenter(at);  // 크기가 바뀌면 공장이 가운데 오게
+  }
+  NVF.fid = UI.nvFac; NVF.full = !!UI.mapFull;
 }
 // 지난번 미흡 항목 한 줄 설명 — 언제 문제였고, 그 뒤 공장주가 무엇을 했나
 // 미흡 항목이 지나온 일 — 날짜(·시간) 순 세로 줄. 점검에서 발견 → 공장주 고쳤어요(메모) / 점검에서 안 고쳐짐 → 이번 점검에서 확인 (2026-09-22 사용자 지시)
@@ -475,68 +524,105 @@ function prevNote(e) {
   return `${e.ins.date} 문제 있음${next ? '<br>' + next : ''}`;
 }
 // 공장 창의 점검 이력 — 최근 3건을 한 줄씩, 누르면 이 공장 점검 결과 화면 (2026-09-22 사용자 지시)
-function insHist(s, fid) {
+function insHist(s, fid, all) {
   const list = facInsp(s, fid);
   if (!list.length) return `<div><div class="lbl">점검 이력</div><div class="cnone">아직 점검한 적이 없어요</div></div>`;
   return `<div><div class="lbl">점검 이력 ${list.length}건</div>
-    <div class="ghist">${list.slice(0, 3).map((i) => { const st = i.st || 'ok', b = i.items.filter((x) => x.answer === 'bad').length;
+    <div class="ghist">${(all ? list : list.slice(0, 3)).map((i) => { const st = i.st || 'ok', b = i.items.filter((x) => x.answer === 'bad').length;
       return `<button class="ghr" data-go="records/${fid}/pre"><span class="ghd">${i.date}</span><span class="ghn"><b>${i.result || RESULTS[0]}</b><small>${i.by}</small></span>${b ? tg(`문제 ${b}`, 'warn') : ''}${tg(ST_WORD[st], 's-' + st)}</button>`; }).join('')}
       <button class="ghall" data-go="records/${fid}/pre">점검 결과 전체 보기 ${I('chevron', 16)}</button></div></div>`;
 }
+// 기업 정보 — 기존 화성 웹의 기업정보 항목을 묶어 보인다 (2026-09-23 사용자 요청).
+// 회사 → 연락처 → 위치 → 업종과 인원. 전화·메일은 눌러서 바로 걸고 쓰게, 주소 아래에 지도 앱 단추
+function firmInfo(fid) {
+  const f = FACTORIES[fid], x = FIRM[fid] || {};
+  const box = (title, body) => `<div class="gfi"><div class="gfih">${title}</div>${body}</div>`;
+  const tap = (href, ic, label, v) => `<a class="gfia" href="${href}"><span class="hic">${I(ic, 18)}</span><span class="gfil">${label}</span><b>${esc(v)}</b></a>`;
+  return `${box('회사', kv([['기업명', esc(f.name)], ['대표자', esc(x.ceo || '-')], ['사업자번호', x.biz || '-'], ['기업 종류', x.kind || '-'], ['소유 형태', x.own || '-']]))}
+    ${box('연락처', `${tap('tel:' + x.tel, 'phone', '회사 전화', x.tel)}<div class="gfia off"><span class="hic">${I('phone', 18)}</span><span class="gfil">팩스</span><b>${esc(x.fax)}</b></div>${tap('mailto:' + x.mail, 'send', '대표 메일', x.mail)}`)}
+    ${box('위치', `${kv([['행정구역', `화성시 ${f.dong}`], ['사업장 주소', `경기도 화성시 ${f.dong} ${esc(x.addr || '')}`]])}
+      <button class="maplink" data-act="openMap">${I('globe', 17)} 지도 앱으로 열기</button>`)}
+    ${box('업종과 인원', kv([['업종', `${esc(f.type)}<br><small class="gfis">${x.ksic ? `${x.ksic[0]} ${x.ksic[1]}` : ''}</small>`], ['주생산품', esc(x.product || '-')],
+      ['상시 근로자', `${f.workers}명`], ['외국인 근로자', `${x.foreign ?? '-'}명`]]))}`;
+}
+// 공장 창 탭 (2026-09-23 사용자 결정) — 기업 정보가 늘어 센서 기록·점검 이력이 너무 아래로 밀려서 나눴다.
+// 처음 여는 탭은 기업 정보, 차례도 기업 정보 → 점검 준비 → 기록 (같은 날 사용자 지시로 바꿈)
+const FTABS = [['info', '기업 정보'], ['prep', '점검 준비'], ['log', '기록']];
 function pre(s, fid) {
   const f = FACTORIES[fid], q = openIssues(s, fid);
-  const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid).slice(0, 2);
+  const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid);
   const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
   // 아래 단추 둘 — 예약 | 점검 시작. 점검 시작은 공장주가 예약을 승인해야 열린다(날짜는 안 따짐).
   // 잠긴 채로 두되 누르면 까닭을 알려 준다 (2026-09-22 사용자 결정 — AI 체크리스트 생성은 점검 시작 다음 화면에서)
   const bk = bookOf(s, fid);
+  const tab = UI.ftab[fid] || 'info';  // 공장마다 마지막에 본 탭을 기억한다 (점검 결과를 보고 돌아와도 기록 탭 그대로)
   return `${sbar(f.name)}<div class="scr"><div class="bd">
     ${head(f.name, '', `<span class="small">${q.length ? `지난번 미흡 ${q.length}개` : '점검'}</span>`)}
-    ${miniMap(f)}
-    ${kv([['이름', f.name], ['위치', `화성시 ${f.dong}`], ['업종', f.type], ['근로자', `${f.workers}명`], s.visits[fid] && ['방문', s.visits[fid]], bookOf(s, fid) && ['예약 요청', `${bookOf(s, fid).v} ${bookOf(s, fid).st === 'no' ? '거절됨' : '승인 기다림'}`]])}
-    <button class="maplink" data-act="openMap">${I('globe', 17)} 지도 앱으로 열기</button>
+    ${miniMap(fid)}
+    <div class="gtabs gftabs" role="tablist">${FTABS.map(([k, w]) => { const n = k === 'prep' ? q.length : k === 'log' ? hist.length + facInsp(s, fid).length : 0;
+      return `<button class="gtab${tab === k ? ' on' : ''}" role="tab" aria-selected="${tab === k}" data-act="ftab" data-fid="${fid}" data-v="${k}">${w}${n ? `<em class="${k === 'prep' ? 'warn' : ''}">${n}</em>` : ''}</button>`; }).join('')}</div>
+    ${tab === 'info' ? firmInfo(fid) : tab === 'log' ? `
+    ${hist.length ? `<div class="gpv"><div class="gpvh sen">${I('bell', 18)}<b>센서 이상 기록</b><em>${hist.length}건</em></div>
+      <div class="rlist">${hist.map((a) => `<div class="vrow"><span class="gsw">${a.day}<i>${hm(a.start)}</i></span><div class="rtx"><div class="t">${esc(SIM.title(a))}</div>
+        <small>${a.acks[0] ? `울린 뒤 ${a.acks[0].at - a.start}분 만에 조치` : SIM.endWord(a)}</small></div></div>`).join('')}</div></div>`
+      : `<div><div class="lbl">센서 이상 기록</div><div class="cnone">센서 이상 기록이 없어요</div></div>`}
+    ${insHist(s, fid, true)}` : `
+    ${kv([['방문', s.visits[fid] || '아직 안 잡힘'], bk && ['예약 요청', `${bk.v} ${bk.st === 'no' ? '거절됨' : '승인 기다림'}`]])}
     ${q.length ? `<div class="gpv"><div class="gpvh">${I('alert', 18)}<b>지난번 미흡 항목</b><em>${q.length}개</em></div>
       ${q.map((e) => `<div class="q gpvq"><div class="t">${esc(e.it.text)}</div>${prevTimeline(e)}</div>`).join('')}</div>`
-      : ''}
-    ${hist.length ? `<div class="gpv"><div class="gpvh sen">${I('bell', 18)}<b>최근 센서 이상 기록</b><em>${hist.length}건</em></div>
-      <div class="rlist">${hist.map((a) => `<div class="vrow"><span class="gsw">${a.day}<i>${hm(a.start)}</i></span><div class="rtx"><div class="t">${esc(SIM.title(a))}</div>
-        <small>${a.acks[0] ? `울린 뒤 ${a.acks[0].at - a.start}분 만에 조치` : SIM.endWord(a)}</small></div></div>`).join('')}</div></div>` : ''}
-    ${insHist(s, fid)}
+      : `<div><div class="lbl">지난번 미흡 항목</div><div class="cnone">고칠 게 남은 항목이 없어요</div></div>`}`}
   </div><div class="ft">
     <div class="gft2"><button class="btn ghost" data-act="date" data-fid="${fid}">${bk && bk.st === 'no' ? '다시 예약하기' : bk || s.visits[fid] ? '예약 변경' : '예약하기'}</button>
     ${going || s.visits[fid] ? `<button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>`
       : `<button class="btn glocked" data-act="lockedStart" data-fid="${fid}">${I('lock', 17)} 점검 시작</button>`}</div>
-  </div></div>`;
+  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 
 /* ---------- G4 사진 · AI ---------- */
+// G4 사진 찍기 (2026-09-23 사용자 지시: 너무 단순하다 → 읽기 쉽고 AI답게, 찍은 사진 지우기)
+// 사진은 번호로 기억한다 — 지워도 다른 사진의 번호가 바뀌지 않게 (AI 제안이 "사진 3에서 봤어요"라고 가리키므로)
+const SHOT_MAX = 10;
+const shotsOf = (d) => d.shots || Array.from({ length: d.photos || 0 }, (_, i) => i + 1);  // 예전 초안은 장수만 있다
+const SHOT_TIPS = ['분전반', '전선과 콘센트', '기계 주변', '통로와 비상구', '약품 보관함'];
 function photo(s) {
-  const d = s.draft, f = FACTORIES[d.fid];
+  const d = s.draft, f = FACTORIES[d.fid], shots = shotsOf(d), n = shots.length, full = n >= SHOT_MAX;
   return `${sbar(f.name)}<div class="scr"><div class="bd">
     ${head(f.name + ' 점검', 'pick')}
-    <div class="mid">공장 안을 찍어 주세요</div>
-    <div class="small">분전반, 전선, 콘센트 같은 곳을 찍어요<br><b class="ink">AI는 찍힌 것만 봐요</b></div>
-    <div class="thumbs">${Array.from({ length: d.photos }, (_, i) => `<div class="thumb">사진 ${i + 1}</div>`).join('')}
-      <button class="thumb" style="border:2px dashed var(--ink);background:#fff;font-size:22px" data-act="addPhoto">＋</button></div>
-    <div class="small">${d.photos} / 10장</div>
+    <div class="gaih"><span class="gaic">${I('sparkle', 22)}</span><div><b>사진으로 AI 제안 받기</b><small>사진 속 위험을 찾아 더 볼 항목을 골라 줘요</small></div></div>
+    <div class="lbl">이런 곳을 찍어 주세요</div>
+    <div class="gtips">${SHOT_TIPS.map((w) => `<span>${w}</span>`).join('')}</div>
+    <div class="gshh"><span class="lbl">찍은 사진</span><b>${n}<small> / ${SHOT_MAX}장</small></b></div>
+    <div class="gshots">${shots.map((k) => `<div class="gshot"><span class="gshim">${I('camera', 22)}<em>사진 ${k}</em></span>
+        <button class="gshx" data-act="delPhoto" data-k="${k}" aria-label="사진 ${k} 지우기">${I('close', 14)}</button></div>`).join('')}
+      ${full ? '' : `<button class="gshadd" data-act="addPhoto">${I('camera', 24)}<span>사진 찍기</span></button>`}</div>
+    <div class="gainote">${I('info', 16)}<span>AI는 사진에 찍힌 것만 봐요. 틀릴 수 있어요.</span></div>
   </div><div class="ft">
-    <button class="btn" data-act="askAI" ${d.photos ? '' : 'disabled'}>AI에게 보내기</button>
+    <button class="btn gaisend${n ? '' : ' glocked'}" data-act="${n ? 'askAI' : 'noPhoto'}">${n ? `${I('sparkle', 18)} AI에게 사진 ${n}장 보내기` : `${I('lock', 17)} AI에게 보내기`}</button>
     <button class="btn ghost" data-act="toList">기본 체크리스트로 돌아가기</button>
   </div></div>`;
 }
+// AI 기다리기 (2026-09-23 사용자 지시: 위에 쏠려 있다 → 가운데로, 멈춘 것처럼 보이지 않게 AI다운 움직임)
+// 도는 빛 고리 + 찍은 사진을 훑는 빛줄기 + 하는 일을 바꿔 보여 주는 한 줄. 움직임은 CSS로만 — 데이터가 와서 다시 그려도 멈추지 않게
+const AI_STEPS = ['사진을 살펴보고 있어요', '위험해 보이는 곳을 찾고 있어요', '비슷한 사고 사례와 맞춰 보고 있어요'];
 function aiWait(s) {
-  const d = s.draft;
+  const d = s.draft, f = FACTORIES[d.fid], sh = shotsOf(d);
   if (d.aiState === 'fail') {
-    return `${sbar(FACTORIES[d.fid].name)}<div class="scr"><div class="bd">
-      <div class="donemark" style="border-style:dashed">${I('alert', 38)}</div>
+    return `${sbar(f.name)}<div class="scr"><div class="bd">${head(f.name + ' 점검', 'photo')}
+      <div class="gaiw"><div class="donemark" style="border-style:dashed">${I('alert', 38)}</div>
       <div class="center big">AI가 지금<br>답하지 않아요</div>
-      <div class="center small">기본 체크리스트는 그대로 점검할 수 있어요. 찍은 사진은 점검 기록에 붙어요.</div>
+      <div class="center small">기본 체크리스트는 그대로 점검할 수 있어요. 찍은 사진은 점검 기록에 붙어요.</div></div>
     </div><div class="ft"><button class="btn" data-act="toList">기본 체크리스트로 점검하기</button><button class="btn ghost" data-act="askAI">다시 해 보기</button></div></div>`;
   }
-  return `${sbar(FACTORIES[d.fid].name)}<div class="scr"><div class="bd">
-    <div class="donemark">${I('sparkle', 38)}</div>
-    <div class="center big">AI가 사진 ${d.photos}장을<br>보고 있어요</div>
-    <div class="center small">보통 20초쯤 걸려요</div>
+  const show = sh.slice(0, 5), more = sh.length - show.length;
+  return `${sbar(f.name)}<div class="scr"><div class="bd">${head(f.name + ' 점검', 'photo')}
+    <div class="gaiw" role="status" aria-live="polite">
+      <div class="gorb"><i class="gring"></i><span class="gcore">${I('sparkle', 34)}</span></div>
+      <div class="center big">AI가 사진 ${sh.length}장을<br>보고 있어요</div>
+      <div class="gsteps" aria-hidden="true">${AI_STEPS.map((w, i) => `<span style="animation-delay:${i * 2}s">${w}</span>`).join('')}</div>
+      <div class="gscan">${show.map((k, i) => `<span style="animation-delay:${i * 0.18}s">${I('camera', 16)}<em>${k}</em></span>`).join('')}${more > 0 ? `<span class="more">+${more}</span>` : ''}<i class="gbeam"></i></div>
+      <div class="gdots" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="center small">보통 20초쯤 걸려요</div>
+    </div>
   </div><div class="ft"><button class="btn ghost" data-act="toList">기다리지 않고 기본 체크리스트로</button></div></div>`;
 }
 function pickScreen(s) {
@@ -551,23 +637,39 @@ function pickScreen(s) {
     ${nPrev ? `<div class="grp">지난번 미흡 항목<span class="must">${nPrev}개</span></div>
     ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
     <div class="grp">기본 체크리스트<span class="must">${CHECKLIST.ver}</span><span class="must">${nBase}문항</span></div>
-    <div class="small">고르지 않아도 전부 점검해요</div>
-    ${CHECKLIST.areas.map((a) => `<div class="item"><div class="bul">✓</div><div><div class="t">${a.no} ${a.name}</div><div class="why">${tg(a.common ? '공통' : '설비별')}${tg(a.items.length + '문항')}${a.common ? '' : '<br>없는 설비는 해당 없음으로'}</div></div></div>`).join('')}
-    <div class="grp">AI 제안<span class="must">원할 때만</span><span class="must">${asked ? `${d.ai.length}개 중 ${nSel}개 고름` : '아직 안 받음'}</span></div>
+    ${CHECKLIST.areas.map(ckArea).join('')}
+    ${asked ? aiPicks(d, nSel) : `<div class="grp">AI 제안</div>`}
     ${asked ? `
-    <div class="small"><b class="ink">사진 속 것만 봐요.</b> 틀릴 수 있어요.</div>
-    ${d.ai.length === 0 ? `<div class="small">사진에서 찾은 것 없음 — 위험이 없다는 뜻은 아니에요.</div>` : ''}
-    ${d.ai.map((x, i) => { const g = AI_SUGGEST[x.idx]; return `<div class="item${x.sel ? ' sel' : ''}">
-      <button class="chk" data-act="toggleAI" data-i="${i}" aria-label="고르기">${x.sel ? '✓' : ''}</button>
-      <div style="flex:1"><div class="t">${esc(g.text)}</div>
-      <button class="link small" style="padding:0;min-height:36px" data-act="why" data-i="${i}">사진에서 본 것: ${g.seen}<br>비슷한 사고: ${esc(g.cases[0].t)} ›</button></div></div>`; }).join('')}
-    <button class="add" data-act="goPhoto">＋ 사진 더 찍어 다시 받기</button>` : `
-    <button class="add" data-act="goPhoto">${I('camera', 16)} 사진 찍어 AI 제안 받기</button>`}
+    <button class="gai" data-act="goPhoto">${I('sparkle', 18)} 사진 더 찍어 다시 받기</button>` : `
+    <button class="gai" data-act="goPhoto">${I('sparkle', 18)} 사진 찍어 AI 제안 받기</button>`}
     ${d.self.length ? `<div class="grp">직접 추가<span class="must">${d.self.length}개</span></div>` : ''}
     ${d.self.map((t) => `<div class="item sel"><div class="bul">${I('plus', 14)}</div><div><div class="t">${esc(t)}</div><div class="why">직접 추가</div></div></div>`).join('')}
     <button class="add" data-act="addSelf">＋ 항목 직접 추가</button>
   </div><div class="ft"><button class="btn" data-act="startAnswer">${answered ? `${total}개 이어서 점검하기` : `${total}개로 점검 시작`}</button></div></div>
   ${UI.sheet && UI.sheet.type === 'why' ? whySheet(s) : ''}${UI.sheet && UI.sheet.type === 'self' ? selfSheet() : ''}`;
+}
+// 기본 체크리스트 영역 — 누르면 아래로 펼쳐져 문항을 미리 본다 (2026-09-23 사용자 지시). 보기만 하고 답은 점검하면서 단다
+function ckArea(a) {
+  const open = !!UI.ckOpen[a.key];
+  return `<div class="item gck${open ? ' open' : ''}">
+    <button class="gckh" data-act="ckTg" data-k="${a.key}" aria-expanded="${open}"><span class="bul">✓</span>
+      <span class="gckt"><span class="t">${a.no} ${a.name}</span><span class="why">${tg(a.common ? '공통' : '설비별')}${tg(a.items.length + '문항')}${a.common ? '' : '<br>없는 설비는 해당 없음으로'}</span></span>
+      <span class="gtdar${open ? ' on' : ''}">${I('chevron', 18)}</span></button>
+    <div class="gckl"${open ? '' : ' inert'}><div><ol>${a.items.map((q) => `<li>${esc(q)}</li>`).join('')}</ol></div></div></div>`;
+}
+// AI 제안 고르기 (2026-09-23 사용자 지시: AI답게) — 보라→파랑 머리 칸(개수, 모두 고르기), 카드마다 어느 사진에서 무엇을 봤는지 꼬리표,
+// 고르면 물빛 테두리. 처음 받았을 때만 카드가 차례로 떠오른다 (고를 때마다 다시 뜨면 거슬려서)
+function aiPicks(d, nSel) {
+  const all = d.ai.length && nSel === d.ai.length, fresh = UI.aiFresh;
+  if (fresh) setTimeout(() => { UI.aiFresh = false; }, 50);
+  return `<div class="gaip"><span class="gaic">${I('sparkle', 20)}</span><div><b>AI 제안 ${d.ai.length}개</b><small>사진 속 것만 봐요. 틀릴 수 있어요.</small></div>
+      ${d.ai.length ? `<button class="gaiall" data-act="allAI" data-v="${all ? 0 : 1}">${all ? '모두 풀기' : '모두 고르기'}</button>` : ''}</div>
+    ${d.ai.length ? `<div class="gaicnt"><b>${nSel}</b>개 골랐어요</div>` : `<div class="small">사진에서 찾은 것 없음 — 위험이 없다는 뜻은 아니에요.</div>`}
+    ${d.ai.map((x, i) => { const g = AI_SUGGEST[x.idx]; return `<div class="gaicard${x.sel ? ' sel' : ''}${fresh ? ' fresh' : ''}" style="${fresh ? `animation-delay:${i * 0.06}s` : ''}">
+      <button class="gaick" data-act="toggleAI" data-i="${i}" aria-pressed="${x.sel}" aria-label="${esc(g.text)} 고르기">${x.sel ? I('check', 18) : ''}</button>
+      <div class="gaib"><div class="gaitg"><span>${I('camera', 13)} 사진 ${x.photo}</span><span>${esc(g.seen)}</span></div>
+        <div class="t">${esc(g.text)}</div>
+        <button class="gaiwhy" data-act="why" data-i="${i}">비슷한 사고: ${esc(g.cases[0].t)} ${I('chevron', 14)}</button></div></div>`; }).join('')}`;
 }
 function whySheet(s) {
   const x = s.draft.ai[UI.sheet.i], g = AI_SUGGEST[x.idx], sp = g.spot;
@@ -754,9 +856,90 @@ function weekly(s) {
     <div class="small">조장이 확인하는지는 아직 몰라요<span class="hyp">가설</span></div>
   </div><div class="ft">${done ? '<button class="btn ghost" data-go="">홈으로</button>' : '<button class="btn" data-act="sendWeekly">주간 보고 내기</button>'}</div></div>`;
 }
-function soon(s, w) {
-  return `${sbar('지킴이')}<div class="scr"><div class="bd">${head({ me: '내 정보 (시안 G1-나)', factories: '우리 권역 (시안 G8)' }[w] || '준비 중')}
-    <div class="stat"><div><div class="mid">시제품 다음 차례에 만들어요</div><div class="small">모양은 HTML 시안을 보세요.</div></div></div></div></div>`;
+
+/* ---------- 로그인 (2026-09-23) ----------
+   아이디·비밀번호 (사용자가 고름). 로그인 상태 유지는 켜 둔 채로 연다 — 현장에서 날마다 다시 치지 않게 */
+const LG = { msg: '', keep: true, busy: false };
+function loginScreen() {
+  return `${sbar('지킴이')}<div class="scr"><div class="bd glog">
+    <div class="glogo"><i class="mark"></i><b>안전지킴이</b><small>산업안전지킴이</small></div>
+    <form id="glf" autocomplete="on">
+      <label class="lbl" for="lid">아이디</label>
+      <input class="input" id="lid" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required>
+      <label class="lbl" for="lpw">비밀번호</label>
+      <input class="input" id="lpw" name="password" type="password" autocomplete="current-password" required>
+      <label class="gkeep"><input type="checkbox" id="lkeep"${LG.keep ? ' checked' : ''}> 로그인 상태 유지</label>
+      ${LG.msg ? `<div class="err" role="alert">${esc(LG.msg)}</div>` : ''}
+      <button class="btn" type="submit"${LG.busy ? ' disabled' : ''}>로그인</button>
+    </form>
+    <button class="glforgot" data-act="forgot">비밀번호를 잊었어요</button>
+    <div class="hint"><b>시험용 계정</b> (비밀번호 모두 1234)<br>
+      <button type="button" class="link" data-act="fill" data-v="guard1">guard1</button> 김지킴 (조원)<br>
+      <button type="button" class="link" data-act="fill" data-v="guard2">guard2</button> 이조장 (조장)</div>
+  </div></div>`;
+}
+function paintLogin() {
+  // 입력하던 값은 다시 그려도 남긴다 (틀렸다는 글이 뜰 때 아이디를 또 치지 않게)
+  const id = $('#lid') ? $('#lid').value : '';
+  $('#app').innerHTML = loginScreen();
+  if (id) $('#lid').value = id;
+  ($(id ? '#lpw' : '#lid')).focus();
+  $('#lkeep').onchange = (e) => { LG.keep = e.target.checked; };
+  $('#glf').onsubmit = async (e) => {
+    e.preventDefault();
+    LG.busy = true;
+    try {
+      const r = await fetch('api/login?app=guard', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ login: $('#lid').value, pw: $('#lpw').value, keep: LG.keep }) });
+      const j = await r.json().catch(() => ({}));
+      LG.busy = false;
+      if (!r.ok) { LG.msg = j.error || '로그인하지 못했어요'; paintLogin(); $('#lpw').value = ''; return; }
+      LG.msg = ''; setAccount(j); R.go(''); render();
+    } catch (err) { LG.busy = false; LG.msg = '서버에 연결되지 않아요'; paintLogin(); }
+  };
+}
+function setAccount(a) { ACC = a; ME = a.name; }
+
+/* ---------- G1-나 내 정보 (2026-09-23) ----------
+   사용자가 고른 것: 소속·조·권역, 비밀번호 바꾸기·문의. 소속은 운영자가 정하는 것이라 여기서는 보기만 한다 */
+function meScreen(s) {
+  const lead = TEAM.lead === ME, n = unsentN(s);
+  const nFac = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area)).length;
+  const sh = UI.sheet;
+  return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
+    ${head('내 정보', '')}
+    <div class="ghello gme"><span class="gav">${I('user', 30)}</span><div><b>${esc(ME)}</b><span class="gmsub">산업안전지킴이</span></div>${tg(lead ? '조장' : '조원', 'now')}</div>
+    <div class="lbl">소속</div>
+    <div class="q">${kv([['분야', TEAM.name.split(' ')[0]], ['조', TEAM.name], ['조장', TEAM.lead + (lead ? ' (나)' : '')],
+      ['조원', TEAM.members.filter((m) => m !== TEAM.lead).map((m) => m === ME ? `${m} (나)` : m).join('<br>')],
+      ['담당 권역', TEAM.areas.map(areaName).join('<br>')], ['담당 공장', `${nFac}곳`]])}</div>
+    <div class="lbl">계정</div>
+    <div class="q">${kv([['아이디', esc(ACC ? ACC.login : '-')]])}</div>
+    <button class="q" data-act="pwOpen"><div class="rowx"><span class="t">비밀번호 바꾸기</span>${I('chevron', 18)}</div></button>
+    <div class="lbl">문의</div>
+    <div class="help">
+      <a class="hrow" href="tel:031-000-0000"><span class="hic">${I('phone', 20)}</span><div><b>운영센터</b><div class="small">031-000-0000 (가상)<br>평일 9시부터 18시까지</div></div></a>
+    </div>
+    ${n ? `<button class="btn glocked gout" data-act="lockedOut">${I('lock', 17)} 로그아웃</button>`
+      : `<button class="btn ghost gout" data-act="askOut">로그아웃</button>`}
+  </div></div>
+  ${sh && sh.type === 'pw' ? pwSheet(sh) : ''}
+  ${sh && sh.type === 'out' ? `<div class="ov" data-act="closeSheet"></div><div class="dlg">
+    <div class="mid" style="font-size:19px">로그아웃할까요?</div>
+    <div class="small ink">다시 들어오려면 아이디와 비밀번호를 쳐야 해요.</div>
+    <button class="btn" data-act="closeSheet">그대로 두기</button>
+    <button class="btn ghost gdanger" data-act="logout">로그아웃</button></div>` : ''}`;
+}
+function pwSheet(sh) {
+  const f = (id, label, ac) => `<label class="lbl" for="${id}">${label}</label>
+    <input class="input" id="${id}" type="password" autocomplete="${ac}">${sh.err && sh.err.field === id ? `<div class="err" role="alert">${esc(sh.err.msg)}</div>` : ''}`;
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="mid">비밀번호 바꾸기</div>
+    ${f('pwOld', '지금 비밀번호', 'current-password')}
+    ${f('pwNew', '새 비밀번호 (4자 이상)', 'new-password')}
+    ${f('pwNew2', '새 비밀번호 한 번 더', 'new-password')}
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">그만두기</button><button class="btn" data-act="pwSave">바꾸기</button></div>
+  </div>`;
 }
 
 /* ---------- 그리기 ---------- */
@@ -764,7 +947,9 @@ function soon(s, w) {
 // 앞뒤가 숫자·글자·/·. 이면 날짜가 아니라고 본다 (주소 "records/..."나 "0 / 10장" 같은 것은 안 건드린다)
 const fmtDates = (h) => h.replace(/(?<![\w/.])(\d{1,2})\/(\d{1,2})(?![\w/])/g, (_, m, d) => `${m.padStart(2, '0')}.${d.padStart(2, '0')}`);
 function render() {
+  if (!ACC) { paintLogin(); return; }
   const s = DB.s, p = R.path();
+  if (location.hash !== lastHash) { UI.mapFull = false; UI.sheet = null; }  // 다른 화면으로 가면(폰의 뒤로 가기 등) 지도 전체화면과 열린 창을 닫는다
   const d = s.draft;
   let html;
   const needFirst = ['photo', 'ai', 'pick', 'list', 'ans', 'sum'].includes(p[0]);
@@ -773,7 +958,7 @@ function render() {
   else if (p[0] === 'map') html = mapScreen(s);
   else if (p[0] === 'cal') html = calScreen(s);
   else if (p[0] === 'factories') html = factoriesScreen(s);
-  else if (p[0] === 'pre') html = pre(s, p[1]);
+  else if (p[0] === 'pre') html = pre(s, p[1]) + mapFullView(p[1]);
   else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
   else if (p[0] === 'photo') html = photo(s);
   else if (p[0] === 'ai') html = aiWait(s);
@@ -785,14 +970,15 @@ function render() {
   else if (p[0] === 'weekly') html = weekly(s);
   else if (p[0] === 'records') html = records(s, p[1], p[2]);
   else if (p[0] === 'insp') html = inspView(s, p[1], p[2]);
-  else if (p[0] === 'soon') html = soon(s, p[1]);
+  else if (p[0] === 'me') html = meScreen(s);
+  else if (p[0] === 'soon') { R.go(p[1] === 'me' ? 'me' : ''); return; }  // 옛 주소
   else html = home(s);
   const ae = document.activeElement, keep = ae && ae.id, val = keep && ae.value;
   // 입력 중에 다시 그리면 커서가 맨 앞으로 간다 — 자리를 기억해 되살린다 (찾기 칸에서 "정공"이 "공정"이 되던 것)
   const caret = keep && typeof ae.selectionStart === 'number' ? [ae.selectionStart, ae.selectionEnd] : null;
   const top = p.join('/');
   html = fmtDates(html);
-  if (['', 'cal', 'map', 'weekly', 'soon/me'].includes(top)) html += gnav(top);  // 공장 전체보기는 홈에서 들어가는 안쪽 화면  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
+  if (['', 'cal', 'map', 'weekly', 'me'].includes(top)) html += gnav(top);  // 공장 전체보기는 홈에서 들어가는 안쪽 화면  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
   // 찾기 칸에 입력 중이면 결과 목록만 갈아 끼운다 — 칸을 건드리지 않아야 한글 조합이 이어진다
   if (keep === 'fq' && location.hash === lastHash && !UI.sheet && $('#fres')) {
     const tmp = document.createElement('div'); tmp.innerHTML = html;
@@ -800,7 +986,7 @@ function render() {
   }
   $('#app').innerHTML = html;
   syncWheels();
-  if (NV.st === 'ready') nvMount();
+  if (NV.st === 'ready') { nvMount(); nvFacMount(); }
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
   if (keep && $('#' + keep)) { const el = $('#' + keep); el.value = val; el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
 }
@@ -817,6 +1003,29 @@ function startDraft(fid) {
 
 const ACTS = {
   closeSheet() { sheet(null); },
+  fill({ v }) { $('#lid').value = v; $('#lpw').value = '1234'; $('#lpw').focus(); },
+  forgot() { toast('운영센터에 전화하면 새 비밀번호를 알려 줘요 (031-000-0000, 가상)'); },
+  pwOpen() { sheet({ type: 'pw', err: null }); setTimeout(() => $('#pwOld') && $('#pwOld').focus(), 50); },
+  async pwSave() {
+    const v = { pwOld: $('#pwOld').value, pwNew: $('#pwNew').value, pwNew2: $('#pwNew2').value };
+    const bad = (field, msg) => { UI.sheet.err = { field, msg }; render(); Object.entries(v).forEach(([k, x]) => { if ($('#' + k)) $('#' + k).value = x; }); $('#' + field).focus(); };
+    if (!v.pwOld) return bad('pwOld', '지금 비밀번호를 적어 주세요');
+    if (v.pwNew.length < 4) return bad('pwNew', '새 비밀번호는 4자 이상이어야 해요');
+    if (v.pwNew !== v.pwNew2) return bad('pwNew2', '새 비밀번호가 서로 달라요');
+    if (!DB.remote) { sheet(null); toast('시제품 서버로 열었을 때만 바뀌어요'); return; }
+    const r = await fetch('api/password?app=guard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ old: v.pwOld, new: v.pwNew }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) return bad(j.field === 'new' ? 'pwNew' : 'pwOld', j.error || '바꾸지 못했어요');
+    sheet(null); toast('비밀번호를 바꿨어요');
+  },
+  askOut() { sheet({ type: 'out' }); },
+  lockedOut() { toast(`아직 안 올라간 점검 ${unsentN(DB.s)}건이 있어요. 전파가 잡혀 올라간 뒤에 로그아웃할 수 있어요`); },
+  async logout() {
+    UI.sheet = null;
+    try { await fetch('api/logout?app=guard', { method: 'POST' }); } catch (e) {}
+    ACC = null; ME = '김지킴'; LG.msg = '';
+    R.go(''); render();
+  },
   date({ fid }) {
     const b = bookOf(DB.s, fid), v = (b && b.v) || DB.s.visits[fid], d = visitDay(v);  // 보낸 요청이나 잡힌 날이 있으면 그 달·그 날을 골라 둔 채로 연다
     sheet({ type: 'date', fid, m: d ? d.m : TODAY.m, pm: d ? d.m : null, d: d ? d.d : null, tm: tmOf(v) });
@@ -837,7 +1046,19 @@ const ACTS = {
   },
   openMap() { toast('실제 앱은 여기서 지도 앱으로 넘어가요'); },
   goPhoto() { R.go('photo'); },
-  addPhoto() { DB.act((s) => { s.draft.photos = Math.min(10, s.draft.photos + 1); }); },
+  addPhoto() {
+    DB.act((s) => {
+      const d = s.draft, sh = shotsOf(d);
+      if (sh.length >= SHOT_MAX) return;
+      d.shotN = Math.max(d.shotN || 0, ...sh, 0) + 1;  // 지운 번호는 다시 쓰지 않는다
+      d.shots = [...sh, d.shotN]; d.photos = d.shots.length;
+    });
+  },
+  delPhoto({ k }) {
+    DB.act((s) => { const d = s.draft; d.shotN = Math.max(d.shotN || 0, ...shotsOf(d), 0); d.shots = shotsOf(d).filter((x) => x !== +k); d.photos = d.shots.length; });
+    toast(`사진 ${k}${'13678'.includes(String(k).slice(-1)) || String(k).endsWith('0') ? '을' : '를'} 지웠어요`);  // 일·삼·육·칠·팔·십은 '을'
+  },
+  noPhoto() { toast('사진을 한 장 이상 찍어 주세요'); },
   askAI() {
     DB.act((s) => { s.draft.aiState = 'wait'; });
     R.go('ai');
@@ -846,11 +1067,13 @@ const ACTS = {
       if (!DB.s.draft || DB.s.draft.aiState !== 'wait') return;
       if (DB.s.aiDown) { DB.act((s) => { s.draft.aiState = 'fail'; }); return; }
       DB.act((s) => {
-        const n = Math.min(4, s.draft.photos + 1);
-        s.draft.ai = AI_SUGGEST.slice(0, n).map((g, i) => ({ idx: i, sel: false, photo: (i % s.draft.photos) + 1 }));
+        const n = Math.min(AI_SUGGEST.length, 4 + shotsOf(s.draft).length * 2);  // 사진 1장 6개, 3장부터 10개 (2026-09-23 더 많이)
+        const sh = shotsOf(s.draft);
+        s.draft.ai = AI_SUGGEST.slice(0, n).map((g, i) => ({ idx: i, sel: false, photo: sh[i % sh.length] }));
         s.draft.aiState = 'done';
       });
-      R.go('pick');
+      UI.aiFresh = true;
+      if (R.path()[0] === 'ai') R.go('pick');  // 기다리다 다른 화면으로 갔으면 끌고 오지 않는다
     }, 2500);
   },
   // AI를 안 받거나 기다리지 않고 기본 체크리스트로 돌아간다 (이미 받아 둔 제안과 고른 것은 그대로)
@@ -859,6 +1082,7 @@ const ACTS = {
     DB.act((s) => { if (s.draft.aiState !== 'done') s.draft.aiState = s.draft.ai.length ? 'done' : null; });
     R.go('pick');
   },
+  allAI({ v }) { DB.act((s) => { s.draft.ai.forEach((x) => { x.sel = v === '1'; }); }); },
   toggleAI({ i, close }) { DB.act((s) => { s.draft.ai[i].sel = !s.draft.ai[i].sel; }); if (close) sheet(null); },
   why({ i }) { sheet({ type: 'why', i: +i }); },
   addSelf() { sheet({ type: 'self' }); setTimeout(() => $('#selfIn') && $('#selfIn').focus(), 50); },
@@ -887,6 +1111,16 @@ const ACTS = {
   sort({ v }) { UI.sort = v; render(); },
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
+  ftab({ fid, v }) { UI.ftab[fid] = v; render(); },
+  mapFull() { UI.mapFull = true; render(); },
+  mapClose() { UI.mapFull = false; render(); },
+  ckTg({ k }, el) {  // 다시 그리면 펼치는 움직임이 안 보여서 칸의 표시만 바꾼다 (todayTg와 같은 방식)
+    UI.ckOpen[k] = !UI.ckOpen[k];
+    const c = el.closest('.gck'), on = UI.ckOpen[k];
+    c.classList.toggle('open', on); el.setAttribute('aria-expanded', on);
+    c.querySelector('.gtdar').classList.toggle('on', on);
+    c.querySelector('.gckl').inert = !on;
+  },
   todayTg(d, el) {  // 다시 그리면 애니메이션이 안 보여서 칸의 표시만 바꾼다
     UI.today = !UI.today;
     const c = el.closest('.gtd'), l = c.querySelector('.gtdl');
@@ -938,4 +1172,11 @@ const ACTS = {
   },
   pickReason({ v }) { UI.sheet.reason = UI.sheet.reason === v ? null : v; render(); },
 };
-wire(ACTS, render);
+
+(async () => {
+  await DB.ready;
+  if (DB.remote) {
+    try { const r = await fetch('api/me?app=guard'); if (r.ok) setAccount(await r.json()); } catch (e) {}
+  } else setAccount({ login: 'guard1', name: '김지킴', org: TEAM.name });  // 서버 없이 열면 로그인할 곳이 없어 김지킴으로 들어간다
+  wire(ACTS, render);
+})();

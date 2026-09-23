@@ -670,3 +670,168 @@ span.gtdtg{cursor:default}
 .gft2 .btn.ghost{flex:0 0 40%}
 .btn.glocked{background:#e5e7eb;color:#8a93a3;box-shadow:none}
 .btn.glocked:active{background:#dcdfe4;transform:none}
+/* 지킴이 로그인 (2026-09-23) — 방패 표지 + 아이디·비밀번호 */
+.glog{justify-content:center;min-height:calc(100dvh - 40px);padding-top:24px}
+.glogo{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:14px}
+.glogo .mark{width:64px;height:64px;border-radius:18px;margin-bottom:8px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z'/%3E%3Cpath d='m8.5 12 2.5 2.5 4.5-5' stroke-linecap='round'/%3E%3C/svg%3E") center/36px no-repeat,linear-gradient(135deg,#2458d6,#4f7cf0)}
+.glogo b{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.glogo small{font-size:14px;color:var(--mid);font-weight:600}
+.glog form{display:flex;flex-direction:column;gap:8px}
+.glog form .btn{margin-top:8px}
+.glog .err,.app .sheet .err{background:var(--red-l);color:var(--red-d);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600}
+.gkeep{display:flex;align-items:center;gap:8px;min-height:44px;font-size:15px;font-weight:600;color:var(--ink)}
+.gkeep input{width:20px;height:20px;accent-color:var(--brand);margin:0}
+.glforgot{align-self:center;min-height:44px;background:none;border:none;color:var(--mid);font:inherit;font-size:14px;text-decoration:underline;text-underline-offset:3px}
+.glog .hint{background:#f5f7fb;border-radius:12px;padding:12px 14px;font-size:14px;color:var(--mid);line-height:1.5}
+.glog .hint .link{min-height:32px;padding:0 4px 0 0;background:none;border:none;font-family:ui-monospace,monospace;font-size:14px;color:var(--brand);text-decoration:underline}
+/* 지킴이 내 정보 (2026-09-23) */
+.gme .gav{background:var(--brand-l);color:var(--brand)}
+.gme .gmsub{display:block;font-size:14px;color:var(--mid);font-weight:600}
+.gme .gtg{flex:none;font-size:13px;padding:3px 10px}
+.gout{margin-top:14px}
+.app .btn.ghost.gdanger{color:var(--red-d);border-color:#f3b6b0}
+.glog .lbl{border:none;padding:0;margin:6px 0 0;font-size:14px;color:var(--ink)}
+/* 공장 자리 지도 (2026-09-23) — 사진 대신. 공장이 있는 동은 파랗게, 둘레 동은 옅게, 공장은 점 */
+.fmini .fmbg{fill:#f1f3f6}
+.fmini path{fill:#e8ebf0;stroke:#fff;stroke-width:1.5;vector-effect:non-scaling-stroke}
+.fmini path.own{fill:#dbe5fa;stroke:#8fa9e4}
+.fmini .halo{fill:rgba(36,88,214,.18)}
+.fmini .dot{fill:var(--brand);stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}
+.fphw .fmini,.gvph .fmini{border-radius:inherit}
+.fphw{box-shadow:inset 0 0 0 1px var(--ring)}
+.gfmap{position:relative;aspect-ratio:2/1;border-radius:14px;overflow:hidden;border:1px solid var(--ring);background:#f1f3f6}
+.gfmap .fmini{width:100%;height:100%}
+.gfmap .nvmap{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+.gfpin{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--brand)}
+.gfpin b{background:var(--ink);color:#fff;font-size:12px;font-weight:800;border-radius:999px;padding:3px 9px;white-space:nowrap}
+/* 기본 체크리스트 영역 펼치기 (2026-09-23) — 오늘 할 일 카드와 같은 움직임 */
+.gck{flex-direction:column;gap:0;padding:0}
+.gckh{display:flex;align-items:flex-start;gap:12px;width:100%;padding:12px;border:none;background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.gckt{flex:1;min-width:0;display:flex;flex-direction:column}
+.gckt .why{display:block}
+.gckh .gtdar{flex:none;align-self:center}
+.gckl{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .25s ease,opacity .2s ease}
+.gck.open .gckl{grid-template-rows:1fr;opacity:1}
+.gckl > div{overflow:hidden;min-height:0}
+.gckl ol{margin:0 12px 12px 48px;padding:4px 0 0;border-top:1px solid var(--line);list-style:none;counter-reset:q}
+.gckl li{counter-increment:q;position:relative;padding:9px 0 9px 26px;font-size:15px;line-height:1.45;color:var(--ink);border-bottom:1px solid var(--line)}
+.gckl li:last-child{border-bottom:none}
+.gckl li::before{content:counter(q);position:absolute;left:0;top:9px;width:20px;text-align:right;font-size:13px;font-weight:800;color:var(--soft)}
+/* 공장 창 지도 전체화면 (2026-09-23) */
+.gfbtn{position:absolute;left:10px;top:10px;z-index:5;display:inline-flex;align-items:center;gap:4px;min-width:44px;min-height:44px;justify-content:center;padding:0 10px;border:1px solid var(--line2);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:15px;font-weight:800;box-shadow:0 2px 8px rgba(23,32,51,.15);cursor:pointer}
+.gffull{position:fixed;inset:0;z-index:30;background:#f1f3f6;animation:fade .15s}
+@media (min-width:500px){.gffull{left:50%;right:auto;width:420px;transform:translateX(-50%)}}
+.gfslot{position:absolute;inset:0}
+.gfslot .fmini{width:100%;height:100%}
+.gfslot .nvmap{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+.gfclose{top:calc(12px + env(safe-area-inset-top));left:12px}
+.gfname{position:absolute;left:12px;right:12px;bottom:calc(40px + env(safe-area-inset-bottom));z-index:5;display:flex;align-items:center;gap:6px;padding:12px 14px;border-radius:14px;background:#fff;box-shadow:0 4px 16px rgba(23,32,51,.18);font-size:17px;font-weight:800;color:var(--ink)}
+.gfname svg{color:var(--brand);flex:none}
+.gfname small{margin-left:auto;font-size:14px;font-weight:600;color:var(--mid)}
+html:has(.gffull),body:has(.gffull){overflow:hidden}
+/* 지도 탭 전체화면 (2026-09-23) — 공장 창과 같은 단추·닫기 */
+.gffull .gfslot.gmap{aspect-ratio:auto;border:none;border-radius:0}
+.gfdrawn{display:grid;place-items:center;padding:64px 0 0}
+.gfdrawn .gmap{width:100%}
+.gfcard{position:absolute;left:12px;right:12px;bottom:calc(40px + env(safe-area-inset-bottom));z-index:5;box-shadow:0 6px 20px rgba(23,32,51,.22);border-radius:14px}
+.gfhold{background:#f1f3f6}
+.gmap .gfbtn svg{position:static;inset:auto;width:20px;height:20px}
+.gmap .gfbtn path{fill:none;stroke:currentColor;stroke-width:inherit;vector-effect:none}
+/* 공장 창 기업 정보 (2026-09-23) — 묶음 카드 네 개 */
+.gfi{background:#fff;border:1px solid var(--ring);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.gfih{font-size:15px;font-weight:800;color:var(--ink);padding-bottom:6px;border-bottom:1px solid var(--line)}
+.gfi .gkv{grid-template-columns:88px 1fr}
+.gfis{font-size:12px;font-weight:600;color:var(--mid)}
+.gfia{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 10px;border-radius:10px;background:var(--brand-l);color:var(--ink);text-decoration:none}
+.gfia .hic{flex:none;color:var(--brand);display:grid;place-items:center}
+.gfil{flex:none;width:72px;font-size:14px;font-weight:600;color:var(--mid)}
+.gfia b{font-size:15px;color:var(--brand);min-width:0;overflow-wrap:anywhere}
+.gfi .maplink{margin-top:2px}
+.gfia.off{background:#f5f7fa}
+.gfia.off .hic,.gfia.off b{color:var(--ink)}
+.gfia.off .hic{color:var(--soft)}
+/* 네이버 지도 로고가 위에 붙은 머리글 위로 올라오지 않게 — 지도 칸 안에서만 겹치게 한다 */
+.gfmap,.gmap{isolation:isolate}
+/* 공장 창 탭 (2026-09-23) — 홈 정렬 탭과 같은 모양, 개수 알약 */
+.gftabs{margin-top:2px}
+.gtab em{display:inline-block;margin-left:5px;min-width:20px;padding:0 6px;border-radius:999px;background:#eef1f5;color:var(--mid);font-style:normal;font-size:12px;font-weight:800;line-height:20px;vertical-align:1px}
+.gtab em.warn{background:var(--amber-l);color:var(--amber)}
+/* AI 제안 받기 단추 (2026-09-23) — AI 색(보라)을 옅은 보라→파랑 물빛과 가는 물빛 테두리로만. 꽉 찬 색은 쓰지 않는다 */
+.gai{position:relative;width:100%;min-height:52px;display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid transparent;border-radius:14px;
+  background:linear-gradient(100deg,#f5f1ff,#eef3ff) padding-box,linear-gradient(100deg,#a88bf0,#7ea0f2) border-box;
+  color:var(--violet);font:inherit;font-size:15px;font-weight:800;cursor:pointer;transition:transform .08s}
+.gai svg{color:var(--violet)}
+.gai:active{transform:scale(.98)}
+/* G4 사진 찍기 (2026-09-23) — AI 머리 칸, 찍을 곳 알약, 3칸 사진판(지우기 ✕), AI 보내기 단추 */
+.gaih{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1.5px solid transparent;
+  background:linear-gradient(100deg,#f5f1ff,#eef3ff) padding-box,linear-gradient(100deg,#a88bf0,#7ea0f2) border-box}
+.gaic{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#7b55e6,#4f7cf0)}
+.gaih b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+.gaih small{display:block;margin-top:2px;font-size:14px;color:var(--mid);line-height:1.4}
+.gtips{display:flex;flex-wrap:wrap;gap:6px}
+.gtips span{padding:6px 11px;border-radius:999px;background:#f1f3f7;color:var(--ink);font-size:14px;font-weight:600}
+.gshh{display:flex;align-items:baseline;justify-content:space-between;margin-top:6px}
+.gshh b{font-size:18px;font-weight:800;color:var(--violet)}
+.gshh small{font-size:14px;font-weight:600;color:var(--mid)}
+.gshots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gshot{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#e7ebf2,#cfd7e3)}
+.gshim{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8a95a8}
+.gshim em{font-style:normal;font-size:13px;font-weight:700;color:var(--mid)}
+.gshx{position:absolute;top:6px;right:6px;width:28px;height:28px;border:none;border-radius:50%;display:grid;place-items:center;background:rgba(23,32,51,.62);color:#fff;cursor:pointer}
+.gshx::after{content:"";position:absolute;inset:-8px}
+.gshadd{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:1.5px dashed #b9a6ee;border-radius:12px;background:#faf8ff;color:var(--violet);font:inherit;font-size:14px;font-weight:800;cursor:pointer}
+.gainote{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mid);margin-top:4px}
+.gainote svg{flex:none}
+.btn.gaisend:not(.glocked){background:linear-gradient(100deg,#6e44d8,#2f63e0);color:#fff;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn.gaisend.glocked{display:flex;align-items:center;justify-content:center;gap:6px}
+/* AI 기다리기 (2026-09-23) — 가운데 모음, 도는 빛 고리, 사진 훑는 빛줄기, 바뀌는 한 줄, 점 셋 */
+.gaiw{flex:1;min-height:calc(100dvh - 230px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:12px 0 24px}
+.gaiw .donemark{margin:0 auto 4px}
+.gorb{position:relative;width:112px;height:112px;margin-bottom:6px}
+.gring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#6e44d8,#4f7cf0,#9fd0ff,#6e44d8);animation:gspin 2.4s linear infinite;
+  -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px));mask:radial-gradient(farthest-side,transparent calc(100% - 5px),#000 calc(100% - 4px))}
+.gorb::before{content:"";position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(110,68,216,.20),rgba(79,124,240,0) 70%);animation:gglow 2.4s ease-in-out infinite}
+.gcore{position:absolute;inset:12px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#7b55e6,#4f7cf0);box-shadow:0 8px 24px rgba(79,92,230,.35)}
+.gcore svg{animation:gtwinkle 1.6s ease-in-out infinite}
+.gsteps{position:relative;width:100%;height:22px;text-align:center}
+.gsteps span{position:absolute;left:0;right:0;font-size:15px;font-weight:700;color:var(--violet);opacity:0;animation:gstep 6s infinite}
+.gscan{position:relative;display:flex;gap:6px;padding:8px;border-radius:14px;background:#f5f3fd;overflow:hidden;margin-top:4px}
+.gscan span{width:46px;height:46px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#e7ebf2,#cfd7e3);color:#8a95a8;animation:gtile 1.8s ease-in-out infinite}
+.gscan span em{font-style:normal;font-size:11px;font-weight:700;color:var(--mid)}
+.gscan span.more{background:#ebe6fb;color:var(--violet);font-size:14px;font-weight:800;animation:none}
+.gbeam{position:absolute;top:0;bottom:0;left:0;width:36px;background:linear-gradient(90deg,rgba(110,68,216,0),rgba(110,68,216,.35),rgba(79,124,240,0));animation:gbeam 1.8s ease-in-out infinite}
+.gdots{display:flex;gap:6px}
+.gdots i{width:7px;height:7px;border-radius:50%;background:var(--violet);opacity:.25;animation:gdot 1.2s infinite}
+.gdots i:nth-child(2){animation-delay:.2s}.gdots i:nth-child(3){animation-delay:.4s}
+@keyframes gspin{to{transform:rotate(360deg)}}
+@keyframes gglow{50%{transform:scale(1.08);opacity:.6}}
+@keyframes gtwinkle{50%{transform:scale(1.12) rotate(8deg)}}
+@keyframes gstep{0%{opacity:0;transform:translateY(6px)}5%,28%{opacity:1;transform:none}33%,100%{opacity:0;transform:translateY(-6px)}}
+@keyframes gtile{50%{filter:brightness(1.08);box-shadow:0 0 0 2px rgba(110,68,216,.25)}}
+@keyframes gbeam{0%{left:-40px}100%{left:100%}}
+@keyframes gdot{30%{opacity:1;transform:translateY(-3px)}}
+@media (prefers-reduced-motion:reduce){.gring,.gorb::before,.gcore svg,.gscan span,.gbeam,.gdots i{animation:none}.gsteps span{animation:none}.gsteps span:first-child{opacity:1}}
+/* AI 제안 고르기 (2026-09-23) — 머리 칸, 고른 수, 카드(사진 꼬리표, 둥근 고르기 칸, 사고 사례 줄) */
+.gaip{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 14px;border-radius:16px;border:1.5px solid transparent;
+  background:linear-gradient(100deg,#f5f1ff,#eef3ff) padding-box,linear-gradient(100deg,#a88bf0,#7ea0f2) border-box}
+.gaip .gaic{width:38px;height:38px;border-radius:11px}
+.gaip > div{flex:1;min-width:0}
+.gaip b{display:block;font-size:16px;font-weight:800;color:var(--ink)}
+.gaip small{display:block;margin-top:1px;font-size:13px;color:var(--mid)}
+.gaiall{flex:none;min-height:36px;padding:0 12px;border:1px solid #cdbdf5;border-radius:999px;background:#fff;color:var(--violet);font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.gaicnt{font-size:14px;color:var(--mid);padding:2px 2px 0}
+.gaicnt b{color:var(--violet);font-size:16px}
+.gaicard{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border-radius:14px;background:#fff;border:1.5px solid #e6e0f7;transition:background .15s,border-color .15s,box-shadow .15s}
+.gaicard.sel{border-color:transparent;background:linear-gradient(100deg,#f7f3ff,#f0f5ff) padding-box,linear-gradient(100deg,#8f6ae8,#5f86ee) border-box;box-shadow:0 4px 14px rgba(110,68,216,.12)}
+.gaicard.fresh{animation:gaiin .35s ease-out both}
+.gaick{flex:none;width:30px;height:30px;margin-top:2px;border:2px solid #c5b5f1;border-radius:9px;display:grid;place-items:center;background:#fff;color:#fff;cursor:pointer;transition:background .15s,border-color .15s}
+.gaick::after{content:"";position:absolute;inset:-8px}
+.gaick{position:relative}
+.gaicard.sel .gaick{border-color:transparent;background:linear-gradient(135deg,#7b55e6,#4f7cf0)}
+.gaib{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.gaib .t{font-size:16px;font-weight:700;line-height:1.4;color:var(--ink)}
+.gaitg{display:flex;flex-wrap:wrap;gap:4px}
+.gaitg span{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;background:#f1edfd;color:var(--violet);font-size:12px;font-weight:700}
+.gaiwhy{align-self:flex-start;display:inline-flex;align-items:center;gap:2px;min-height:32px;padding:0;border:none;background:none;color:var(--mid);font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
+@keyframes gaiin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.gaicard.fresh{animation:none}}

@@ -19,6 +19,8 @@ const B = 'http://127.0.0.1:8765/';
     localStorage.setItem('w.notif', 'on'); localStorage.setItem('lang', 'ko'); });
   await O.goto(B + 'web.html'); await shot(O, 'o_login');
   await login(O, 'daesung'); await G.goto(B + 'guard.html'); await ready(G);
+  await G.waitForSelector('#lid'); await shot(G, 'g_login');  // 지킴이 로그인 (2026-09-23)
+  await G.click('[data-v="guard1"]'); await G.click('button[type=submit]'); await G.waitForSelector('.ghello');
   await W.reload(); await ready(W); await shot(W, 'w_home');
   // 근로자 경보 흐름
   await ctl(W, 'raise', '[data-k="press2"]'); await shot(W, 'w_alarm');
@@ -84,7 +86,7 @@ const B = 'http://127.0.0.1:8765/';
   await click(G, '사진 찍어 AI 제안 받기');
   await G.locator('[data-act="addPhoto"]').click(); await G.locator('[data-act="addPhoto"]').click(); await G.locator('[data-act="addPhoto"]').click();
   await shot(G, 'g_photo');
-  await ctl(G, 'ai'); await click(G, 'AI에게 보내기'); await G.waitForTimeout(2800); await shot(G, 'g_ai_fail');
+  await ctl(G, 'ai'); await G.locator('.gaisend').click(); await G.waitForTimeout(150); await G.waitForTimeout(2800); await shot(G, 'g_ai_fail');
   await ctl(G, 'ai'); await click(G, '다시 해 보기'); await shot(G, 'g_ai_wait'); await G.waitForTimeout(2800); await shot(G, 'g_pick');
   await G.locator('[data-act="toggleAI"]').first().click();
   await G.locator('[data-act="why"]').nth(1).click(); await shot(G, 'g_why');
