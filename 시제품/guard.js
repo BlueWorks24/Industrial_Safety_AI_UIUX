@@ -117,7 +117,7 @@ function home(s) {
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }
 
-// 최근 방문한 곳 — 참고 앱의 "최근방문매장" 자리. 내가 마지막으로 점검한 곳과 그 점검의 상태 (2026-09-22)
+// 최근 점검한 곳 — 참고 앱의 "최근방문매장" 자리. 내가 마지막으로 점검한 곳과 그 점검의 상태 (2026-09-22)
 // 오늘 할 일 — 인삿말 아래 카드. 공장주가 승인해 오늘로 잡힌 방문을 시간 순으로 (2026-09-22 사용자 지시: "오늘 방문 n곳" 알약 → 우리 카드 모양으로)
 // 제목 줄만 늘 보이고 목록은 눌러서 펼친다 (같은 날 사용자 지시). 오늘 방문이 없으면 펼칠 것이 없어 "없음"만
 function todayCard(s, all) {
@@ -134,10 +134,10 @@ function todayCard(s, all) {
 }
 function recentVisit(s) {
   const ins = s.inspections.find((i) => i.by === ME);
-  if (!ins) return `<div class="gvisit"><div class="gvt">최근 방문한 곳</div><div class="gvsub">아직 점검한 곳이 없어요</div>${homeActs(s)}</div>`;
+  if (!ins) return `<div class="gvisit"><div class="gvt">최근 점검한 곳</div><div class="gvsub">아직 점검한 곳이 없어요</div>${homeActs(s)}</div>`;
   const f = FACTORIES[ins.fid], [m, d] = ins.date.split('/').map(Number);
   // 점검한 날은 제목 줄 오른쪽에 — "언제 갔던 곳"이 먼저 읽히게 (2026-09-22 사용자: 승인 표시·문제 수 빼고 날짜 자리 옮김)
-  return `<div class="gvisit"><div class="gvt">최근 방문한 곳<span class="gvdate">${I('calendar', 15)} ${m}월 ${d}일 (${WD[new Date(TODAY.y, m - 1, d).getDay()]})</span></div>
+  return `<div class="gvisit"><div class="gvt">최근 점검한 곳<span class="gvdate">${I('calendar', 15)} ${m}월 ${d}일 (${WD[new Date(TODAY.y, m - 1, d).getDay()]})</span></div>
     <div class="gvrow"><div class="gvtx">
       <div class="gvkm">${I('pin', 15)} ${kmTo(f.ll).toFixed(1)}km</div>
       <b>${f.name}</b><div class="gvsub">화성시 ${f.dong}</div>
@@ -199,7 +199,9 @@ const mdNum = (d) => { const m = String(d || '').match(/(\d+)\/(\d+)/); return m
 const lastIns = (s, fid) => s.inspections.filter((i) => i.fid === fid).sort((a, b) => mdNum(b.date) - mdNum(a.date))[0];
 function facRow(s, fid, tk) {
   const f = FACTORIES[fid], li = lastIns(s, fid);
-  const now = tk.map((x) => (x.kind === 'back' ? tg('반려', 'warn') : tg('점검 예정', 'now') + (x.prev ? tg(`미흡 ${x.prev}`, 'warn') : ''))).join('');
+  const q = openIssues(s, fid).length;
+  const now = tk.map((x) => (x.kind === 'back' ? tg('반려', 'warn') : tg('점검 예정', 'now') + (x.prev ? tg(`미흡 ${x.prev}`, 'warn') : ''))).join('')
+    || [s.visits[fid] ? tg('점검 예정', 'now') : '', q ? tg(`미흡 ${q}`, 'warn') : ''].join('');
   return `<button class="fcard fall" data-go="pre/${fid}">
     <span class="fphw">${facPhoto(fid)}</span>
     <span class="fbody"><span class="fname">${f.name}</span><span class="floc">화성시 ${f.dong}</span><span class="fmeta">${kmTo(f.ll).toFixed(1)}km</span>
@@ -211,15 +213,23 @@ function factoriesScreen(s) {
   locate();
   const t = tasks(s), tk = (fid) => t.filter((x) => x.fid === fid);
   const team = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area)), inTeam = team.filter(inAreas);
-  const nTodo = inTeam.filter((f) => tk(f).length).length;
+  // 점검 상태로 나눈다 (2026-09-23 사용자 결정 — 할 일 있음/없음은 홈과 기준이 겹쳤다)
+  // 한 공장이 여러 칸에 들어갈 수 있다: 방문일이 잡혔고 미흡도 남은 곳
+  const FST = {
+    all: () => true,
+    soon: (f) => !!s.visits[f],                    // 공장주가 승인해 방문일이 잡힌 곳
+    prev: (f) => openIssues(s, f).length > 0,      // 지난번 미흡이 아직 남은 곳
+    never: (f) => facInsp(s, f).length === 0,      // 우리 조가 한 번도 점검하지 않은 곳
+  };
+  const pick = FST[UI.fst] || FST.all;
   const q = UI.fq.trim();
-  const list = inTeam.filter((f) => (UI.fst === 'todo' ? tk(f).length : UI.fst === 'none' ? !tk(f).length : true))
+  const list = inTeam.filter(pick)
     .filter(matchQ)
     .sort((a, b) => kmTo(FACTORIES[a].ll) - kmTo(FACTORIES[b].ll));
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('공장 전체보기', '', `<span class="small">${TEAM.name}</span>`)}
     ${findRow('fac')}
-    <div class="fst">${[['all', `전체 ${inTeam.length}`], ['todo', `할 일 있음 ${nTodo}`], ['none', `할 일 없음 ${inTeam.length - nTodo}`]].map(([k, w]) => `<button class="${UI.fst === k ? 'on' : ''}" data-act="fst" data-v="${k}">${w}</button>`).join('')}</div>
+    <div class="fst">${[['all', '전체'], ['soon', '점검 예정'], ['prev', '미흡 남음'], ['never', '아직 안 감']].map(([k, w]) => `<button class="${UI.fst === k ? 'on' : ''}" data-act="fst" data-v="${k}">${w}<em>${inTeam.filter(FST[k]).length}</em></button>`).join('')}</div>
     <div id="fres">${list.map((fid) => facRow(s, fid, tk(fid))).join('') || `<div class="cnone">${q ? `"${esc(q)}"에 맞는 공장이 없어요` : '공장이 없어요'}</div>`}</div>
   </div></div>${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }

@@ -561,8 +561,10 @@ span.gtdtg{cursor:default}
 .fall .fbody > span{display:block}
 .fall .fname{font-size:18px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fall .gchev{flex:none;color:var(--soft);display:inline-flex}
-.fst{display:flex;gap:14px;border-bottom:1px solid var(--line);margin:0 -16px;padding:0 16px}
-.fst button{min-height:40px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;padding:0;font:inherit;font-size:14px;font-weight:700;color:var(--soft);cursor:pointer}
+.fst{display:flex;gap:12px;border-bottom:1px solid var(--line);margin:0 -16px;padding:0 16px}
+.fst button{display:inline-flex;align-items:center;gap:4px;min-height:42px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;padding:0;font:inherit;font-size:14px;font-weight:700;color:var(--soft);white-space:nowrap;cursor:pointer}
+.fst em{font-style:normal;font-size:12px;font-weight:800;color:var(--mid);background:#f1f2f4;border-radius:999px;padding:1px 6px}
+.fst button.on em{color:#fff;background:var(--ink)}
 .fst button.on{color:var(--ink);border-bottom-color:var(--ink)}
 
 /* ===== 지킴이 — 정보를 "·"로 잇지 않고 나눠 보이는 도구 (2026-09-22 사용자 지시) ===== */
