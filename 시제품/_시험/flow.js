@@ -11,6 +11,22 @@ const B = 'http://127.0.0.1:8765/';
   const shot = async (p, name) => { await p.waitForTimeout(1300); await p.screenshot({ path: `${OUT}/${String(++n).padStart(2, '0')}_${name}.png`, fullPage: true }); };
   const ctl = async (p, c, extra = '') => { await p.evaluate(({ c, extra }) => { toggleCtl(true); document.querySelector(`#ctl [data-c="${c}"]${extra}`).click(); document.getElementById('ctl')?.remove(); }, { c, extra }); };
   const click = async (p, text) => { await p.getByText(text, { exact: false }).first().click(); await p.waitForTimeout(150); };
+  // 점검은 테마마다 한 쪽 (2026-09-28) — 첫 쪽부터 쪽마다 답하고 "다음"으로 넘겨 마무리 쪽까지 간다. 이미 답한 줄과 skip 번호는 건너뛴다
+  const answerPages = async (p, pick = () => 'ok', skip = []) => {
+    await p.locator('.cpg button').first().click();
+    for (;;) {
+      const ns = await p.$$eval('.crow [data-act="ans"][data-v="ok"]', (b) => b.map((x) => +x.dataset.n));
+      for (const i of ns) {
+        if (skip.includes(i) || await p.locator(`.crow [data-n="${i}"].on`).count()) continue;
+        await p.locator(`[data-act="ans"][data-n="${i}"][data-v="${pick(i)}"]`).click(); await p.waitForTimeout(40);
+      }
+      if (!(await p.locator('.btn.cnext').count())) break;
+      await p.locator('.btn.cnext').click();
+    }
+  };
+  // i번 항목이 있는 쪽으로 — 위 칩 줄을 앞에서부터 눌러 본다
+  const toItem = async (p, i) => { const n = await p.locator('.cpg button').count();
+    for (let j = 0; j < n && !(await p.locator(`[data-act="ansBad"][data-n="${i}"]`).count()); j++) await p.locator('.cpg button').nth(j).click(); };
 
   const ready = (p) => p.waitForFunction(() => typeof DB !== 'undefined' && DB.s);
   const login = async (p, id) => { await p.goto(B + 'web.html'); await p.waitForSelector('#lid'); await p.fill('#lid', id); await p.fill('#lpw', '1234'); await p.click('button[type=submit]'); await p.waitForSelector('.wtop'); };
@@ -70,10 +86,9 @@ const B = 'http://127.0.0.1:8765/';
   await G.locator('[data-act="ans"][data-n="0"][data-v="ok"]').click();
   await G.locator('[data-act="ansBad"][data-n="1"]').click(); await click(G, '부품이나 업체를 기다려요'); await shot(G, 'g_not_sheet');
   await G.locator('[data-act="saveBad"]').click(); await shot(G, 'g_re_done');
-  const nd = await G.evaluate(() => DB.s.draft.items.length);
-  for (let i = 2; i < nd; i++) { await G.locator(`[data-act="ans"][data-n="${i}"][data-v="ok"]`).click(); }
+  await answerPages(G);
   await shot(G, 'g_resum');
-  await click(G, '점검 결과 내기'); await shot(G, 'g_sent');
+  await G.locator('.ft [data-act="submitFirst"]').click(); await shot(G, 'g_sent');
   await ctl(G, 'approve');  // 운영자 승인 → 원래 미흡 항목에 고쳐짐 / 안 고쳐짐이 적힌다
   // 공장주 고칠 것
   await O.goto(B + 'web.html#/rec/insp'); await O.waitForSelector('.wtop'); await shot(O, 'o_insp_back');
@@ -94,25 +109,25 @@ const B = 'http://127.0.0.1:8765/';
   await click(G, '항목 직접 추가'); await G.fill('#selfIn', '소화기가 제자리에 있나?'); await G.locator('[data-act="saveSelf"]').click();
   await click(G, '개로 점검 시작'); await shot(G, 'g_list');
   const total = await G.evaluate(() => DB.s.draft.items.length);
-  // 목록 한 장에서 줄마다 답한다 — 7번째만 문제 있음
-  await G.locator('[data-act="ansBad"][data-n="6"]').click(); await G.fill('#memoIn', '바닥에 늘어진 전선 피복이 벗겨짐');
+  // 테마마다 한 쪽에서 줄마다 답한다 — 7번째만 문제 있음
+  await toItem(G, 6); await G.locator('[data-act="ansBad"][data-n="6"]').click(); await G.fill('#memoIn', '바닥에 늘어진 전선 피복이 벗겨짐');
   await shot(G, 'g_bad_sheet'); await G.locator('[data-act="saveBad"]').click(); await G.waitForTimeout(150);
   await shot(G, 'g_list_part');
-  for (let i = 0; i < total; i++) {
-    if (i === 6) continue;
-    await G.locator(`[data-act="ans"][data-n="${i}"][data-v="${i === total - 1 ? 'na' : 'ok'}"]`).click(); await G.waitForTimeout(70);
-  }
+  await answerPages(G, (i) => (i === total - 1 ? 'na' : 'ok'), [6]);
   await shot(G, 'g_sum');
   await ctl(G, 'net', '[data-w="guard"]');
-  await click(G, '점검 결과 내기'); await shot(G, 'g_sent_offline');
+  await G.locator('.ft [data-act="submitFirst"]').click(); await shot(G, 'g_sent_offline');
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_home_unsent');
   await ctl(G, 'net', '[data-w="guard"]'); await shot(G, 'g_home_uploaded');
   await G.goto(B + 'guard.html#/records'); await shot(G, 'g_records');
   // 운영자 제출 검사 (조작판 흉내) — 반려 → 고쳐서 다시 내기 → 승인 (2026-09-22)
   await ctl(G, 'reject'); await G.goto(B + 'guard.html#/todo'); await shot(G, 'g_todo_back');
-  await G.goto(B + 'guard.html#/map'); await G.locator('[data-act="pin"][data-fid="hanbit"]').click(); await shot(G, 'g_todo_map');
+  // 지도 — 구를 고르고, 점검 예정 핀을 누르면 아래에 그 공장 줄이 나온다 (2026-09-28)
+  await G.goto(B + 'guard.html#/map'); await G.locator('.gusel [data-v="동탄구"]').click();
+  await G.locator('[data-act="pin"][data-fid="daesung"]').click(); await shot(G, 'g_todo_map');
   await G.goto(B + 'guard.html#/');
   await click(G, '고쳐서 다시 내기'); await shot(G, 'g_redo');
+  await G.locator('.cpg button').last().click();  // 반려된 점검은 답이 다 있으니 마무리 쪽에서 바로 낸다
   await G.locator('.ft [data-act="submitFirst"]').click(); await shot(G, 'g_sent_redo');
   await ctl(G, 'approve'); await G.goto(B + 'guard.html#/records'); await shot(G, 'g_records_ok');
   await G.goto(B + 'guard.html#/weekly'); await shot(G, 'g_weekly');

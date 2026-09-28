@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, fold: {}, area: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {} };
+const UI = { sheet: null, aiTimer: null, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {}, preBack: {}, wkTags: [] };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -126,9 +126,38 @@ function home(s) {
     <div id="fres">${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}</div>
     <button class="hall" data-go="factories">${I('factory', 18)} 공장 전체보기<em>${nAll}곳</em>${I('chevron', 18)}</button>
     <div class="proto">가상 데이터로 만든 시제품이에요</div>
-  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
+  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}${UI.sheet && UI.sheet.type === 'brief' ? briefSheet(s) : ''}`;
 }
 
+// 오늘 방문할 공장 한 줄 요약 (2026-09-28 사용자 지시) — 실제 서비스에서는 AI가 지난 점검·미흡·센서 기록을 읽고 쓴다.
+// 시제품은 같은 재료로 규칙대로 지어 보인다 (가설: 요약에 들어갈 재료는 이 셋이면 된다)
+function aiBrief(s, fid) {
+  const q = openIssues(s, fid), hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid), li = lastIns(s, fid);
+  // 미흡 항목은 첫 것만 짧게 따온다 (한 줄 요약이라 두 줄 안팎으로)
+  const cut = (t) => { t = t.replace(/\?$/, ''); return t.length > 14 ? t.slice(0, 13) + '…' : t; };
+  const iss = q.length && `미흡 ${q.length}건("${cut(q[0].it.text)}"${q.length > 1 ? ` 외 ${q.length - 1}건` : ''})`;
+  const sen = hist.length && `센서 이상 ${hist.length}건(${SIM.title(hist[0])})`;
+  if (iss && sen) return `지난번 ${iss}과 최근 ${sen}을 자세히 보세요.`;
+  if (iss) return `지난번(${q[0].ins.date}) ${iss}을 다시 확인하세요.`;
+  if (sen) return `최근 ${sen}이 있었어요. 그 설비 둘레를 자세히 보세요.`;
+  return li ? `특이사항 없어요. 지난 점검(${li.date})에서 문제가 없었어요.` : '처음 가는 곳이에요. 기본 체크리스트대로 보면 돼요.';
+}
+// AI 요약 자세히 (2026-09-28 사용자 지시) — 요약 칸을 누르면 뜨는 창. 요약 문장 → 먼저 볼 것 → 근거 세 줄 → 공장 보기.
+// 미흡 흐름·센서 기록 전체는 공장 창에 있으니 여기는 개수와 날짜만 (같은 날 사용자: 너무 자세하다)
+function briefSheet(s) {
+  const fid = UI.sheet.fid, f = FACTORIES[fid], v = visitDay(s.visits[fid]);
+  const q = openIssues(s, fid), hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid), li = lastIns(s, fid);
+  const look = [...q.map((e) => e.it.text), ...(hist.length ? [`${SIM.title(hist[0])} 둘레`] : [])];
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet gbrief" role="dialog" aria-label="${f.name} AI 요약"><div class="grip"></div>
+    <div class="gbh"><span class="gbi">${I('sparkle', 18)}</span><div><b>${f.name} AI 요약</b><small>${v ? `오늘 ${v.tm} 방문` : ''}</small></div></div>
+    <div class="gbs">${esc(aiBrief(s, fid))}</div>
+    ${look.length ? `<div class="lbl">먼저 볼 것</div><ol class="gbl">${look.map((t) => `<li>${esc(t)}</li>`).join('')}</ol>` : ''}
+    ${kv([['지난번 미흡', q.length ? `${q.length}건` : '없음'], ['센서 이상', hist.length ? `${hist.length}건 (최근 ${hist[0].day})` : '없음'],
+      ['지난 점검', li ? `${li.date} ${li.result || RESULTS[0]}` : '없음']])}
+    <div class="small">지난 기록으로 AI가 쓴 요약이라 틀릴 수 있어요.</div>
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">닫기</button><button class="btn" data-go="pre/${fid}">공장 보기</button></div>
+  </div>`;
+}
 // 최근 점검한 곳 — 참고 앱의 "최근방문매장" 자리. 내가 마지막으로 점검한 곳과 그 점검의 상태 (2026-09-22)
 // 오늘 할 일 — 인삿말 아래 카드. 공장주가 승인해 오늘로 잡힌 방문을 시간 순으로 (2026-09-22 사용자 지시: "오늘 방문 n곳" 알약 → 우리 카드 모양으로)
 // 제목 줄만 늘 보이고 목록은 눌러서 펼친다 (같은 날 사용자 지시). 오늘 방문이 없으면 펼칠 것이 없어 "없음"만
@@ -141,8 +170,10 @@ function todayCard(s, all) {
   // 목록은 늘 그려 두고 접힌 칸에 숨긴다 — 여닫을 때 높이가 미끄러지게 (todayTg가 다시 그리지 않고 칸만 바꾼다)
   return `<div class="gtd${open ? ' open' : ''}"><div class="gtdh">${head}
       <button class="gtdcal" data-act="calToday">${I('calendar', 15)} 캘린더 ${I('chevron', 14)}</button></div>
-    ${l.length ? `<div class="gtdl"${open ? '' : ' inert'}><div>${l.map((x) => { const f = FACTORIES[x.fid]; return `<button class="gtdr" data-go="pre/${x.fid}">
-      <span class="gtdt">${visitDay(s.visits[x.fid]).tm}</span><span class="gtdn"><b>${f.name}</b><small>화성시 ${f.dong}</small></span>${I('chevron', 18)}</button>`; }).join('')}</div></div>` : ''}</div>`;
+    ${l.length ? `<div class="gtdl"${open ? '' : ' inert'}><div>${l.map((x) => { const f = FACTORIES[x.fid]; return `<div class="gtdr"><button class="gtdrow" data-go="pre/${x.fid}">
+      <span class="gtdt"><b>${visitDay(s.visits[x.fid]).tm}</b><small>방문</small></span>
+      <span class="gtdn"><b>${f.name}</b><small>화성시 ${f.dong}</small></span>${I('chevron', 18)}</button>
+      <button class="gtdai" data-act="brief" data-fid="${x.fid}" aria-label="${f.name} AI 요약 자세히">${I('sparkle', 14)}<span><em>AI 요약</em>${esc(aiBrief(s, x.fid))}</span>${I('chevron', 14)}</button></div>`; }).join('')}</div></div>` : ''}</div>`;
 }
 function recentVisit(s) {
   const ins = s.inspections.find((i) => i.by === ME);
@@ -209,6 +240,8 @@ function calScreen(s) {
    찾기 · 권역 · 할 일 있음/없음으로 거르고, 가까운 순. 누르면 회사 창. */
 const mdNum = (d) => { const m = String(d || '').match(/(\d+)\/(\d+)/); return m ? +m[1] * 100 + +m[2] : 0; };
 const lastIns = (s, fid) => s.inspections.filter((i) => i.fid === fid).sort((a, b) => mdNum(b.date) - mdNum(a.date))[0];
+// 점검 예정 — 공장 줄의 "점검 예정" 꼬리표와 같은 기준: 할 일에 점검으로 올라 있거나 방문일이 잡힌 곳 (2026-09-28, 지도 핀도 이걸 쓴다)
+const isDue = (s, fid) => !!s.visits[fid] || tasks(s).some((x) => x.fid === fid && x.kind === 'visit');
 function facRow(s, fid, tk) {
   const f = FACTORIES[fid], li = lastIns(s, fid);
   const q = openIssues(s, fid).length;
@@ -257,6 +290,10 @@ const findRow = (kind) => `<div class="hfrow"><input class="input" id="fq" type=
   <button class="harea${UI.areas.length ? ' on' : ''}" data-act="areaOpen" data-v="${kind}">${areaWord()} ${I('chevron', 14)}</button></div>`;
 // 권역 고르기 창 — 화성시 구 → 우리 조 읍·면·동. 줄마다 할 일 수(홈) 또는 공장 수(공장 전체보기). 적용해야 목록이 바뀐다
 const GU_ORDER = ['만세구', '효행구', '병점구', '동탄구'];
+// 구 색 — 화성시 일반구 구획도의 색을 따르되 지도 위에선 옅게 칠한다 (2026-09-28 사용자 지시)
+const GU_COLOR = { 만세구: '#2e9d6b', 효행구: '#3d82c4', 병점구: '#e0853a', 동탄구: '#c2b236' };
+const guOf = (dong) => (HWASEONG.find((h) => h.name === dong) || {}).gu;
+const guDongs = (g) => HWASEONG.filter((h) => h.gu === g).map((h) => h.name);
 function areaSheet(s) {
   const sh = UI.sheet, gu = (a) => (HWASEONG.find((h) => h.name === TEAM.dongs[a][0]) || {}).gu || '';
   const n = sh.v === 'home' ? (a) => `할 일 ${tasks(s).filter((x) => FACTORIES[x.fid].area === a).length}`
@@ -275,11 +312,14 @@ document.addEventListener('input', (e) => { if (e.target.id === 'fq') { UI.fq = 
 
 /* ---------- 지도 (하단바) — 예전 내 할 일의 지도 보기를 옮겼다 ---------- */
 function mapScreen(s) {
-  const list = sortTasks(s, tasks(s)).filter((x) => !UI.area || FACTORIES[x.fid].area === UI.area);
+  // 지도에 찍는 공장 — 우리 조 권역의 공장 전부, 구를 고르면 그 구 것만 (2026-09-28 사용자 지시)
+  const list = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area) && (!UI.gu || guOf(FACTORIES[fid].dong) === UI.gu));
+  const t = tasks(s);
+  // 위쪽 고르기는 우리 조 권역 대신 화성시 구 4곳 (2026-09-28 사용자 지시) — 칸마다 지도와 같은 색 점
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('지도', '', `<span class="small">${list.length}곳</span>`)}
-    <div class="seg">${['전체', ...TEAM.areas].map((a) => `<button class="${(UI.area || '전체') === a ? 'on' : ''}" data-act="area" data-v="${a}">${a}</button>`).join('')}</div>
-    ${taskMap(s, list, (x) => fcard(s, x))}
+    ${head('지도', '', `<span class="small">공장 ${list.length}곳</span>`)}
+    <div class="gusel">${[null, ...GU_ORDER].map((g) => `<button class="${UI.gu === g ? 'on' : ''}" data-act="gu" data-v="${g || ''}" aria-pressed="${UI.gu === g}"${g ? ` style="--gc:${GU_COLOR[g]}"` : ''}><i${g ? '' : ' class="all"'}></i>${g || '전체'}</button>`).join('')}</div>
+    ${taskMap(s, list, (fid) => facRow(s, fid, t.filter((x) => x.fid === fid)))}
   </div></div>${UI.mapFull ? UI.mapFullHtml : ''}${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 // 하단바 — 첫 단계 화면에만 붙는다 (점검 도중에는 없음)
@@ -288,8 +328,6 @@ const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, i
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
    신호가 약해도 테두리와 핀은 보이게 하려는 것이다. 핀은 할 일 종류마다 모양과 말이 다르다(색만으로 가르지 않는다). */
-const KIND = { back: '반려', prev: '미흡', visit: '점검' };
-const pinKind = (x) => (x.kind === 'back' ? 'back' : x.prev ? 'prev' : 'visit');
 const MAPK = Math.cos(37.15 * Math.PI / 180), MAP_AR = 11 / 10;  // 경도 줄임 · 지도 칸 가로:세로
 const mxy = ([x, y]) => [x * MAPK * 1000, -y * 1000];
 const ringArea = (r) => Math.abs(r.reduce((a, c, i) => { const n = r[(i + 1) % r.length]; return a + c[0] * n[1] - n[0] * c[1]; }, 0)) / 2;
@@ -297,39 +335,37 @@ const ringArea = (r) => Math.abs(r.reduce((a, c, i) => { const n = r[(i + 1) % r
 const mainPolys = (d) => { const big = Math.max(...d.polys.map((p) => ringArea(p[0]))); return d.polys.filter((p) => ringArea(p[0]) >= big * 0.2); };
 function bboxOf(names) {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  HWASEONG.filter((h) => names.includes(h.name)).forEach((h) => mainPolys(h).forEach((p) => p[0].forEach((c) => {
+  HWASEONG.filter((h) => !names || names.includes(h.name)).forEach((h) => mainPolys(h).forEach((p) => p[0].forEach((c) => {
     const [x, y] = mxy(c); x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); })));
   return { x0, y0, x1, y1 };
 }
 function taskMap(s, list, cardOf) {
-  const mine = (nm) => TEAM.areas.find((a) => TEAM.dongs[a].includes(nm));
-  const focus = UI.area ? TEAM.dongs[UI.area] : TEAM.areas.flatMap((a) => TEAM.dongs[a]);
-  // 보여 줄 범위 — 고른 권역(없으면 우리 조 권역 전체)에 맞추고 지도 칸 비율로 늘린다
-  const { x0, y0, x1, y1 } = bboxOf(focus);
-  let w = (x1 - x0) * 1.12, h = (y1 - y0) * 1.18;
+  const focus = UI.gu ? guDongs(UI.gu) : null;
+  // 보여 줄 범위 — 고른 구에 맞추고 지도 칸 비율로 늘린다. 전체는 화성시에 꽉 차게 한 단계 당겨 본다 (2026-09-28 사용자 지시)
+  const { x0, y0, x1, y1 } = bboxOf(focus), zin = focus ? 1 : 0.85;
+  let w = (x1 - x0) * (focus ? 1.05 : 1.12 * zin), h = (y1 - y0) * (focus ? 1.08 : 1.18 * zin);  // 고른 구는 칸에 거의 가득 (2026-09-28)
   if (w / h > MAP_AR) h = w / MAP_AR; else w = h * MAP_AR;
   const vx = (x0 + x1) / 2 - w / 2, vy = (y0 + y1) / 2 - h / 2;
   const pct = (ll) => { const [x, y] = mxy(ll); return [((x - vx) / w) * 100, ((y - vy) / h) * 100]; };
   const path = (polys) => polys.map((p) => p.map((r) => 'M' + r.map((c) => mxy(c).map((v) => v.toFixed(1)).join(',')).join('L') + 'Z').join('')).join('');
-  // 우리 권역은 맨 나중에 그려 이웃 동의 회색 선에 덮이지 않게 한다
-  const shapes = [...HWASEONG].sort((a, b) => !!mine(a.name) - !!mine(b.name)).map((d) => {
-    const a = mine(d.name), on = a && (!UI.area || UI.area === a);
-    return `<path d="${path(d.polys)}" class="${a ? (on ? 'mine on' : 'mine') : ''}"${a ? ` data-act="area" data-v="${a}"` : ''}><title>${d.gu} ${d.name}</title></path>`;
-  }).join('');
-  // 권역 이름 — 권역 가장자리 안쪽에서 핀을 피해 자리를 고른다 (위 → 아래 → 왼쪽 → 오른쪽)
-  const pinBox = list.map((x) => { const [l, t] = pct(FACTORIES[x.fid].ll); return [l - 8, t - 14, l + 8, t + 1]; });
-  const labels = TEAM.areas.map((a) => {
-    const b = bboxOf(TEAM.dongs[a]);
-    const L = ((b.x0 - vx) / w) * 100, Rt = ((b.x1 - vx) / w) * 100, T = ((b.y0 - vy) / h) * 100, B = ((b.y1 - vy) / h) * 100;
-    const cx = (L + Rt) / 2, cy = (T + B) / 2;
-    const spot = [[cx, T + 6], [cx, B - 5], [L + 7, cy], [Rt - 7, cy]].find(([l, t]) => l > 5 && l < 95 && t > 4 && t < 96
-      && !pinBox.some(([a0, b0, a1, b1]) => l + 6 > a0 && l - 6 < a1 && t + 3.5 > b0 && t - 3.5 < b1));
-    return spot ? `<span class="glab" style="left:${spot[0]}%;top:${spot[1]}%">${a}</span>` : '';
-  }).join('');
-  const pins = list.map((x) => { const [l, t] = pct(FACTORIES[x.fid].ll); return pinHtml(s, x, `left:${l}%;top:${t}%`); }).join('');
-  const sel = list.find((x) => x.fid === UI.pin);
-  const tail = `<div class="gleg"><span><i class="k-back"></i>반려</span><span><i class="k-prev"></i>미흡 확인 있음</span><span><i class="k-visit"></i>점검</span><span><i class="today"></i>오늘 방문</span></div>
-    ${sel ? cardOf(sel) : `<div class="small">${list.length ? '핀을 누르면 그 공장이 아래에 나와요' : `${UI.area ? UI.area + '에는 ' : ''}할 일이 없어요`}</div>`}
+  // 멀리서는 구 4곳만 색으로, 가까이(구를 고르면) 그 구를 읍·면·동 경계로 나눠 보인다 (2026-09-28 사용자 지시).
+  // 읍·면·동 이름은 달지 않는다 — 네이버 지도에 이미 있고 공장 핀과 겹친다 (2026-09-28 사용자 지시).
+  // 그림 지도는 손으로 확대할 수 없으니 구를 고른 것을 "가까이"로 본다. 네이버 지도는 확대 단계로 가른다(nvPaint)
+  const lab = (ll, cls, t) => { const [l, tp] = pct(ll); return l > 4 && l < 96 && tp > 3 && tp < 97 ? `<span class="glab ${cls}" style="left:${l}%;top:${tp}%">${t}</span>` : ''; };
+  // 구를 고르면 그 구만 남기고 나머지 구와 화성시 바깥 선은 그리지 않는다 (2026-09-28 사용자 지시)
+  const shapes = UI.gu
+    ? HWASEONG_GU.gu.filter((g) => g.name === UI.gu).map((g) => `<path d="${path(g.polys)}" class="gu open"/>`).join('')
+      + HWASEONG.filter((d) => d.gu === UI.gu).map((d) => `<path d="${path(d.polys)}" class="dong" style="fill:${GU_COLOR[d.gu]}"><title>${d.gu} ${d.name}</title></path>`).join('')
+    : HWASEONG_GU.gu.map((g) => `<path d="${path(g.polys)}" class="gu" style="fill:${GU_COLOR[g.name]}" data-act="gu" data-v="${g.name}"><title>${g.name}</title></path>`).join('')
+      + `<path d="${path(HWASEONG_GU.city)}" class="city"/>`;
+  const labels = UI.gu ? '' : HWASEONG_GU.gu.map((g) => lab(g.label, 'gulab', g.name)).join('');
+  // 공장 핀 — 점검 예정(isDue — 아래 공장 줄의 "점검 예정" 꼬리표와 같은 기준)은 파란 핀과 이름으로 크게,
+  // 나머지는 작은 회색 점. 점검 예정 핀을 나중에 그려 위에 오게 한다. 누르면 아래에 그 공장 줄이 나온다 (2026-09-28 사용자 지시)
+  const order = [...list].sort((a, b) => isDue(s, a) - isDue(s, b));
+  const pins = order.map((fid) => { const [l, t] = pct(FACTORIES[fid].ll); return pinHtml(s, fid, `left:${l}%;top:${t}%`); }).join('');
+  const sel = list.includes(UI.pin) ? UI.pin : null;
+  const tail = `<div class="gleg"><span><i class="due"></i>점검 예정</span><span><i class="etc"></i>다른 공장</span></div>
+    ${sel ? cardOf(sel) : `<div class="small">${list.length ? '핀을 누르면 그 공장이 아래에 나와요' : '이 구에는 우리 조 공장이 없어요'}</div>`}
     <div class="small gsrc">경계 자료: 통계청 SGIS, vuski/admdongkor (CC BY 4.0)</div>`;
   nvLoad();
   const nv = NV.st === 'ready', full = `<button class="gfbtn" data-act="mapFull" aria-label="지도 전체화면">${I('expand', 20)}</button>`;
@@ -346,18 +382,20 @@ function taskMap(s, list, cardOf) {
   return `${NV.st === 'fail' ? '<div class="small">네이버 지도를 불러오지 못해 그림 지도로 보여요</div>' : ''}<div class="gmap">${drawn}${full}</div>
     ${tail}`;
 }
-// 핀 하나 — 그림 지도에서는 자리(style)를 받아 버튼으로, 네이버 지도에서는 마커 속 내용으로 쓴다
-function pinHtml(s, x, style) {
-  const k = pinKind(x), f = FACTORIES[x.fid], cls = `gpin k-${k}${(s.visits[x.fid] || '').startsWith('오늘') ? ' today' : ''}${UI.pin === x.fid ? ' sel' : ''}`;
-  const inner = `<i>${KIND[k]}</i><b>${f.name}</b>`;
-  return style ? `<button class="${cls}" style="${style}" data-act="pin" data-fid="${x.fid}" aria-label="${f.name} ${KIND[k]}">${inner}</button>`
-    : `<div class="nvpin"><span class="${cls}">${inner}</span></div>`;
+// 핀 하나 — 그림 지도에서는 자리(style)를 받아 버튼으로, 네이버 지도에서는 마커 속 내용으로 쓴다.
+// 점검 예정은 물방울 핀(끝이 공장 자리) + 아래 이름, 나머지는 가운데가 공장 자리인 작은 점
+const PIN_SVG = '<svg viewBox="0 0 24 32" width="28" height="37" aria-hidden="true"><path d="M12 .8C5.8.8.8 5.8.8 12c0 8.6 11.2 19.2 11.2 19.2S23.2 20.6 23.2 12C23.2 5.8 18.2.8 12 .8z"/><circle cx="12" cy="12" r="4.6"/></svg>';
+function pinHtml(s, fid, style) {
+  const f = FACTORIES[fid], due = isDue(s, fid), cls = `gpin2 ${due ? 'due' : 'etc'}${UI.pin === fid ? ' sel' : ''}`;
+  const inner = due ? `${PIN_SVG}<b>${f.name}</b>` : '<i></i>';
+  return style ? `<button class="${cls}" style="${style}" data-act="pin" data-fid="${fid}" aria-label="${f.name}${due ? ' 점검 예정' : ''}">${inner}</button>`
+    : `<div class="nvmk"><span class="${cls}">${inner}</span></div>`;
 }
 
 /* ---------- 네이버 지도 (2026-09-22) — mapkey.js에 Client ID가 있으면 그림 지도 대신 깐다 ----------
    못 불러오거나(신호 없음) 인증이 막히면 그림 지도로 남는다. 지도 한 벌을 계속 다시 쓴다 —
    화면을 새로 그릴 때마다 지도를 새로 만들면 깜박이고 사용량이 는다. */
-const NV = { st: 'none', el: null, map: null, marks: [], fit: null };  // st: none · loading · ready · fail
+const NV = { st: 'none', el: null, map: null, marks: [], labs: [], fit: null, zAll: 0 };  // st: none · loading · ready · fail
 function nvLoad() {
   if (!window.NAVER_MAP_KEY || NV.st !== 'none') return;
   NV.st = 'loading';
@@ -370,44 +408,77 @@ function nvLoad() {
 }
 function bboxLL(names) {
   let w = 1e9, s = 1e9, e = -1e9, n = -1e9;
-  HWASEONG.filter((h) => names.includes(h.name)).forEach((h) => mainPolys(h).forEach((p) => p[0].forEach(([x, y]) => {
+  HWASEONG.filter((h) => !names || names.includes(h.name)).forEach((h) => mainPolys(h).forEach((p) => p[0].forEach(([x, y]) => {
     w = Math.min(w, x); e = Math.max(e, x); s = Math.min(s, y); n = Math.max(n, y); })));
   return { w, s, e, n };
 }
 function nvMount() {
   const slot = $('#nvSlot'); if (!slot || !UI.nvArgs) return;
   const N = naver.maps, { list, focus } = UI.nvArgs;
-  const area = (nm) => TEAM.areas.find((a) => TEAM.dongs[a].includes(nm)) || '';
   if (!NV.map) {
     NV.el = document.createElement('div'); NV.el.className = 'nvmap'; slot.appendChild(NV.el);
     NV.map = new N.Map(NV.el, { mapDataControl: false, scaleControl: false, zoomControl: true,
       zoomControlOptions: { position: N.Position.TOP_RIGHT, style: N.ZoomControlStyle.SMALL } });
-    NV.map.data.addGeoJson({ type: 'FeatureCollection', features: HWASEONG.map((d) => ({ type: 'Feature',
-      properties: { name: d.name, area: area(d.name) }, geometry: { type: 'MultiPolygon', coordinates: d.polys } })) });
-    NV.map.data.addListener('click', (e) => { const a = e.feature.getProperty('area'); if (a) ACTS.area({ v: a }); });
+    // 구 4곳 → 읍·면·동 29곳 → 화성시 바깥 테두리 차례로 얹고, 무엇을 보일지는 nvPaint가 확대 단계를 보고 정한다
+    const feat = (props, polys) => ({ type: 'Feature', properties: props, geometry: { type: 'MultiPolygon', coordinates: polys } });
+    NV.map.data.addGeoJson({ type: 'FeatureCollection', features: [
+      ...HWASEONG_GU.gu.map((g) => feat({ kind: 'gu', gu: g.name }, g.polys)),
+      ...HWASEONG.map((d) => feat({ kind: 'dong', gu: d.gu, name: d.name }, d.polys)),
+      feat({ kind: 'city' }, HWASEONG_GU.city)] });
+    // 구·읍·면·동을 누르면 그 구를 고른다
+    NV.map.data.addListener('click', (e) => { const g = e.feature.getProperty('gu'); if (g && g !== UI.gu) ACTS.gu({ v: g }); });
+    const mk = (ll, cls, t, gu) => Object.assign(new N.Marker({ map: NV.map, position: new N.LatLng(ll[1], ll[0]), clickable: false, zIndex: 1,
+      icon: { content: `<div class="nvlab"><span class="glab ${cls}">${t}</span></div>` } }), { gu });
+    NV.labs = HWASEONG_GU.gu.map((g) => mk(g.label, 'gulab', g.name, g.name));
+    N.Event.addListener(NV.map, 'zoom_changed', nvPaint);
   } else {
     slot.appendChild(NV.el);
     NV.map.setSize(new N.Size(slot.clientWidth, slot.clientHeight)); NV.map.refresh(true);
     if (NV.full !== !!UI.mapFull) NV.fit = null;  // 전체화면을 열고 닫으면 크기가 바뀌니 범위를 다시 맞춘다
   }
   NV.full = !!UI.mapFull;
-  NV.map.data.setStyle((f) => {
-    const a = f.getProperty('area'), on = a && (!UI.area || UI.area === a);
-    return a ? { fillColor: '#2458d6', fillOpacity: on ? 0.14 : 0.05, strokeColor: '#2458d6', strokeWeight: on ? 3 : 1.5, strokeOpacity: on ? 0.95 : 0.5, clickable: true }
-      : { fillOpacity: 0, strokeColor: '#6b7789', strokeWeight: 1, strokeOpacity: 0.45, clickable: false };
-  });
   NV.marks.forEach((m) => m.setMap(null));
-  NV.marks = list.map((x) => {
-    const f = FACTORIES[x.fid];
-    const m = new N.Marker({ map: NV.map, position: new N.LatLng(f.ll[1], f.ll[0]), title: f.name, icon: { content: pinHtml(DB.s, x) } });
-    N.Event.addListener(m, 'click', () => ACTS.pin({ fid: x.fid }));
+  NV.marks = list.map((fid) => {
+    const f = FACTORIES[fid], due = isDue(DB.s, fid);
+    const m = new N.Marker({ map: NV.map, position: new N.LatLng(f.ll[1], f.ll[0]), title: f.name, zIndex: due ? 20 : 10, icon: { content: pinHtml(DB.s, fid) } });
+    N.Event.addListener(m, 'click', () => ACTS.pin({ fid }));
     return m;
   });
-  const key = UI.area || '전체';  // 권역을 바꿀 때만 범위를 다시 맞춘다 — 핀을 누를 때마다 지도가 튀지 않게
+  const key = UI.gu || '전체';  // 구를 바꿀 때만 범위를 다시 맞춘다 — 다시 그릴 때마다 지도가 튀지 않게
   if (NV.fit !== key) {
     NV.fit = key; const b = bboxLL(focus);
-    NV.map.fitBounds(new N.LatLngBounds(new N.LatLng(b.s, b.w), new N.LatLng(b.n, b.e)), { top: 44, right: 20, bottom: 16, left: 20 });
+    NV.map.fitBounds(new N.LatLngBounds(new N.LatLng(b.s, b.w), new N.LatLng(b.n, b.e)), focus ? { top: 12, right: 12, bottom: 12, left: 12 } : { top: 44, right: 20, bottom: 16, left: 20 });
+    if (!focus) { NV.map.setZoom(NV.map.getZoom() + 1, false); NV.zAll = NV.map.getZoom(); }  // 전체는 한 단계 당겨 화성시가 칸에 꽉 차게 (2026-09-28 사용자 지시)
+    else {
+      // 고른 구는 칸에 거의 가득 차게 (2026-09-28 사용자 지시) — 네이버 지도는 한 단계에 두 배라, 당겨도 넘치는 게 조금이면 한 단계 더 당긴다
+      const v = NV.map.getBounds(), ne = v.getNE(), sw = v.getSW();
+      const fill = Math.max((b.e - b.w) / (ne.lng() - sw.lng()), (b.n - b.s) / (ne.lat() - sw.lat()));
+      if (fill * 2 <= 1.12) NV.map.setZoom(NV.map.getZoom() + 1, false);
+    }
   }
+  nvPaint();
+}
+// 네이버 지도 칠하기 — 전체 기본 크기에서는 구만, 거기서 한 단계라도 당기면 읍·면·동으로 나눠 보인다.
+// 구를 고르면 그 구만 크기와 상관없이 읍·면·동으로 보이고, 나머지 구와 화성시 바깥 선은 감춘다 (2026-09-28 사용자 지시)
+const GU_FILL = 0.18;  // 색은 옅게 (2026-09-28 사용자 지시 — 0.3에서 더 옅게)
+function nvPaint() {
+  if (!NV.map) return;
+  const near = NV.map.getZoom() > (NV.zAll || 11), sel = UI.gu;
+  const shown = (g) => !sel || sel === g;
+  const split = (g) => near || sel === g;  // 이 구를 읍·면·동으로 나눠 보이나
+  // 스타일은 매번 모든 값을 다 적는다 — 빠진 값은 네이버 지도가 앞의 것을 그대로 둬서,
+  // 구를 골랐다가 전체로 돌아오면 숨겼던 구 테두리가 안 돌아왔다 (2026-09-28 사용자 제보)
+  const st = (o) => ({ visible: true, fillColor: '#ffffff', fillOpacity: 0, strokeColor: '#ffffff', strokeWeight: 1, strokeOpacity: 1, clickable: false, zIndex: 0, ...o });
+  NV.map.data.setStyle((f) => {
+    const k = f.getProperty('kind'), g = f.getProperty('gu');
+    if (k === 'city') return st({ visible: !sel, strokeColor: '#8190a8', strokeWeight: 2, strokeOpacity: 0.55 });
+    if (k === 'gu') return !shown(g) ? st({ visible: false })
+      : sel ? st({ strokeColor: '#8190a8', strokeWeight: 2, strokeOpacity: 0.55, zIndex: 2 })  // 고른 구의 바깥 선 — 화성시 바깥 선과 같은 결
+      : split(g) ? st({ strokeWeight: 3.5, strokeOpacity: 0.95, zIndex: 2 })
+      : st({ fillColor: GU_COLOR[g], fillOpacity: GU_FILL, strokeWeight: 2, strokeOpacity: 0.95, clickable: true, zIndex: 1 });
+    return st({ visible: shown(g) && split(g), fillColor: GU_COLOR[g], fillOpacity: GU_FILL, strokeWeight: 1.2, strokeOpacity: 0.9, clickable: true, zIndex: 1 });
+  });
+  NV.labs.forEach((m) => m.setVisible(!sel));  // 구 이름은 전체일 때만
 }
 // 방문 예약 — 달력에서 날짜를 누르고 시·분 바퀴를 굴려 시간을 고른다 (2026-09-22 사용자 요청: 날짜 다섯 개 단추 → 달력, 오전/오후 → 시·분 따로 스크롤, 방문일 정하기 → 예약).
 // 지난 날은 못 고르고, 다른 공장 방문이 잡힌 날엔 막대가 뜬다. 보내면 공장주에게 예약 요청이 가고, 승인되면 캘린더에 오른다.
@@ -548,6 +619,12 @@ function firmInfo(fid) {
 // 공장 창 탭 (2026-09-23 사용자 결정) — 기업 정보가 늘어 센서 기록·점검 이력이 너무 아래로 밀려서 나눴다.
 // 처음 여는 탭은 기업 정보, 차례도 기업 정보 → 점검 준비 → 기록 (같은 날 사용자 지시로 바꿈)
 const FTABS = [['info', '기업 정보'], ['prep', '점검 준비'], ['log', '기록']];
+// 공장 창과 AI 요약 창이 같이 쓰는 칸 — 센서 이상 기록, 지난번 미흡 항목
+const senBlock = (hist) => `<div class="gpv"><div class="gpvh sen">${I('bell', 18)}<b>센서 이상 기록</b><em>${hist.length}건</em></div>
+  <div class="rlist">${hist.map((a) => `<div class="vrow"><span class="gsw">${a.day}<i>${hm(a.start)}</i></span><div class="rtx"><div class="t">${esc(SIM.title(a))}</div>
+    <small>${a.acks[0] ? `울린 뒤 ${a.acks[0].at - a.start}분 만에 조치` : SIM.endWord(a)}</small></div></div>`).join('')}</div></div>`;
+const prevBlock = (q) => `<div class="gpv"><div class="gpvh">${I('alert', 18)}<b>지난번 미흡 항목</b><em>${q.length}개</em></div>
+  ${q.map((e) => `<div class="q gpvq"><div class="t">${esc(e.it.text)}</div>${prevTimeline(e)}</div>`).join('')}</div>`;
 function pre(s, fid) {
   const f = FACTORIES[fid], q = openIssues(s, fid);
   const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid);
@@ -557,20 +634,15 @@ function pre(s, fid) {
   const bk = bookOf(s, fid);
   const tab = UI.ftab[fid] || 'info';  // 공장마다 마지막에 본 탭을 기억한다 (점검 결과를 보고 돌아와도 기록 탭 그대로)
   return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head(f.name, '', `<span class="small">${q.length ? `지난번 미흡 ${q.length}개` : '점검'}</span>`)}
+    ${head(f.name, UI.preBack[fid] || '', `<span class="small">${q.length ? `지난번 미흡 ${q.length}개` : '점검'}</span>`)}
     ${miniMap(fid)}
     <div class="gtabs gftabs" role="tablist">${FTABS.map(([k, w]) => { const n = k === 'prep' ? q.length : k === 'log' ? hist.length + facInsp(s, fid).length : 0;
       return `<button class="gtab${tab === k ? ' on' : ''}" role="tab" aria-selected="${tab === k}" data-act="ftab" data-fid="${fid}" data-v="${k}">${w}${n ? `<em class="${k === 'prep' ? 'warn' : ''}">${n}</em>` : ''}</button>`; }).join('')}</div>
     ${tab === 'info' ? firmInfo(fid) : tab === 'log' ? `
-    ${hist.length ? `<div class="gpv"><div class="gpvh sen">${I('bell', 18)}<b>센서 이상 기록</b><em>${hist.length}건</em></div>
-      <div class="rlist">${hist.map((a) => `<div class="vrow"><span class="gsw">${a.day}<i>${hm(a.start)}</i></span><div class="rtx"><div class="t">${esc(SIM.title(a))}</div>
-        <small>${a.acks[0] ? `울린 뒤 ${a.acks[0].at - a.start}분 만에 조치` : SIM.endWord(a)}</small></div></div>`).join('')}</div></div>`
-      : `<div><div class="lbl">센서 이상 기록</div><div class="cnone">센서 이상 기록이 없어요</div></div>`}
+    ${hist.length ? senBlock(hist) : `<div><div class="lbl">센서 이상 기록</div><div class="cnone">센서 이상 기록이 없어요</div></div>`}
     ${insHist(s, fid, true)}` : `
     ${kv([['방문', s.visits[fid] || '아직 안 잡힘'], bk && ['예약 요청', `${bk.v} ${bk.st === 'no' ? '거절됨' : '승인 기다림'}`]])}
-    ${q.length ? `<div class="gpv"><div class="gpvh">${I('alert', 18)}<b>지난번 미흡 항목</b><em>${q.length}개</em></div>
-      ${q.map((e) => `<div class="q gpvq"><div class="t">${esc(e.it.text)}</div>${prevTimeline(e)}</div>`).join('')}</div>`
-      : `<div><div class="lbl">지난번 미흡 항목</div><div class="cnone">고칠 게 남은 항목이 없어요</div></div>`}`}
+    ${q.length ? prevBlock(q) : `<div><div class="lbl">지난번 미흡 항목</div><div class="cnone">고칠 게 남은 항목이 없어요</div></div>`}`}
   </div><div class="ft">
     <div class="gft2"><button class="btn ghost" data-act="date" data-fid="${fid}">${bk && bk.st === 'no' ? '다시 예약하기' : bk || s.visits[fid] ? '예약 변경' : '예약하기'}</button>
     ${going || s.visits[fid] ? `<button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>`
@@ -691,7 +763,7 @@ function selfSheet() {
   </div>`;
 }
 
-/* ---------- G5 점검 — 목록 한 장에서 줄마다 바로 답하기 (2026-09-18 사용자 결정) ---------- */
+/* ---------- G5 점검 — 목록 한 장에서 줄마다 바로 답하기 (2026-09-18 사용자 결정). 답 순서는 해당 없음 | 문제 있음 | 이상 없음 (2026-09-28 사용자 지시) ---------- */
 const ANS = { ok: '이상 없음', bad: '문제 있음', na: '해당 없음' };
 const GRP = { base: '기본 체크리스트', ai: 'AI 제안', self: '직접 추가' };
 // 묶음 — 기본 체크리스트는 영역(01~05)마다, 나머지는 출처마다 (2026-09-22)
@@ -705,47 +777,65 @@ function checkList(s) {
   const nOk = n('ok'), nBad = n('bad'), nNa = n('na');
   const done = nOk + nBad + nNa, left = d.items.length - done;
   const bad = d.items.filter((x) => x.answer === 'bad');
-  const only = UI.only && left;
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
   const top = `<div class="apptop">${band(f.name + (redo ? ' 고쳐 내기' : ' 점검'), redo ? '' : 'pick')}${bar()}
     <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
     <div class="prog">${['ok', 'bad', 'na'].map((v) => `<i class="${v}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div>
     <div class="tally"><span class="ok">✓ ${ANS.ok} ${nOk}</span><span class="bad">⚠ ${ANS.bad} ${nBad}</span>${nNa ? `<span class="na">— ${ANS.na} ${nNa}</span>` : ''}${left ? `<span>안 본 것 ${left}</span>` : ''}</div></div></div>`;
-  let rows = '', last = null;
-  d.items.forEach((x, i) => {
-    const k = gkey(x);
-    if (k !== last) {  // 묶음 머리글 — 눌러서 접고 편다
-      last = k;
-      const g = d.items.filter((y) => gkey(y) === k), rest = g.filter((y) => !y.answer).length;
-      const tag = AREA[k] ? `<span class="must">${AREA[k].common ? '공통' : '설비별'}</span>` : k === 'prev' ? '<span class="must">이상 없음 = 고쳐짐</span>' : '';
-      rows += `<button class="grp gh" data-act="fold" data-k="${k}">${UI.fold[k] ? '▸' : '▾'} ${gname(k)}${tag}<span class="must">${g.length}개</span>${rest ? `<span class="rest">안 본 것 ${rest}</span>` : '<span class="small">다 답함</span>'}</button>`;
-    }
-    if (UI.fold[k] || (only && x.answer)) return;
+  // 테마(묶음)마다 한 쪽 — 한 테마를 다 보고 다음 쪽으로 넘긴다. 맨 끝은 마무리 쪽 (2026-09-28 사용자 지시)
+  const pages = [...new Set(d.items.map(gkey))].map((k) => {
+    const l = d.items.map((x, i) => [x, i]).filter(([x]) => gkey(x) === k);
+    return { k, l, rest: l.filter(([x]) => !x.answer).length };
+  });
+  const endI = pages.length, cur = Math.min(UI.cpage || 0, endI);
+  const short = (k) => (k === 'prev' ? '지난번 미흡' : gname(k));
+  const chips = `<div class="cpg" role="tablist">${pages.map((p, i) => `<button class="${i === cur ? 'on' : ''}${p.rest ? '' : ' done'}" data-act="cpage" data-v="${i}" aria-selected="${i === cur}">
+      ${p.rest ? `<em>${p.rest}</em>` : I('check', 13)}${short(p.k)}</button>`).join('')}
+    <button class="${cur === endI ? 'on' : ''}" data-act="cpage" data-v="${endI}" aria-selected="${cur === endI}">${I('flag', 13)}마무리</button></div>`;
+  const row = ([x, i]) => {
     const st = x.answer || '';
     const mark = [x.memo ? '메모: ' + esc(x.memo) : '', x.shot ? '사진 1장' : ''].filter(Boolean).join('<br>');
-    rows += `<div class="crow ${st}">
+    return `<div class="crow ${st}">
       <div class="ctop"><span class="cnum">${i + 1}</span><div class="t">${esc(x.text)}</div></div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
       <div class="cans">
-        <button class="${st === 'ok' ? 'on ok' : ''}" data-act="ans" data-n="${i}" data-v="ok">${ANS.ok}</button>
-        <button class="${st === 'bad' ? 'on bad' : ''}" data-act="ansBad" data-n="${i}">${ANS.bad}</button>
         <button class="${st === 'na' ? 'on na' : ''}" data-act="ans" data-n="${i}" data-v="na">${ANS.na}</button>
+        <button class="${st === 'bad' ? 'on bad' : ''}" data-act="ansBad" data-n="${i}">${ANS.bad}</button>
+        <button class="${st === 'ok' ? 'on ok' : ''}" data-act="ans" data-n="${i}" data-v="ok">${ANS.ok}</button>
       </div>
       ${st === 'bad' && mark ? `<div class="cmemo">${mark}</div>` : ''}
     </div>`;
-  });
+  };
   const res = d.result || RESULTS[0];
+  let body, foot;
+  if (cur < endI) {
+    const p = pages[cur], k = p.k;
+    const tag = AREA[k] ? tg(AREA[k].common ? '공통' : '설비별') : k === 'prev' ? tg('이상 없음 = 고쳐짐') : '';
+    body = `<div class="cph"><span class="cpn">${cur + 1} / ${endI}</span><b>${gname(k)}</b></div>
+      <div class="cpt">${tag}${tg(`${p.l.length}개`)}${p.rest ? tg(`안 본 것 ${p.rest}`, 'now') : `<span class="alldone">${I('check', 13)}다 답함</span>`}</div>
+      <div class="clist">${p.l.map(row).join('')}</div>`;
+    // 다음 테마 이름이 두 줄이 되면 "유해위험 / 기구/시설"처럼 낱말 사이에서 끊는다 — 빗금으로 이은 말(기구/시설)은 한 덩어리로 (2026-09-28 사용자 지시)
+    const nx = (cur + 1 < endI ? esc(short(pages[cur + 1].k)) : '마무리').replace(/([가-힣]{2}\/[가-힣]+)/, '<wbr><span class="nw">$1</span>');
+    foot = `<div class="gft2">${cur ? `<button class="btn ghost" data-act="cpage" data-v="${cur - 1}">${I('back', 18)} 이전</button>` : ''}
+      <button class="btn cnext" data-act="cpage" data-v="${cur + 1}"><span class="cnl">다음: ${nx}</span>${I('chevron', 18)}</button></div>`;
+  } else {
+    // 마무리 — 안 본 것이 남았으면 그 쪽으로 바로 가는 줄, 다 봤으면 점검 결과를 고르고 낸다
+    const todo = pages.map((p, i) => [p, i]).filter(([p]) => p.rest);
+    body = `<div class="cph"><span class="cpn">마무리</span><b>점검 결과 내기</b></div>
+      ${todo.length ? `<div class="lbl">아직 안 본 항목</div><div class="clist">${todo.map(([p, i]) => `<button class="cgo" data-act="cpage" data-v="${i}"><span>${gname(p.k)}</span>${tg(`안 본 것 ${p.rest}`, 'now')}${I('chevron', 16)}</button>`).join('')}</div>` : ''}
+      ${bad.length ? `<div class="lbl">문제로 찍은 항목 ${bad.length}개</div><ul class="q gul">${bad.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ul>` : `<div class="small">문제로 찍은 항목이 없어요</div>`}
+      ${left ? '' : `<div class="lbl">점검 결과<span class="hyp">가설</span></div>
+      <div class="seg">${RESULTS.map((r) => `<button class="${res === r ? 'on' : ''}" data-act="pickResult" data-v="${r}">${r}</button>`).join('')}</div>
+      <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">운영자가 검사해요. 반려되면 고쳐서 다시 낼 수 있어요.<br>승인되면 문제 항목이 공장주에게 개선 요청으로 가요.</div></div>`}`;
+    // 안 본 것이 남으면 내기 단추는 잠그고, 누르면 까닭을 알린다 (못 누르는 단추 규칙, 2026-09-22)
+    const go = redo ? '고쳐서 다시 내기' : '점검 결과 내기';
+    foot = `<div class="gft2"><button class="btn ghost" data-act="cpage" data-v="${endI - 1}">${I('back', 18)} 이전</button>
+      ${left ? `<button class="btn glocked" data-act="lockedSubmit" data-v="${left}">${I('lock', 17)} ${go}</button>` : `<button class="btn" data-act="submitFirst">${go}</button>`}</div>`;
+  }
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
     ${redo && redo.back ? `<div class="warnbar"><span class="ic">${I('alert', 22)}</span><div><div class="mid">${redo.back.at} 운영자가 반려했어요</div><div class="small ink">"${esc(redo.back.note)}"</div></div></div>` : ''}
-    ${left ? `<div class="seg"><button class="${UI.only ? '' : 'on'}" data-act="only" data-v="0">전체 ${d.items.length}</button><button class="${UI.only ? 'on' : ''}" data-act="only" data-v="1">안 본 것 ${left}</button></div>` : ''}
-    ${rows}
-    ${bad.length ? `<div class="grp">문제로 찍은 항목<span class="must">${bad.length}개</span></div>
-      <ul class="q gul">${bad.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ul>` : ''}
-    ${left ? '' : `<div class="lbl">점검 결과<span class="hyp">가설</span></div>
-      <div class="seg">${RESULTS.map((r) => `<button class="${res === r ? 'on' : ''}" data-act="pickResult" data-v="${r}">${r}</button>`).join('')}</div>
-      <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">운영자가 검사해요. 반려되면 고쳐서 다시 낼 수 있어요.<br>승인되면 문제 항목이 공장주에게 개선 요청으로 가요.</div></div>`}
-  </div><div class="ft">
-    ${left ? `<button class="btn ghost" data-act="only" data-v="1">안 본 항목 ${left}개 보기</button>` : `<button class="btn" data-act="submitFirst">${redo ? '고쳐서 다시 내기' : '점검 결과 내기'}</button>`}
-  </div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}`;
+    ${chips}
+    ${body}
+  </div><div class="ft">${foot}</div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}`;
 }
 function badSheet(s) {
   const it = s.draft.items[UI.sheet.n];
@@ -763,12 +853,16 @@ function badSheet(s) {
 }
 /* G6 재점검 화면은 2026-09-22 걷었다 — 지난번 미흡 항목은 다음 점검의 체크리스트에 붙는다 */
 /* ---------- 낸 뒤 ---------- */
-function sent(s, kind) {
-  const wait = unsentN(s), first = kind === 'first';
-  return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
-    <div class="donemark" style="${wait ? 'border-style:dashed' : ''}">${wait ? I('clock', 38) : I('check', 40)}</div>
-    <div class="center big">${wait ? '휴대폰에 저장됐어요' : '올라갔어요'}</div>
-    <div class="center small ink">${wait ? '전파가 없어요. <b>연결되면 저절로 올라가요.</b><br>앱을 지우거나 로그아웃하지 마세요.' : (first ? '운영자가 검사해요. 승인되면 공장주에게 개선 요청이 가요.<br>반려되면 내 할 일 맨 위에 다시 올라와요.' : '공장주와 운영자가 지금 볼 수 있어요.')}</div>
+// 낸 뒤 — AI 기다리기처럼 머리글을 달고 가운데로 모은다 (2026-09-28 사용자 지시). 막 냈을 때만 표시가 튀어나오고 체크가 그려진다
+function sent(s, kind, fid) {
+  const wait = unsentN(s), first = kind === 'first', f = FACTORIES[fid], fresh = UI.sentFresh;
+  if (fresh) setTimeout(() => { UI.sentFresh = false; }, 50);
+  return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">${head(f ? f.name + ' 점검' : '점검 결과', '')}
+    <div class="gaiw gsent${fresh ? ' fresh' : ''}" role="status">
+      <div class="gdmark${wait ? ' wait' : ''}"><i></i><span>${wait ? I('clock', 40) : I('check', 44)}</span></div>
+      <div class="center big">${wait ? '휴대폰에 저장됐어요' : '올라갔어요'}</div>
+      <div class="center small ink">${wait ? '전파가 없어요. <b>연결되면 저절로 올라가요.</b><br>앱을 지우거나 로그아웃하지 마세요.' : (first ? '운영자가 검사해요.<br>승인되면 공장주에게 개선 요청이 가요.<br>반려되면 내 할 일 맨 위에 다시 올라와요.' : '공장주와 운영자가 지금 볼 수 있어요.')}</div>
+    </div>
   </div><div class="ft"><button class="btn" data-go="">홈으로</button></div></div>`;
 }
 
@@ -833,26 +927,66 @@ function records(s, fid, from) {
     ${s.outbox.guard.map((m) => `<div class="q now"><div class="rowx"><span class="t">${FACTORIES[m.data.fid].name}</span><span class="small">9/17</span></div><div class="small">${I('clock', 14)} 휴대폰에 저장됨<br>전파가 잡히면 올라가요</div></div>`).join('')}
   </div></div>`;
 }
-/* ---------- G9 주간 보고 (2026-09-22 — 기존 웹 "주간점검"의 칸을 따른다: 점검조·작성자·점검 기업 수·결과별 수) ---------- */
-const WEEK = { key: '9/15', label: '9/15(월) ~ 9/19(금)', days: ['9/15', '9/16', '9/17', '9/18', '9/19'] };
-function weekCounts(s) {
-  const ins = s.inspections.filter((i) => WEEK.days.includes(i.date) && TEAM.members.includes(i.by));
+/* ---------- G9 주간 보고 (2026-09-22 — 기존 웹 "주간점검"의 칸을 따른다: 점검조·작성자·점검 기업 수·결과별 수) ----------
+   2026-09-28 사용자 결정으로 칸을 늘렸다: 요약 숫자와 지난주 대비 → 요일별 점검 → 찾은 문제(테마별) → 처리 상태 → 앞으로 예정 → 특이 사항 칩 */
+// 앱 달력으로 9/17은 목요일이라 이번 주는 9/14(월)~9/18(금) (2026-09-28 바로잡음 — 전엔 9/15(월)로 하루 밀려 있었다).
+// key는 저장된 보고를 찾는 이름이라 그대로 둔다
+const WEEK = { key: '9/15', label: '9/14(월) ~ 9/18(금)', days: ['9/14', '9/15', '9/16', '9/17', '9/18'], from: 914, to: 918, prev: [907, 911] };
+const WK_TAGS = ['점검 거부', '휴업/폐업', '연락 안 됨', '공장주 부재'];
+function weekCounts(s, from = WEEK.from, to = WEEK.to) {
+  const ins = s.inspections.filter((i) => mdNum(i.date) >= from && mdNum(i.date) <= to && TEAM.members.includes(i.by));
   const c = Object.fromEntries(RESULTS.map((r) => [r, ins.filter((i) => (i.result || RESULTS[0]) === r).length]));
   return { firms: new Set(ins.map((i) => i.fid)).size, c, ins };
 }
+// 문제 항목을 테마(영역)별로 센다 — 기본 체크리스트 밖의 것은 AI 제안·직접 추가·지난번 미흡으로
+const issueThemes = (ins) => {
+  const m = {};
+  ins.forEach((i) => i.items.filter((x) => x.answer === 'bad').forEach((x) => { const k = gname(gkey(x)) || '그 밖'; m[k] = (m[k] || 0) + 1; }));
+  return Object.entries(m).sort((a, b) => b[1] - a[1]);
+};
 function weekly(s) {
-  const w = weekCounts(s), done = (s.weekly || {})[WEEK.key];
+  const w = weekCounts(s), pw = weekCounts(s, ...WEEK.prev), done = (s.weekly || {})[WEEK.key];
+  const diff = w.firms - pw.firms;
+  const nBad = w.ins.reduce((n, i) => n + i.items.filter((x) => x.answer === 'bad').length, 0);
+  // 요일별 — 그날 점검한 기업 수로 막대
+  const perDay = WEEK.days.map((d) => new Set(w.ins.filter((i) => mdNum(i.date) === mdNum(d)).map((i) => i.fid)).size);
+  const top = Math.max(1, ...perDay);
+  const themes = issueThemes(w.ins), tMax = themes.length ? themes[0][1] : 1;
+  const st = (k) => w.ins.filter((i) => (i.st || 'ok') === k).length;
+  // 앞으로 예정 — 방문 잡힘(오늘 뒤) / 공장주 승인 기다림 / 예약 필요(할 일인데 방문일도 요청도 없음)
+  const t = tasks(s).filter((x) => x.kind === 'visit');
+  const booked = t.filter((x) => s.visits[x.fid] && !s.visits[x.fid].startsWith('오늘'));
+  const waiting = t.filter((x) => !s.visits[x.fid] && bookOf(s, x.fid) && bookOf(s, x.fid).st !== 'no');
+  const need = t.filter((x) => !s.visits[x.fid] && !(bookOf(s, x.fid) && bookOf(s, x.fid).st !== 'no'));
   const lines = w.ins.map((i) => `<div class="rowx"><span><b>${FACTORIES[i.fid].name}</b> <span class="small">${i.date} ${i.result || RESULTS[0]}</span></span>${tg(ST_WORD[i.st || 'ok'], 's-' + (i.st || 'ok'))}</div>`);
+  const tags = done ? done.tags || [] : UI.wkTags;
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('주간 보고', '', `<span class="small">${TEAM.name}</span>`)}
     <div class="today"><div><b>${WEEK.label}</b></div></div>
     ${kv([['조', TEAM.name], ['조장', TEAM.lead], ['조원', TEAM.members.filter((m) => m !== TEAM.lead).join(', ')], ['작성자', ME]])}
-    <div class="lbl">이번 주 실적</div>
-    <div class="q"><div class="rowx"><span class="t">점검 기업</span><b>${w.firms}곳</b></div>
-      ${RESULTS.map((r) => `<div class="rowx"><span class="small">${r}</span><span class="small ink">${w.c[r]}건</span></div>`).join('')}</div>
-    ${lines.length ? `<div class="lbl">이번 주 점검</div><div class="q gstack">${lines.join('')}</div>` : ''}
-    ${done ? `<div class="stat"><div class="ck">${I('check', 26)}</div><div><div class="mid">${done.at} ${esc(done.by)} 냄</div><div class="small ink">${done.memo ? '특이 사항: ' + esc(done.memo) : '특이 사항 없음'}</div></div></div>`
-      : `<div class="lbl">특이 사항 (안 써도 돼요)</div><textarea class="input" id="wkMemo" placeholder="예: 향남 공장 한 곳이 점검을 거부함"></textarea>`}
+    <div class="wks">
+      <div class="wkh"><span>점검 기업</span><b>${w.firms}<small>곳</small></b>
+        <em class="${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}">지난주보다 ${diff > 0 ? `${diff}곳 늘었어요` : diff < 0 ? `${-diff}곳 줄었어요` : '같아요'}</em></div>
+      <div class="wkr">${RESULTS.map((r) => `<div><b>${w.c[r]}</b><span>${r}</span></div>`).join('')}<div class="bad"><b>${nBad}</b><span>찾은 문제</span></div></div>
+    </div>
+    <div class="lbl">요일별 점검</div>
+    <div class="wkd">${WEEK.days.map((d, i) => `<div class="${mdNum(d) === TODAY.m * 100 + TODAY.d ? 'now' : ''}"><em>${perDay[i] || ''}</em><i style="height:${(perDay[i] / top) * 100}%"></i><span>${WD[new Date(TODAY.y, +d.split('/')[0] - 1, +d.split('/')[1]).getDay()]}</span></div>`).join('')}</div>
+    ${lines.length ? `<div class="q gstack">${lines.join('')}</div>` : ''}
+    <div class="lbl">찾은 문제 (테마별)</div>
+    ${themes.length ? `<div class="q wkt">${themes.map(([k, n]) => `<div><span>${esc(k)}</span><i><b style="width:${(n / tMax) * 100}%"></b></i><em>${n}건</em></div>`).join('')}</div>`
+      : '<div class="cnone">이번 주 찾은 문제가 없어요</div>'}
+    <div class="lbl">처리 상태</div>
+    <div class="wkr wkst"><div><b>${st('ok')}</b><span>승인</span></div><div><b>${st('wait')}</b><span>검사 대기</span></div><div class="${st('back') ? 'bad' : ''}"><b>${st('back')}</b><span>반려</span></div></div>
+    ${st('back') ? `<div class="warnbar"><span class="ic">${I('alert', 22)}</span><div class="small ink">반려된 점검 ${st('back')}건을 고쳐 내야 해요</div></div>` : ''}
+    <div class="lbl">앞으로 예정</div>
+    ${kv([['방문 잡힘', booked.length ? booked.map((x) => `${FACTORIES[x.fid].name} ${s.visits[x.fid]}`).join('<br>') : '없음'],
+      ['승인 기다림', waiting.length ? waiting.map((x) => FACTORIES[x.fid].name).join('<br>') : '없음'],
+      ['예약 필요', need.length ? need.map((x) => FACTORIES[x.fid].name).join('<br>') : '없음']])}
+    <div class="lbl">특이 사항${done ? '' : ' (안 골라도 돼요)'}</div>
+    ${done ? `<div class="stat"><div class="ck">${I('check', 26)}</div><div><div class="mid">${done.at} ${esc(done.by)} 냄</div>
+        <div class="small ink">${tags.length ? tags.map((x) => tg(x)).join('') + '<br>' : ''}${done.memo ? esc(done.memo) : tags.length ? '' : '특이 사항 없음'}</div></div></div>`
+      : `<div class="wktg">${WK_TAGS.map((x) => `<button class="${tags.includes(x) ? 'on' : ''}" data-act="wkTag" data-v="${x}" aria-pressed="${tags.includes(x)}">${x}</button>`).join('')}</div>
+      <textarea class="input" id="wkMemo" placeholder="덧붙일 말 (예: 향남 공장 한 곳이 점검을 거부함)">${esc(UI.wkMemo || '')}</textarea>`}
     <div class="small">조장이 확인하는지는 아직 몰라요<span class="hyp">가설</span></div>
   </div><div class="ft">${done ? '<button class="btn ghost" data-go="">홈으로</button>' : '<button class="btn" data-act="sendWeekly">주간 보고 내기</button>'}</div></div>`;
 }
@@ -958,7 +1092,13 @@ function render() {
   else if (p[0] === 'map') html = mapScreen(s);
   else if (p[0] === 'cal') html = calScreen(s);
   else if (p[0] === 'factories') html = factoriesScreen(s);
-  else if (p[0] === 'pre') html = pre(s, p[1]) + mapFullView(p[1]);
+  else if (p[0] === 'pre') {
+    // 공장 창의 ← 는 들어온 목록(홈·지도·캘린더·공장 전체보기 등)으로 돌아간다 (2026-09-28 사용자 제보 — 지도에서 들어가도 홈으로 갔다).
+    // 공장 창 안쪽 화면(점검 결과·점검)에서 돌아올 때는 처음 적어 둔 곳을 그대로 쓴다
+    const prev = (lastHash || '').replace(/^#\/?/, '').split('/')[0];
+    if (location.hash !== lastHash && [...NAV.map(([go]) => go), 'factories'].includes(prev)) UI.preBack[p[1]] = prev;
+    html = pre(s, p[1]) + mapFullView(p[1]);
+  }
   else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
   else if (p[0] === 'photo') html = photo(s);
   else if (p[0] === 'ai') html = aiWait(s);
@@ -966,7 +1106,7 @@ function render() {
   else if (p[0] === 'list') html = checkList(s);
   else if (p[0] === 'ans' || p[0] === 'sum') { R.go('list'); return; }
   else if (p[0] === 're' || p[0] === 'resum') { R.go('pre/' + p[1]); return; }  // 옛 재점검 주소 — 회사 창으로
-  else if (p[0] === 'sent') html = sent(s, p[1]);
+  else if (p[0] === 'sent') html = sent(s, p[1], p[2]);
   else if (p[0] === 'weekly') html = weekly(s);
   else if (p[0] === 'records') html = records(s, p[1], p[2]);
   else if (p[0] === 'insp') html = inspView(s, p[1], p[2]);
@@ -984,7 +1124,10 @@ function render() {
     const tmp = document.createElement('div'); tmp.innerHTML = html;
     const nr = tmp.querySelector('#fres'); if (nr) { $('#fres').replaceWith(nr); return; }
   }
+  // 점검 쪽 칩 줄은 다시 그려도 가로 위치를 그대로 둔다 — 답을 누를 때마다 맨 왼쪽으로 튀었다 (2026-09-28 사용자 제보)
+  const cpx = $('.cpg') ? $('.cpg').scrollLeft : null;
   $('#app').innerHTML = html;
+  if (cpx != null && $('.cpg')) $('.cpg').scrollLeft = cpx;
   syncWheels();
   if (NV.st === 'ready') { nvMount(); nvFacMount(); }
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
@@ -997,6 +1140,7 @@ function sheet(v) { UI.sheet = v; render(); }
 function startDraft(fid) {
   DB.act((s) => {
     if (s.draft && s.draft.kind === 'first' && s.draft.fid === fid) return;
+    UI.cpage = 0;  // 새 점검은 첫 쪽부터 (하던 점검을 이어 할 때는 보던 쪽 그대로)
     s.draft = { kind: 'first', fid, photos: 0, ai: [], self: [], items: [], aiState: null, result: RESULTS[0] };
   });
 }
@@ -1106,8 +1250,14 @@ const ACTS = {
   },
   ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; }); },
   ansBad({ n }) { const it = DB.s.draft.items[+n]; sheet({ type: 'bad', n: +n, photo: !!it.shot, reason: it.reason || null }); },
-  fold({ k }) { UI.fold[k] = !UI.fold[k]; render(); },
-  area({ v }) { UI.area = v === '전체' ? null : v; UI.pin = null; render(); },
+  // 점검 쪽 넘기기 — 넘기면 맨 위로, 위 칩 줄은 지금 쪽이 보이게 민다
+  cpage({ v }) {
+    UI.cpage = +v; render(); scrollTo(0, 0);
+    const c = $('.cpg .on'), bar = c && c.parentElement;
+    if (bar) bar.scrollLeft = c.offsetLeft - (bar.clientWidth - c.offsetWidth) / 2;  // 고른 칩을 가운데로
+  },
+  lockedSubmit({ v }) { toast(`안 본 항목 ${v}개에 먼저 답해 주세요`); },
+  gu({ v }) { UI.gu = v || null; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
@@ -1134,6 +1284,7 @@ const ACTS = {
   areaClear() { UI.sheet.pick = []; render(); },
   areaApply() { UI.areas = [...UI.sheet.pick]; UI.sheet = null; render(); },
   calM({ v }) { UI.calM = Math.min(12, Math.max(1, UI.calM + +v)); UI.calD = null; render(); },
+  brief({ fid }) { sheet({ type: 'brief', fid }); },
   pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },
   pickResult({ v }) { DB.act((s) => { s.draft.result = v; }); },
   // 반려된 점검을 연다 — 답은 그대로 두고 고친다 (2026-09-22)
@@ -1143,14 +1294,15 @@ const ACTS = {
       s.draft = { kind: 'first', fid: ins.fid, redo: id, result: ins.result || RESULTS[0], photos: 0, ai: [], self: [], aiState: null,
         items: ins.items.map((x) => Object.assign({}, x)) };
     });
-    UI.only = false; R.go('list');
+    UI.cpage = 0; R.go('list');
   },
+  // 칩을 누르면 다시 그린다 — 적던 덧붙일 말은 먼저 담아 둔다
+  wkTag({ v }) { UI.wkMemo = $('#wkMemo') ? $('#wkMemo').value : ''; UI.wkTags = UI.wkTags.includes(v) ? UI.wkTags.filter((x) => x !== v) : [...UI.wkTags, v]; render(); },
   sendWeekly() {
     const memo = ($('#wkMemo') ? $('#wkMemo').value : '').trim(), w = weekCounts(DB.s);
-    DB.act((s) => { s.weekly = s.weekly || {}; s.weekly[WEEK.key] = { by: ME, at: '9/17', memo, firms: w.firms, c: w.c }; DB.log(`${TEAM.name} 주간 보고 냄`); });
+    DB.act((s) => { s.weekly = s.weekly || {}; s.weekly[WEEK.key] = { by: ME, at: '9/17', memo, tags: [...UI.wkTags], firms: w.firms, c: w.c }; DB.log(`${TEAM.name} 주간 보고 냄`); });
     toast('주간 보고를 냈어요');
   },
-  only({ v }) { UI.only = v === '1'; render(); },
   sheetPhoto() { UI.sheet.photo = true; render(); },
   saveBad() {
     const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ph = UI.sheet.photo, reason = UI.sheet.reason || '';
@@ -1168,7 +1320,8 @@ const ACTS = {
       DB.log(`지킴이 ${d.redo ? '반려된 점검 다시 냄' : '점검 냄'} · ${FACTORIES[d.fid].name}`);
       s.draft = null;
     });
-    R.go('sent/first');
+    UI.sentFresh = true;
+    R.go('sent/first/' + d.fid);
   },
   pickReason({ v }) { UI.sheet.reason = UI.sheet.reason === v ? null : v; render(); },
 };

@@ -209,6 +209,13 @@ const SEED = {
     ...[['seongwon', '9/03', '박지킴'], ['saehan', '8/25', '최지킴'], ['hangyeol', '9/10', '이조장']].map(([fid, date, by]) => ({
       id: 'i' + fid, fid, date, by, locked: true, st: 'ok', result: '점검완료',
       items: BASE_ITEMS['금속가공'].map((t, i) => ({ id: fid + i, text: t, src: 'base', answer: 'ok' })) })),
+    // 이번 주(9/15~) 다른 조원들이 한 점검 (2026-09-28) — 주간 보고를 채워 보이려고. 할 일이 없는 공장이라 홈 목록은 그대로.
+    // bad: 문제로 찍은 문항 [영역 키-번호]. 동화정공은 아직 운영자 검사 대기
+    ...[['ujin', '9/15', '박지킴', 'ok', '점검완료', ['a3-0', 'a3-3']], ['donghwa', '9/16', '최지킴', 'wait', '점검완료', ['a2-0', 'a3-1', 'a5-2']],
+      ['mirae', '9/16', '이조장', 'ok', '패트롤', []]].map(([fid, date, by, st, result, bad]) => ({
+      id: 'w' + fid, fid, date, by, locked: true, st, result,
+      items: CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => ({ id: `${fid}-${a.key}-${i}`, text: t, src: 'base', area: a.key,
+        answer: bad.includes(`${a.key}-${i}`) ? 'bad' : 'ok' }))) })),
     { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '점검완료', items: [
       { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블',
         log: [ { t: 'fix', at: '8/30', tm: '14:20', note: '케이블 걸이 설치' } ] },

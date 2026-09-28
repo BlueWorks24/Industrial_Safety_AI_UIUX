@@ -379,17 +379,17 @@ svg.i{flex:none;vertical-align:-.18em}
 .progtop{padding:10px 16px 12px;background:#fff;border-top:1px solid var(--ring)}
 .progtop .rowx{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
 .progtop .t{font-size:15px;font-weight:800}
-.crow{background:var(--surface);border:1px solid var(--ring);border-left-width:3px;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 10px rgba(23,32,51,.05)}
+/* 묶음마다 흰 칸 하나에 줄로 — 왼쪽 색 띠·옅은 바탕은 뺐다 (2026-09-28 사용자: 박스 왼쪽 초록 띠 없애기). 낸 점검 다시 보기(.rlist)와 같은 모양 */
+.clist{background:var(--surface);border:1px solid var(--line2);border-radius:14px;padding:0 14px}
+.crow{display:flex;flex-direction:column;gap:10px;padding:14px 0}
+.crow + .crow{border-top:1px solid var(--line)}
 .crow .ctop{display:flex;gap:10px;align-items:flex-start}
-.crow .t{font-size:16px;font-weight:700;line-height:1.4}
-.cnum{flex:none;width:26px;height:26px;border-radius:8px;background:#eef2fb;color:var(--navy);font-size:13px;font-weight:800;display:grid;place-items:center}
-.crow.ok{border-left-color:var(--green);background:#fbfdfc}
-.crow.bad{border-left-color:var(--amber);background:#fffdfa}
-.crow.na{border-left-color:#9aa6b8;background:#fafbfc}
-/* 답은 셋 — 답한 뒤에도 버튼이 남아 한 번에 고친다 (2026-09-18) */
-.cans{display:flex;gap:6px}
-.cans button{flex:1;min-width:0;min-height:50px;border:none;border-radius:var(--r-s);padding:0 4px;background:#fff;color:var(--mid);font-size:15px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--line2)}
-.cans button.on{color:#fff;box-shadow:none}
+.crow .t{font-size:16px;font-weight:700;line-height:1.45}
+.cnum{flex:none;min-width:20px;font-size:14px;font-weight:700;color:var(--soft);line-height:23px}
+/* 답은 셋 — 회색 틀 안에 셋을 나란히, 고른 것만 색으로 채운다. 답한 뒤에도 남아 한 번에 고친다 (2026-09-18) */
+.cans{display:flex;gap:4px;padding:4px;background:#f1f3f6;border-radius:var(--r-s)}
+.cans button{flex:1;min-width:0;min-height:46px;border:none;border-radius:9px;padding:0 4px;background:transparent;color:var(--mid);font-size:15px;font-weight:700;white-space:nowrap;cursor:pointer}
+.cans button.on{color:#fff;box-shadow:0 1px 3px rgba(23,32,51,.18)}
 .cans button.on::before{margin-right:4px}
 .cans button.on.ok{background:var(--green)}
 .cans button.on.ok::before{content:"✓"}
@@ -397,7 +397,29 @@ svg.i{flex:none;vertical-align:-.18em}
 .cans button.on.bad::before{content:"⚠"}
 .cans button.on.na{background:#6b7789}
 .cans button.on.na::before{content:"—"}
-.cmemo{font-size:13px;color:var(--mid);line-height:1.5}
+.cmemo{margin-left:30px;font-size:13px;color:var(--mid);line-height:1.5}
+/* 테마마다 한 쪽 (2026-09-28) — 위 칩 줄로 쪽을 옮기고, 아래 이전 | 다음 단추로 넘긴다 */
+.cpg{position:relative;display:flex;gap:6px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none}
+.cpg::-webkit-scrollbar{display:none}
+.cpg button{flex:none;min-height:40px;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);border-radius:999px;padding:0 12px;background:#fff;color:var(--mid);font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
+.cpg button em{font-style:normal;min-width:18px;height:18px;border-radius:9px;padding:0 5px;background:var(--brand-l);color:var(--brand);font-size:11px;font-weight:800;display:inline-grid;place-items:center}
+.cpg button.done{color:var(--green)}
+.cpg button.done svg{stroke-width:2.4}
+.cpg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.cpg button.on em{background:rgba(255,255,255,.2);color:#fff}
+.cph{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.cph b{font-size:19px;font-weight:800;color:var(--ink)}
+.cpn{font-size:13px;font-weight:800;color:var(--brand)}
+.cpt{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:2px}
+.cpt .alldone{display:inline-flex;align-items:center;gap:2px;color:var(--green);font-size:12px;font-weight:800}
+.cgo{width:100%;min-height:52px;display:flex;align-items:center;gap:6px;border:none;background:none;padding:0;font:inherit;font-size:15px;font-weight:700;color:var(--ink);text-align:left;cursor:pointer}
+.cgo span:first-child{flex:1}
+.cgo + .cgo{border-top:1px solid var(--line)}
+.btn.cnext{display:flex;align-items:center;justify-content:center;gap:4px;word-break:keep-all;line-height:1.3}
+.btn.cnext .nw{white-space:nowrap}
+.btn.cnext .cnl{min-width:0;text-align:center}
+.btn.cnext svg{flex:none}
+.gft2 .btn{display:flex;align-items:center;justify-content:center;gap:4px}
 /* 위에 남는 진행 줄 — 상태별로 색을 나눠 채운다 */
 .progtop .prog{display:flex;gap:2px;background:#e9edf2}
 .progtop .prog i.ok{background:var(--green)}
@@ -406,9 +428,6 @@ svg.i{flex:none;vertical-align:-.18em}
 .progtop .tally{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:13px;font-weight:700;color:var(--mid)}
 .progtop .tally .ok{color:var(--green)}
 .progtop .tally .bad{color:var(--amber)}
-/* 묶음 머리글을 눌러 접는다 */
-.grp.gh{width:100%;min-height:44px;padding:8px 2px;border:none;background:none;text-align:left;cursor:pointer}
-.grp .rest{background:var(--brand-l);color:var(--brand);border-radius:999px;padding:2px 8px;font-size:12px;font-weight:800}
 /* 회사 창 약도 (2026-09-20) — 실제 지도가 아니라 공장 자리만 보여 주는 그림이다 */
 .map{position:relative;border-radius:var(--r);overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
 .map svg{display:block;width:100%;height:auto}
@@ -426,28 +445,45 @@ svg.i{flex:none;vertical-align:-.18em}
 .gmap path{fill:#e6eaf0;stroke:#c9d1dc;stroke-width:1;vector-effect:non-scaling-stroke}
 .gmap path.mine{fill:#e3ebfb;stroke:#8fa9e4;cursor:pointer}
 .gmap path.mine.on{fill:#d3e0fa;stroke:var(--brand);stroke-width:2}
+/* 구 4곳을 구획도 색으로 옅게 칠하고 경계는 흰 선 (2026-09-28 사용자 지시). 구를 고르면 그 구만 읍·면·동으로 보이고 나머지는 안 그린다 */
+.gmap path.gu{fill-opacity:.18;stroke:#fff;stroke-width:2;cursor:pointer}
+.gmap path.gu.open{fill:none;stroke:#8190a8;stroke-width:1.5;stroke-opacity:.6;cursor:default}
+.gmap path.dong{fill-opacity:.18;stroke:#fff;stroke-width:1.2}
+.gmap path.city{fill:none;stroke:#8190a8;stroke-width:1.5;stroke-opacity:.6;stroke-linejoin:round}
+.glab.gulab{font-size:14px;color:var(--ink);background:rgba(255,255,255,.9);padding:2px 9px;border-radius:999px;box-shadow:0 1px 3px rgba(23,32,51,.15)}
+/* 구 고르기 — 회색 틀 안에 다섯 칸, 칸마다 구 색 점. 고른 칸은 흰 바탕에 구 색 테두리 */
+.gusel{display:flex;gap:3px;padding:4px;background:#eef1f5;border-radius:14px}
+.gusel button{flex:1;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:5px;border:none;border-radius:10px;padding:0 2px;background:transparent;color:var(--mid);font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer}
+.gusel i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--gc)}
+.gusel i.all{background:conic-gradient(#2e9d6b 0 25%,#3d82c4 0 50%,#e0853a 0 75%,#c2b236 0)}
+.gusel button.on{background:#fff;color:var(--ink);font-weight:800;box-shadow:0 1px 3px rgba(23,32,51,.14),inset 0 0 0 1.5px var(--gc,var(--brand))}
+.nvlab{position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none}
+.nvlab .glab{position:static;transform:none;display:inline-block}
 .glab{position:absolute;transform:translate(-50%,-50%);font-size:13px;font-weight:800;color:var(--navy);background:rgba(255,255,255,.75);border-radius:6px;padding:1px 6px;pointer-events:none;white-space:nowrap}
-.gpin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:2px;border:none;background:none;padding:0;cursor:pointer;min-width:44px;min-height:44px;justify-content:flex-end}
-.gpin i{font-style:normal;font-size:12px;font-weight:800;border-radius:999px;padding:4px 9px;box-shadow:0 2px 6px rgba(23,32,51,.25);white-space:nowrap}
-.gpin b{font-size:11px;font-weight:800;color:var(--ink);background:rgba(255,255,255,.85);border-radius:5px;padding:0 4px;white-space:nowrap}
-.gpin.k-back i{background:var(--amber);color:#fff}
-.gpin.k-prev i{background:#fff;color:var(--amber);box-shadow:inset 0 0 0 2px var(--amber),0 2px 6px rgba(23,32,51,.2)}
-.gpin.k-visit i{background:var(--brand);color:#fff}
-.gpin.today i{outline:3px solid #111;outline-offset:2px}
-.gpin.sel i{transform:scale(1.15)}
 .gleg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;font-weight:700;color:var(--mid)}
 .gleg span{display:inline-flex;align-items:center;gap:5px}
 .gleg i{width:12px;height:12px;border-radius:50%;display:inline-block}
-.gleg i.k-back{background:var(--amber)}
-.gleg i.k-prev{background:#fff;box-shadow:inset 0 0 0 2px var(--amber)}
-.gleg i.k-visit{background:var(--brand)}
-.gleg i.today{background:#fff;outline:2px solid #111;outline-offset:1px}
+.gleg i.due{margin-left:3px;background:var(--brand);box-shadow:0 0 0 2px #fff,0 0 0 3px var(--brand)}
+.gleg i.etc{width:9px;height:9px;background:#8a94a6}
+/* 공장 핀 (2026-09-28) — 점검 예정은 파란 물방울 핀(끝이 공장 자리)과 이름, 나머지는 작은 회색 점(가운데가 공장 자리) */
+.gpin2{position:absolute;border:none;background:none;padding:0;cursor:pointer}
+.gpin2::after{content:"";position:absolute;inset:-8px}
+.gpin2.due{transform:translate(-50%,-100%);color:var(--brand);z-index:2;filter:drop-shadow(0 2px 3px rgba(23,32,51,.35))}
+.gpin2.due svg{position:static;width:28px;height:37px;display:block;transform-origin:50% 100%;transition:transform .15s}
+.gpin2.due path{fill:currentColor;stroke:#fff;stroke-width:1.6}
+.gpin2.due circle{fill:#fff}
+.gpin2.due b{position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:3px;font-size:12px;font-weight:800;color:var(--ink);background:#fff;border-radius:6px;padding:1px 6px;white-space:nowrap}
+.gpin2.etc{transform:translate(-50%,-50%);width:24px;height:24px;display:grid;place-items:center;z-index:1}
+.gpin2.etc i{width:12px;height:12px;border-radius:50%;background:#8a94a6;border:2px solid #fff;box-shadow:0 1px 3px rgba(23,32,51,.3);transition:transform .15s}
+.gpin2.sel.due{color:var(--brand-d)}
+.gpin2.sel.due svg{transform:scale(1.18)}
+.gpin2.sel.etc i{background:var(--ink);transform:scale(1.35)}
+.nvmk{position:absolute;left:0;top:0}
 .gsrc{font-size:11px;color:var(--soft)}
 /* 네이버 지도를 깔 때 (2026-09-22) — 핀은 마커 속 내용으로, 바닥 가운데가 좌표에 오게 */
 /* 네이버 지도가 자기 칸의 position을 덮어쓰므로 크기를 !important로 못 박는다 — 안 그러면 높이가 0이 된다 */
 .gmap.nv .nvmap{position:absolute!important;inset:0;width:100%!important;height:100%!important}
 .nvpin{position:absolute;left:0;top:0;transform:translate(-50%,-100%)}
-.nvpin .gpin{position:static;transform:none;cursor:pointer}
 
 /* ===== 지킴이 홈 = 공장 목록 · 하단바 (2026-09-22, 사용자가 준 세차장 예약 앱 구성을 참고) ===== */
 .ghello{display:flex;align-items:center;gap:14px;padding:14px 2px 4px}
@@ -472,12 +508,31 @@ span.gtdtg{cursor:default}
 .gtdh b{font-size:18px;font-weight:800;letter-spacing:-.03em}
 .gtdh em{font-style:normal;font-size:13px;font-weight:800;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px}
 .gtdcal{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:32px;padding:0 4px;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer}
-.gtdr{display:flex;align-items:center;gap:12px;width:100%;padding:12px 0;border:none;border-top:1px solid var(--line);background:none;font:inherit;text-align:left;color:var(--ink);cursor:pointer}
-.gtdt{flex:none;min-width:64px;padding:8px 0;border-radius:10px;background:var(--brand-l);color:var(--brand);font-size:16px;font-weight:800;text-align:center}
+.gtdr{display:flex;flex-direction:column;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
+.gtdrow{display:flex;align-items:flex-start;gap:12px;width:100%;padding:0;border:none;background:none;font:inherit;text-align:left;color:var(--ink);cursor:pointer}
+/* 방문 시각 — 색 칸 없이 굵은 숫자와 작은 "방문", 오른쪽 가는 선으로 가른다 (2026-09-28 사용자 지시: AI스럽지 않게) */
+.gtdt{flex:none;min-width:58px;display:flex;flex-direction:column;padding:1px 12px 1px 0;border-right:1px solid var(--line2)}
+.gtdt b{font-size:18px;font-weight:800;color:var(--ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.25}
+.gtdt small{font-size:12px;font-weight:700;color:var(--mid)}
 .gtdn{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .gtdn b{font-size:17px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gtdn small{font-size:13px;color:var(--mid)}
-.gtdr > svg{flex:none;color:var(--soft)}
+.gtdrow > svg{flex:none;color:var(--soft);align-self:center}
+/* 한 줄 요약 — 시각·이름 아래 한 줄 폭 전체, 옅은 회색 칸, 앞에 작은 반짝이와 "AI 요약" */
+.gtdai{width:100%;display:flex;gap:6px;align-items:flex-start;word-break:keep-all;border:none;font-family:inherit;text-align:left;cursor:pointer;padding:8px 10px;border-radius:10px;background:#f5f6f8;color:var(--ink);font-size:13px;font-weight:500;line-height:1.5;white-space:normal}
+.gtdai > svg{flex:none;margin-top:2px;color:var(--violet)}
+.gtdai > span{flex:1;min-width:0}
+.gtdai > svg:last-child{align-self:center;margin-top:0;color:var(--soft)}
+.gtdai:active{background:#eceef2}
+/* AI 요약 자세히 창 (2026-09-28) */
+.gbh{display:flex;align-items:center;gap:10px}
+.gbi{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--violet-l);color:var(--violet)}
+.gbh b{display:block;font-size:17px;font-weight:800}
+.gbh small{display:block;font-size:13px;color:var(--mid)}
+.gbs{padding:12px 14px;border-radius:12px;background:#f5f6f8;font-size:15px;line-height:1.55;word-break:keep-all}
+.gbl{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:15px;line-height:1.45;word-break:keep-all}
+.gbl li::marker{color:var(--violet);font-weight:800}
+.gtdai em{font-style:normal;font-weight:800;color:var(--violet);margin-right:5px}
 .ghello .live{flex:none}
 /* 정렬 탭 — 밑줄 */
 .gtabs{display:flex;margin:6px -16px 0;padding:0 16px;border-bottom:1px solid var(--line)}
@@ -811,6 +866,23 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
 @keyframes gbeam{0%{left:-40px}100%{left:100%}}
 @keyframes gdot{30%{opacity:1;transform:translateY(-3px)}}
 @media (prefers-reduced-motion:reduce){.gring,.gorb::before,.gcore svg,.gscan span,.gbeam,.gdots i{animation:none}.gsteps span{animation:none}.gsteps span:first-child{opacity:1}}
+/* 낸 뒤 (2026-09-28) — 초록 원이 톡 튀어나오고, 체크가 그려지고, 물결이 한 번 퍼진다. 글은 뒤따라 올라온다 */
+.gdmark{position:relative;width:104px;height:104px;margin-bottom:6px}
+.gdmark span{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#fff;box-shadow:0 10px 26px rgba(18,135,90,.28)}
+.gdmark span svg{stroke-width:2.4}
+.gdmark i{position:absolute;inset:-12px;border-radius:50%;background:var(--green-l)}
+.gdmark.wait span{background:var(--amber-l);color:var(--amber);border:2px dashed var(--amber-b);box-shadow:none}
+.gdmark.wait i{background:none}
+.gsent.fresh .gdmark span{animation:gpop .5s cubic-bezier(.3,1.5,.5,1) both}
+.gsent.fresh .gdmark i{animation:gwave .9s .15s ease-out both}
+.gsent.fresh .gdmark:not(.wait) path{stroke-dasharray:22;stroke-dashoffset:22;animation:gdraw .35s .35s ease-out forwards}
+.gsent.fresh > div:not(.gdmark){animation:rise .35s ease-out both}
+.gsent.fresh > .big{animation-delay:.45s}
+.gsent.fresh > .small{animation-delay:.55s}
+@keyframes gpop{0%{transform:scale(.3);opacity:0}100%{transform:none;opacity:1}}
+@keyframes gwave{0%{transform:scale(.5);opacity:0}40%{opacity:1}100%{transform:none;opacity:1}}
+@keyframes gdraw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.gsent.fresh *{animation:none !important}.gsent.fresh .gdmark path{stroke-dashoffset:0}}
 /* AI 제안 고르기 (2026-09-23) — 머리 칸, 고른 수, 카드(사진 꼬리표, 둥근 고르기 칸, 사고 사례 줄) */
 .gaip{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 14px;border-radius:16px;border:1.5px solid transparent;
   background:linear-gradient(100deg,#f5f1ff,#eef3ff) padding-box,linear-gradient(100deg,#a88bf0,#7ea0f2) border-box}
@@ -835,3 +907,45 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
 .gaiwhy{align-self:flex-start;display:inline-flex;align-items:center;gap:2px;min-height:32px;padding:0;border:none;background:none;color:var(--mid);font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}
 @keyframes gaiin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.gaicard.fresh{animation:none}}
+/* 세로 고정 (2026-09-28) — 폰을 가로로 돌리면 앱 위를 덮는다. 높이 500px 이하만 = 폰 가로. 데스크톱 넓은 창은 그대로 */
+.rotmask{display:none}
+@media (orientation:landscape) and (max-height:500px){
+  .rotmask{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#fff;color:var(--ink);text-align:center;padding:24px}
+  .rotmask svg{color:var(--brand)}
+  .rotmask b{font-size:18px;font-weight:800}
+  .rotmask span{font-size:14px;color:var(--mid)}
+}
+/* ===== 주간 보고 (2026-09-28) — 요약 숫자·지난주 대비 → 요일별 막대 → 테마별 문제 → 처리 상태 → 앞으로 예정 → 특이 사항 칩 ===== */
+.wks{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:14px}
+.wkh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.wkh > span{width:100%;font-size:13px;font-weight:700;color:var(--mid)}
+.wkh b{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.wkh b small{font-size:16px;font-weight:700;margin-left:2px}
+.wkh em{font-style:normal;font-size:13px;font-weight:700;color:var(--mid)}
+.wkh em.up{color:var(--green)}
+.wkh em.down{color:var(--amber)}
+.wkr{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
+.wkr > div{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;border-radius:10px;background:#f5f6f8}
+.wkr b{font-size:18px;font-weight:800}
+.wkr span{font-size:12px;font-weight:700;color:var(--mid);white-space:nowrap}
+.wkr .bad{background:var(--amber-l)}
+.wkr .bad b,.wkr .bad span{color:var(--amber)}
+.wkr.wkst{grid-template-columns:repeat(3,1fr);margin-top:0}
+.wkr.wkst > div{background:#fff;border:1px solid var(--line2)}
+.wkr.wkst > div.bad{background:var(--amber-l);border-color:var(--amber-b)}
+.wkd{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;height:120px;padding:10px 12px 8px;background:#fff;border:1px solid var(--line2);border-radius:14px}
+.wkd > div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-height:0}
+.wkd i{display:block;width:60%;min-height:3px;border-radius:5px 5px 2px 2px;background:#c9d3e3}
+.wkd em{font-style:normal;font-size:13px;font-weight:800;color:var(--ink);min-height:18px}
+.wkd span{font-size:12px;font-weight:700;color:var(--mid)}
+.wkd .now i{background:var(--brand)}
+.wkd .now span{color:var(--brand)}
+.wkt{display:flex;flex-direction:column;gap:10px}
+.wkt > div{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;align-items:center;gap:10px;font-size:14px;font-weight:700}
+.wkt > div > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wkt i{display:block;height:8px;border-radius:4px;background:#eef1f5;overflow:hidden}
+.wkt i b{display:block;height:100%;border-radius:4px;background:var(--amber)}
+.wkt em{font-style:normal;font-size:13px;color:var(--amber);font-weight:800}
+.wktg{display:flex;flex-wrap:wrap;gap:6px}
+.wktg button{min-height:40px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;background:#fff;color:var(--mid);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.wktg button.on{border-color:var(--ink);background:var(--ink);color:#fff}

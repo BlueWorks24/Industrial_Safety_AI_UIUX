@@ -82,6 +82,15 @@ DB.ready = (async () => {
 const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 // 아이폰 홈 화면 앱이면 문서 스크롤을 잠근다 (display-mode 미지원 대비)
 try { if (navigator.standalone) document.documentElement.dataset.standalone = '1'; } catch (e) {}
+// 앱(근로자·지킴이)은 세로로만 쓴다 (2026-09-28 사용자 지시). 잠글 수 있는 곳(안드로이드 홈 화면 앱)은 잠그고,
+// 잠글 수 없는 브라우저(아이폰 사파리 등)는 폰을 가로로 돌리면 "세로로 돌려 주세요" 가림막을 띄운다 — 웹(공장주·운영자)은 그대로
+if (document.querySelector('#app.app')) {
+  try { screen.orientation.lock('portrait').catch(() => {}); } catch (e) {}
+  const m = document.createElement('div');
+  m.className = 'rotmask'; m.setAttribute('aria-live', 'polite');
+  m.innerHTML = '<svg viewBox="0 0 48 48" width="56" height="56" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="15" y="6" width="18" height="32" rx="3.5"/><path d="M22 33h4"/><path d="M8 30a16 16 0 0 1 2-14"/><path d="m6 19 4-3 3 4"/></svg><b>휴대폰을 세로로 돌려 주세요</b><span>이 앱은 세로 화면에서만 써요</span>';
+  document.body.appendChild(m);
+}
 const hm = (m) => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
 const $ = (q) => document.querySelector(q);
 function toast(msg) {
