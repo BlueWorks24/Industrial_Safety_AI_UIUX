@@ -3,15 +3,15 @@
 
 const isTabOn = (p, active) => (p.startsWith('soon') ? p === active : p.split('/')[0] === active);
 
-function webFrame({ brand, org, who, tabs, active, title, desc, body, split, menu, after = '' }) {
-  const cur = (tabs.find(([p]) => isTabOn(p, active)) || tabs[0])[1];
+function webFrame({ brand, org, who, tabs, active, title, desc, body, split, menu, after = '', crumb = null }) {
+  const cur = crumb || (tabs.find(([p]) => isTabOn(p, active)) || tabs[0])[1];
   const intro = `<section class="intro${split ? '' : ' wide'}"><h1>${title}</h1><p>${desc}</p></section>`;
   return `<div class="util"><div class="in">
       <span>${who}</span><i class="sep"></i><span>${hm(DB.s.clock)} 기준</span><i class="sep"></i>
       <button class="ulink" data-act="logout">로그아웃</button><i class="sep"></i>
       <button class="ulink" data-act="ctl" title="진행자용 시연 조작판">⚙ 조작판</button></div></div>
     <header class="wtop${menu ? ' open' : ''}"><div class="in">
-      <span class="brand"><i class="mark"></i><span><b>${brand}</b><small>${org}</small></span></span>
+      <button class="brand" data-go="" aria-label="${brand} 처음 화면"><i class="mark"></i><span><b>${brand}</b><small>${org}</small></span></button>
       <button class="menubtn" data-act="menu">☰ 메뉴</button>
       <nav class="wtabs">${tabs.map(([p, n]) => `<button class="${isTabOn(p, active) ? 'on' : ''}" data-go="${p}">${n}</button>`).join('')}</nav>
     </div></header>

@@ -137,6 +137,58 @@ const TEAM = { name: '전기 1조', lead: '이조장', members: ['이조장', '�
 // 점검 결과 종류 — 기존 웹의 "점검결과" 칸. 패트롤·기타가 무엇인지는 아직 모른다 (가설)
 const RESULTS = ['점검완료', '재점검', '패트롤', '기타'];
 
+/* ---------- 운영자 웹 (2026-10-01) — 점검조 · 지킴이 명단 · 체크리스트 판 · 공지 · 자료. 모두 가상 ----------
+   공장과 점검 기록이 실제로 있는 조는 우리 조(TEAM) 하나뿐이다. 나머지 조는 숫자만 있다 — 공장 목록·점검 기록에는 안 나온다.
+   조 이름 앞의 분야는 기존 웹 회원의 "분야"(소방·전기·화학·공통)에서 따왔다. 분야별 조가 권역을 어떻게 나누는지는 모른다 (가설: 권역이 겹치지 않는다).
+   firms 맡은 공장 · month 9월에 점검한 공장 · week 이번 주 점검 · res 9월 결과별 건수(점검완료·재점검·패트롤·기타) · fx 개선 요청·고쳐짐 확인 · sent 이번 주 주간 보고 냄 */
+const SQUADS = [
+  { id: 'e1', name: TEAM.name, lead: TEAM.lead, members: TEAM.members, areas: TEAM.areas.flatMap((a) => TEAM.dongs[a]), since: 2026 },
+  { id: 'e2', name: '전기 2조', lead: '정조장', members: ['정조장', '강지킴', '윤지킴'], areas: ['남양읍', '새솔동'], since: 2026, firms: 12, month: 5, week: 4, res: [5, 1, 0, 0], fx: [9, 6], sent: true },
+  { id: 'f1', name: '소방 1조', lead: '문조장', members: ['문조장', '서지킴', '남지킴'], areas: ['송산면', '서신면', '마도면'], since: 2026, firms: 11, month: 4, week: 3, res: [3, 0, 1, 0], fx: [7, 3], sent: true },
+  { id: 'f2', name: '소방 2조', lead: '하조장', members: ['하조장', '권지킴', '황지킴'], areas: ['팔탄면', '장안면', '양감면'], since: 2026, firms: 9, month: 6, week: 5, res: [5, 0, 0, 1], fx: [11, 8], sent: false },
+  { id: 'c1', name: '화학 1조', lead: '송조장', members: ['송조장', '안지킴', '유지킴'], areas: ['매송면', '비봉면'], since: 2025, firms: 10, month: 3, week: 2, res: [2, 1, 0, 0], fx: [6, 2], sent: false },
+  { id: 'c2', name: '화학 2조', lead: '홍조장', members: ['홍조장', '전지킴', '고지킴'], areas: ['정남면', '기배동', '진안동'], since: 2026, firms: 13, month: 5, week: 4, res: [4, 0, 1, 0], fx: [8, 5], sent: true },
+  { id: 'g1', name: '공통 1조', lead: '노조장', members: ['노조장', '류지킴', '배지킴', '백지킴'], areas: ['병점1동', '병점2동', '반월동', '화산동'], since: 2026, firms: 14, month: 7, week: 6, res: [6, 1, 0, 0], fx: [12, 7], sent: true },
+];
+// 지킴이 명단 — 기존 웹 회원정보관리의 분야 · 근무여부(근무·휴직·병가·퇴직). 오지킴은 조가 없다 (조 편성에서 넣어 볼 수 있게)
+const GUARDS = Object.fromEntries(SQUADS.flatMap((q) => q.members.map((m) => [m, { field: q.name.split(' ')[0], joined: `${q.since}-03`, work: '근무' }])));
+Object.assign(GUARDS, { '오지킴': { field: '공통', joined: '2026-09', work: '근무' } });
+GUARDS['윤지킴'].work = '휴직';
+GUARDS['배지킴'].work = '병가';
+const APPLICANTS = [
+  { name: '한새봄', field: '소방', at: '9/16', tel: '010-0000-1201' },
+  { name: '표가람', field: '전기', at: '9/17', tel: '010-0000-1202' },
+];
+// 기업 등록사유 — 기존 웹 기업등록의 다섯 가지 (현장등록 · 점검신청 · 점검거부 · 기업DB · 기타)
+Object.entries({ daesung: '점검신청', hanbit: '점검신청', dongbang: '기업DB', taegwang: '현장등록', saehan: '기업DB',
+  ujin: '기업DB', seongwon: '현장등록', donghwa: '기업DB', hangyeol: '점검신청', mirae: '기업DB' }).forEach(([fid, why]) => { FIRM[fid].why = why; });
+// 체크리스트 판 이력 — 지난 판의 문항 수와 바뀐 점은 예시다
+const CL_VERS = [
+  { ver: CHECKLIST.ver, at: '2026-01-02', n: 34, what: '05 영역을 설비마다 한 문항으로 나눔' },
+  { ver: '25VER02', at: '2025-07-01', n: 30, what: '04 화학안전에 MSDS 문항을 더함' },
+  { ver: '25VER01', at: '2025-01-02', n: 29, what: '처음 판' },
+];
+// 월별 점검 건수 (모든 조, 4~8월) — 통계 막대용
+const OP_MONTHS = [['4월', 38], ['5월', 44], ['6월', 41], ['7월', 47], ['8월', 45]];
+// 주별 개선 요청 · 고쳐짐 확인 (모든 조, 6~8월) — 운영자 홈 개선지도 막대. 9월 주는 지금 숫자에서 나눈다
+const OP_FIX_WEEKS = [[6, 11, 8], [6, 14, 10], [6, 9, 7], [6, 13, 9], [7, 16, 11], [7, 12, 9], [7, 15, 12], [7, 10, 8], [7, 13, 9],
+  [8, 17, 11], [8, 12, 9], [8, 14, 10], [8, 11, 8]];
+// 운영자가 쓴 공지 · 올린 자료 (받는 쪽: 지킴이 · 공장주 · 모두)
+const OP_NOTICES = [
+  { id: 'on3', to: '공장주', at: '9/22', title: '지킴이 방문 예약은 웹에서 승인해 주세요',
+    body: '지킴이가 방문 날짜를 정하면 공장주 웹 첫 화면에 요청이 떠요.\n승인하면 그날 방문하고, 안 되는 날이면 거절해 주세요. 지킴이가 다른 날로 다시 요청해요.' },
+  { id: 'on2', to: '지킴이', at: '9/15', title: '추석 연휴(9/24~9/26) 점검 일정',
+    body: '연휴 사흘은 점검하지 않아요.\n그 주에 잡힌 방문은 공장주와 다시 날짜를 맞춰 주세요.' },
+  { id: 'on1', to: '모두', at: '1/02', title: '2026년 점검항목 새 판(26VER01) 안내',
+    body: '올해부터 05 유해위험기구/시설을 설비마다 한 문항으로 나눴어요.\n그 공장에 없는 설비는 "해당 없음"으로 답하면 돼요.' },
+];
+const OP_FILES = [
+  { id: 'fl1', name: '2026 산업안전지킴이 점검 매뉴얼.pdf', to: '지킴이', size: '4.2MB', at: '1/02' },
+  { id: 'fl2', name: '위험성평가 양식.hwp', to: '공장주', size: '86KB', at: '3/10' },
+  { id: 'fl3', name: '소화기 점검 요령.pdf', to: '모두', size: '1.1MB', at: '5/21' },
+  { id: 'fl4', name: '전기안전 자가점검표.xlsx', to: '공장주', size: '42KB', at: '8/04' },
+];
+
 // 사진을 올리면 AI가 내놓는 제안 (가짜). 사례는 설명용 예시.
 const AI_SUGGEST = [
   { text: '전선 피복이 벗겨진 곳이 없나?', seen: '전선', spot: { l: 18, t: 40, w: 38, h: 22 },

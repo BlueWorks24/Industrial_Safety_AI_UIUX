@@ -29,7 +29,7 @@ const B = 'http://127.0.0.1:8765/';
     for (let j = 0; j < n && !(await p.locator(`[data-act="ansBad"][data-n="${i}"]`).count()); j++) await p.locator('.cpg button').nth(j).click(); };
 
   const ready = (p) => p.waitForFunction(() => typeof DB !== 'undefined' && DB.s);
-  const login = async (p, id) => { await p.goto(B + 'web.html'); await p.waitForSelector('#lid'); await p.fill('#lid', id); await p.fill('#lpw', '1234'); await p.click('button[type=submit]'); await p.waitForSelector('.wtop'); };
+  const login = async (p, id) => { await p.goto(B + 'web.html'); await p.waitForSelector('#lid'); await p.fill('#lid', id); await p.fill('#lpw', '1234'); await p.click('button[type=submit]'); await p.waitForSelector('.wtop, .oph'); };  // 운영자 웹은 새 틀(.oph) — 2026-10-01
   await W.goto(B + 'worker.html'); await ready(W); await W.evaluate(async () => { localStorage.clear(); sessionStorage.clear(); await DB.reset();
     await fetch('api/invite/accept', { method: 'POST', body: JSON.stringify({ code: 'DS-KIM' }) });
     localStorage.setItem('w.notif', 'on'); localStorage.setItem('lang', 'ko'); });
@@ -138,10 +138,10 @@ const B = 'http://127.0.0.1:8765/';
   const dev2 = await browser.newContext({ viewport: { width: 1100, height: 800 } });
   const M = await dev2.newPage(); M.on('pageerror', (e) => errs.push(e.message));
   await login(M, 'admin'); await shot(M, 'm_board');
-  await M.goto(B + 'web.html#/factory/daesung'); await M.waitForSelector('.wtop'); await shot(M, 'm_factory');
+  await M.goto(B + 'web.html#/factory/daesung'); await M.waitForSelector('.oph'); await shot(M, 'm_factory');
   await W.goto(B + 'worker.html#/'); await ready(W);
   await ctl(W, 'raise', '[data-k="leak"]'); await ctl(W, 'tick', '[data-m="5"]');
-  await M.goto(B + 'web.html#/'); await M.waitForSelector('.wtop'); await shot(M, 'm_board_alarm');
+  await M.goto(B + 'web.html#/'); await M.waitForSelector('.oph'); await shot(M, 'm_board_alarm');
   const dev3 = await browser.newContext({ viewport: { width: 390, height: 780 } });
   const H = await dev3.newPage(); H.on('pageerror', (e) => errs.push(e.message));
   await H.goto(B + 'web.html'); await H.waitForSelector('#lid'); await H.fill('#lid', 'hanbit'); await H.fill('#lpw', 'x'); await H.click('button[type=submit]'); await H.waitForSelector('.err'); await shot(H, 'h_login_fail');

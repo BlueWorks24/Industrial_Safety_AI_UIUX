@@ -10,7 +10,7 @@ const B = 'http://127.0.0.1:8765/';
     p.on('pageerror', (e) => errs.push(e.message)); return p; };
   const shot = async (p, name, full = true) => { await p.waitForTimeout(1300); await p.screenshot({ path: `${OUT}/c${String(++n).padStart(2, '0')}_${name}.png`, fullPage: full }); };
   const ready = (p) => p.waitForFunction(() => typeof DB !== 'undefined' && DB.s && document.querySelector('#app').innerHTML.length > 0);
-  const login = async (p, id) => { await p.goto(B + 'web.html'); await p.waitForSelector('#lid'); await p.fill('#lid', id); await p.fill('#lpw', '1234'); await p.click('button[type=submit]'); await p.waitForSelector('.wbody'); };
+  const login = async (p, id) => { await p.goto(B + 'web.html'); await p.waitForSelector('#lid'); await p.fill('#lid', id); await p.fill('#lpw', '1234'); await p.click('button[type=submit]'); await p.waitForSelector('.wbody, .oph'); };  // 운영자 홈은 새 틀(.oph) — 2026-10-01
   const ctl = (p, c, extra = '') => p.evaluate(({ c, extra }) => { toggleCtl(true); document.querySelector(`#ctl [data-c="${c}"]${extra}`).click(); document.getElementById('ctl')?.remove(); }, { c, extra });
   const go = async (p, hash) => { await p.evaluate((h) => { location.hash = h; }, hash); await p.waitForTimeout(400); };
 

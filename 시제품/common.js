@@ -236,6 +236,10 @@ function settlePrev(s, ins) {
   });
 }
 
+// 운영자 제출 검사 (2026-10-01 운영자 웹으로 옮김 — 조작판도 같은 것을 부른다). 반려 사유 칸이 기존 웹에 있는지는 모른다 (가설)
+function approveInsp(s, ins, by) { ins.st = 'ok'; ins.locked = true; ins.okAt = '9/17'; ins.okBy = by; settlePrev(s, ins); DB.log(`${by} 점검 승인 · ${FACTORIES[ins.fid].name}`); }
+function rejectInsp(s, ins, by, note) { ins.st = 'back'; ins.back = { at: '9/17', by, note }; DB.log(`${by} 점검 반려 · ${FACTORIES[ins.fid].name}`); }
+
 /* ---------- 화면 넘기기 ---------- */
 const R = {
   path() { return (location.hash.replace(/^#\/?/, '') || '').split('/').filter(Boolean); },
@@ -319,7 +323,7 @@ function drawCtl() {
   ${live.map((a) => `<div class="al"><b>${esc(FACTORIES[alarmFid(a)].name + ' ' + SIM.title(a))}</b> · ${a.status === 'open' ? '조치 안 됨' : a.status === 'watch' ? '지켜보는 중 → ' + hm(a.remindAt) : '다시 알림 중'} · 미룸 ${a.snoozes}<br>
      <button class="cb" data-c="normal" data-id="${a.id}">센서 정상으로</button>
      <button class="cb" data-c="other" data-id="${a.id}">${OWNER_NAME[alarmFid(a)]}가 조치 완료</button></div>`).join('') || '<div class="small">없음</div>'}
-  <h3>운영자 제출 검사 (운영자 웹이 생기기 전 흉내)</h3>
+  <h3>운영자 제출 검사 (운영자 웹 대신 빠르게)</h3>
   ${s.inspections.filter((i) => i.st === 'wait').map((i) => `<div class="al"><b>${esc(FACTORIES[i.fid].name)}</b> · ${esc(i.by)} · ${i.sentAt || i.date} 냄<br>
      <button class="cb" data-c="approve" data-id="${i.id}">승인</button>
      <button class="cb" data-c="reject" data-id="${i.id}">반려</button></div>`).join('') || '<div class="small">검사 기다리는 점검 없음</div>'}
@@ -357,9 +361,8 @@ document.addEventListener('click', (e) => {
     if (c === 'other') SIM.ack(s, b.dataset.id, OWNER_NAME[alarmFid(SIM.get(s, b.dataset.id))]);
     if (c === 'ai') s.aiDown = !s.aiDown;
     const ins = (c === 'approve' || c === 'reject') && s.inspections.find((i) => i.id === b.dataset.id);
-    if (ins && c === 'approve') { ins.st = 'ok'; ins.locked = true; ins.okAt = '9/17'; settlePrev(s, ins); DB.log(`운영자 점검 승인 · ${FACTORIES[ins.fid].name}`); }
-    // 반려 사유는 예시다 — 기존 웹에 사유 칸이 있는지 아직 모른다 (가설)
-    if (ins && c === 'reject') { ins.st = 'back'; ins.back = { at: '9/17', note: '문제 항목의 메모가 짧아요. 무엇이 어떻게 문제인지 적어 다시 내 주세요.' }; DB.log(`운영자 점검 반려 · ${FACTORIES[ins.fid].name}`); }
+    if (ins && c === 'approve') approveInsp(s, ins, '운영자');
+    if (ins && c === 'reject') rejectInsp(s, ins, '운영자', '문제 항목의 메모가 짧아요. 무엇이 어떻게 문제인지 적어 다시 내 주세요.');
     if (c === 'bookOk') bookApprove(s, b.dataset.f, OWNER_NAME[b.dataset.f] || '공장주');
     if (c === 'bookNo') bookReject(s, b.dataset.f, OWNER_NAME[b.dataset.f] || '공장주');
     const v = (s.voices || [])[0];
