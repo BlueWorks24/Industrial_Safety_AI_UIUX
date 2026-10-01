@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 운영자 제출 검사(승인·반려), 주간 보고.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {}, preBack: {}, wkTags: [] };
+const UI = { sheet: null, aiTimer: null, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {}, preBack: {}, wk: { area: null, note: {}, focus: {} } };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -123,7 +123,7 @@ function home(s) {
     ${recentVisit(s)}
     ${findRow('home')}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
-    <div id="fres">${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}</div>
+    <div id="fres" class="hlist">${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}</div>
     <button class="hall" data-go="factories">${I('factory', 18)} 공장 전체보기<em>${nAll}곳</em>${I('chevron', 18)}</button>
     <div class="proto">가상 데이터로 만든 시제품이에요</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}${UI.sheet && UI.sheet.type === 'brief' ? briefSheet(s) : ''}`;
@@ -187,16 +187,17 @@ function recentVisit(s) {
       <button class="fbtn gvbtn" data-go="pre/${ins.fid}">공장 보기 ${I('chevron', 16)}</button></div>
       <button class="gvph" data-go="pre/${ins.fid}" aria-label="${f.name}">${facMini(ins.fid)}</button></div>${homeActs(s)}</div>`;
 }
-// 파란 칸 아래쪽의 작은 단추 둘 — 보고서 쓰기 · 점검 결과 보기 (가로로 나란히)
+// 파란 칸 아래쪽의 작은 단추 둘 — 그 공장에 전화 걸기 · 그 공장 점검 결과 보기 (가로로 나란히)
+// 2026-10-01 사용자: 이 칸의 단추는 그 공장에 관한 것만 — 주간 보고 쓰기를 빼고(하단바에 있다) '전화 걸기'로 (처음엔 '공장에 전화'였다가 같은 날 사용자가 바꿈). 최근 점검한 곳이 없으면 단추도 없다
 function homeActs(s) {
-  const done = (s.weekly || {})[WEEK.key];
   // 점검 결과 보기는 최근 방문한 그 공장의 기록만 연다 (2026-09-22 사용자 지시)
   const last = s.inspections.find((i) => i.by === ME);
-  const mine = last ? facInsp(s, last.fid).filter((i) => i.by === ME) : [], n = (st) => mine.filter((i) => (i.st || 'ok') === st).length;
+  if (!last) return '';
+  const mine = facInsp(s, last.fid).filter((i) => i.by === ME), n = (st) => mine.filter((i) => (i.st || 'ok') === st).length;
   const badge = n('back') ? `<em class="warn">반려 ${n('back')}</em>` : n('wait') ? `<em>대기 ${n('wait')}</em>` : '';
   return `<div class="gacts">
-    <button class="gact" data-go="weekly">${I('list', 17)}${done ? '주간 보고 냄' : '주간 보고 쓰기'}</button>
-    <button class="gact" data-go="${last ? `records/${last.fid}` : 'records'}">${I('folder', 17)}점검 결과 보기${badge}</button></div>`;
+    <a class="gact" href="tel:${FIRM[last.fid].tel}" aria-label="${FACTORIES[last.fid].name}에 전화 ${FIRM[last.fid].tel}">${I('phone', 17)}전화 걸기</a>
+    <button class="gact" data-go="records/${last.fid}">${I('folder', 17)}점검 결과 보기${badge}</button></div>`;
 }
 
 /* ---------- G10 캘린더 (2026-09-22 사용자 요청) ----------
@@ -928,68 +929,67 @@ function records(s, fid, from) {
   </div></div>`;
 }
 /* ---------- G9 주간 보고 (2026-09-22 — 기존 웹 "주간점검"의 칸을 따른다: 점검조·작성자·점검 기업 수·결과별 수) ----------
-   2026-09-28 사용자 결정으로 칸을 늘렸다: 요약 숫자와 지난주 대비 → 요일별 점검 → 찾은 문제(테마별) → 처리 상태 → 앞으로 예정 → 특이 사항 칩 */
+   2026-09-28 사용자 결정으로 칸을 늘렸다: 요약 숫자와 지난주 대비 → 요일별 점검 → 찾은 문제(테마별) → 처리 상태 → 앞으로 예정 → 특이 사항 칩
+   2026-10-01 오전 사용자: 한눈에 안 들어온다 → 요약 + 이번 주 점검한 곳 목록 + 특이 사항만 남김.
+   2026-10-01 오후 기존 웹 등록 양식을 캡처로 확인하고 그 칸 그대로 다시 그림 (사용자 승인, 260921_기존시스템_분석.md 8절):
+   기본정보(점검조·권역·기간·기업수) → 점검기업리스트(결과별 개사 + 기업마다 점검번호·기업명·사업자번호·업종·점검일·결과보고·비고) → 중점점검항목(분야·항목·내용·비고).
+   기존 웹은 전부 손으로 적지만 우리는 점검 기록에서 채운다 — 지킴이가 적는 것은 기업별 비고와 중점점검항목뿐.
+   권역은 기존처럼 하나만 고르고 권역마다 따로 낸다 `가설`. 기업수는 목록의 기업 수로 채운다 `가설`. 중점점검항목이 이번 주 것인지 다음 주 계획인지는 모른다 `가설` */
 // 앱 달력으로 9/17은 목요일이라 이번 주는 9/14(월)~9/18(금) (2026-09-28 바로잡음 — 전엔 9/15(월)로 하루 밀려 있었다).
-// key는 저장된 보고를 찾는 이름이라 그대로 둔다
-const WEEK = { key: '9/15', label: '9/14(월) ~ 9/18(금)', days: ['9/14', '9/15', '9/16', '9/17', '9/18'], from: 914, to: 918, prev: [907, 911] };
-const WK_TAGS = ['점검 거부', '휴업/폐업', '연락 안 됨', '공장주 부재'];
-function weekCounts(s, from = WEEK.from, to = WEEK.to) {
-  const ins = s.inspections.filter((i) => mdNum(i.date) >= from && mdNum(i.date) <= to && TEAM.members.includes(i.by));
+// key는 저장된 보고를 찾는 이름이라 그대로 둔다. 권역마다 따로 내므로 `9/15 동탄`처럼 권역을 붙여 담는다
+const WEEK = { key: '9/15', label: '9/14(월) ~ 9/18(금)', from: 914, to: 918 };
+const wkKey = (a) => `${WEEK.key} ${a}`;
+function weekCounts(s, area) {
+  const ins = s.inspections.filter((i) => mdNum(i.date) >= WEEK.from && mdNum(i.date) <= WEEK.to && TEAM.members.includes(i.by) && FACTORIES[i.fid].area === area)
+    .sort((a, b) => mdNum(a.date) - mdNum(b.date));
   const c = Object.fromEntries(RESULTS.map((r) => [r, ins.filter((i) => (i.result || RESULTS[0]) === r).length]));
   return { firms: new Set(ins.map((i) => i.fid)).size, c, ins };
 }
-// 문제 항목을 테마(영역)별로 센다 — 기본 체크리스트 밖의 것은 AI 제안·직접 추가·지난번 미흡으로
-const issueThemes = (ins) => {
-  const m = {};
-  ins.forEach((i) => i.items.filter((x) => x.answer === 'bad').forEach((x) => { const k = gname(gkey(x)) || '그 밖'; m[k] = (m[k] || 0) + 1; }));
-  return Object.entries(m).sort((a, b) => b[1] - a[1]);
-};
+// 고른 권역 — 안 골랐으면 점검한 곳이 있고 아직 안 낸 첫 권역
+const wkArea = (s) => UI.wk.area || TEAM.areas.find((a) => weekCounts(s, a).ins.length && !(s.weekly || {})[wkKey(a)]) || TEAM.areas[0];
+// 점검번호 — 기존 웹 점검코드(R + 날짜 6자리 + 글자 2 + 차례 3) 꼴을 흉내 낸 임시 번호. 가운데 글자 두 개의 뜻은 몰라서 뺐다
+const insNo = (s, i) => { const [m, d] = i.date.split('/').map(Number); const k = s.inspections.filter((x) => x.date === i.date).indexOf(i) + 1;
+  return `R26${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}${String(k).padStart(3, '0')}`; };
+const WK_FIELDS = CHECKLIST.areas.map((a) => a.name);
+const wkFocus = (a) => (UI.wk.focus[a] = UI.wk.focus[a] || [{ fld: '', item: '', txt: '', note: '' }]);
 function weekly(s) {
-  const w = weekCounts(s), pw = weekCounts(s, ...WEEK.prev), done = (s.weekly || {})[WEEK.key];
-  const diff = w.firms - pw.firms;
-  const nBad = w.ins.reduce((n, i) => n + i.items.filter((x) => x.answer === 'bad').length, 0);
-  // 요일별 — 그날 점검한 기업 수로 막대
-  const perDay = WEEK.days.map((d) => new Set(w.ins.filter((i) => mdNum(i.date) === mdNum(d)).map((i) => i.fid)).size);
-  const top = Math.max(1, ...perDay);
-  const themes = issueThemes(w.ins), tMax = themes.length ? themes[0][1] : 1;
-  const st = (k) => w.ins.filter((i) => (i.st || 'ok') === k).length;
-  // 앞으로 예정 — 방문 잡힘(오늘 뒤) / 공장주 승인 기다림 / 예약 필요(할 일인데 방문일도 요청도 없음)
-  const t = tasks(s).filter((x) => x.kind === 'visit');
-  const booked = t.filter((x) => s.visits[x.fid] && !s.visits[x.fid].startsWith('오늘'));
-  const waiting = t.filter((x) => !s.visits[x.fid] && bookOf(s, x.fid) && bookOf(s, x.fid).st !== 'no');
-  const need = t.filter((x) => !s.visits[x.fid] && !(bookOf(s, x.fid) && bookOf(s, x.fid).st !== 'no'));
-  const lines = w.ins.map((i) => `<div class="rowx"><span><b>${FACTORIES[i.fid].name}</b> <span class="small">${i.date} ${i.result || RESULTS[0]}</span></span>${tg(ST_WORD[i.st || 'ok'], 's-' + (i.st || 'ok'))}</div>`);
-  const tags = done ? done.tags || [] : UI.wkTags;
+  const area = wkArea(s), w = weekCounts(s, area), done = (s.weekly || {})[wkKey(area)];
+  const notes = done ? done.notes || {} : UI.wk.note;
+  const opts = TEAM.areas.map((a) => { const n = weekCounts(s, a).firms; return `<option value="${a}"${a === area ? ' selected' : ''}>${a} (${(s.weekly || {})[wkKey(a)] ? '냄' : `${n}곳`})</option>`; }).join('');
+  const firm = (i) => { const f = FACTORIES[i.fid], note = notes[i.id] || '';
+    return `<div class="q wkco"><div class="rowx"><b>${f.name}</b>${tg(i.result || RESULTS[0])}</div>
+      <dl class="gkv wksm"><dt>점검일</dt><dd>${i.date}</dd><dt>업종</dt><dd>${esc(f.type)}</dd><dt>사업자번호</dt><dd>${FIRM[i.fid].biz}</dd><dt>점검번호</dt><dd>${insNo(s, i)}</dd>${done && note ? `<dt>비고</dt><dd>${esc(note)}</dd>` : ''}</dl>
+      ${done ? ''
+        : `<input class="input wkin" id="wkn-${i.id}" data-wk="note:${i.id}" value="${esc(note)}" placeholder="비고 (예: 공장주 부재로 다음 주 다시 감)" aria-label="${f.name} 비고">`}</div>`; };
+  const focus = done ? done.focus || [] : wkFocus(area);
+  const frow = (r, n) => done
+    ? `<div class="q wkco"><dl class="gkv wksm"><dt>분야</dt><dd>${esc(r.fld)}</dd><dt>항목</dt><dd>${esc(r.item)}</dd><dt>내용</dt><dd>${esc(r.txt)}</dd>${r.note ? `<dt>비고</dt><dd>${esc(r.note)}</dd>` : ''}</dl></div>`
+    : `<div class="q wkco"><div class="rowx"><b>${n + 1}</b><button class="wkdel" data-act="wkDel" data-n="${n}" aria-label="${n + 1}번 지우기">${I('close', 14)}지우기</button></div>
+      <div class="wkf"><label for="wkf-${n}-fld">분야</label><select class="input wkin" id="wkf-${n}-fld" data-wk="f:${n}:fld"><option value="">고르기</option>${WK_FIELDS.map((x) => `<option${r.fld === x ? ' selected' : ''}>${x}</option>`).join('')}</select>
+        <label for="wkf-${n}-item">항목</label><input class="input wkin" id="wkf-${n}-item" data-wk="f:${n}:item" value="${esc(r.item)}" placeholder="예: 분전반">
+        <label for="wkf-${n}-txt">내용</label><input class="input wkin" id="wkf-${n}-txt" data-wk="f:${n}:txt" value="${esc(r.txt)}" placeholder="예: 분전반 앞 적재물">
+        <label for="wkf-${n}-note">비고</label><input class="input wkin" id="wkf-${n}-note" data-wk="f:${n}:note" value="${esc(r.note)}"></div></div>`;
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('주간 보고', '', `<span class="small">${TEAM.name}</span>`)}
     <div class="today"><div><b>${WEEK.label}</b></div></div>
-    ${kv([['조', TEAM.name], ['조장', TEAM.lead], ['조원', TEAM.members.filter((m) => m !== TEAM.lead).join(', ')], ['작성자', ME]])}
-    <div class="wks">
-      <div class="wkh"><span>점검 기업</span><b>${w.firms}<small>곳</small></b>
-        <em class="${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}">지난주보다 ${diff > 0 ? `${diff}곳 늘었어요` : diff < 0 ? `${-diff}곳 줄었어요` : '같아요'}</em></div>
-      <div class="wkr">${RESULTS.map((r) => `<div><b>${w.c[r]}</b><span>${r}</span></div>`).join('')}<div class="bad"><b>${nBad}</b><span>찾은 문제</span></div></div>
-    </div>
-    <div class="lbl">요일별 점검</div>
-    <div class="wkd">${WEEK.days.map((d, i) => `<div class="${mdNum(d) === TODAY.m * 100 + TODAY.d ? 'now' : ''}"><em>${perDay[i] || ''}</em><i style="height:${(perDay[i] / top) * 100}%"></i><span>${WD[new Date(TODAY.y, +d.split('/')[0] - 1, +d.split('/')[1]).getDay()]}</span></div>`).join('')}</div>
-    ${lines.length ? `<div class="q gstack">${lines.join('')}</div>` : ''}
-    <div class="lbl">찾은 문제 (테마별)</div>
-    ${themes.length ? `<div class="q wkt">${themes.map(([k, n]) => `<div><span>${esc(k)}</span><i><b style="width:${(n / tMax) * 100}%"></b></i><em>${n}건</em></div>`).join('')}</div>`
-      : '<div class="cnone">이번 주 찾은 문제가 없어요</div>'}
-    <div class="lbl">처리 상태</div>
-    <div class="wkr wkst"><div><b>${st('ok')}</b><span>승인</span></div><div><b>${st('wait')}</b><span>검사 대기</span></div><div class="${st('back') ? 'bad' : ''}"><b>${st('back')}</b><span>반려</span></div></div>
-    ${st('back') ? `<div class="warnbar"><span class="ic">${I('alert', 22)}</span><div class="small ink">반려된 점검 ${st('back')}건을 고쳐 내야 해요</div></div>` : ''}
-    <div class="lbl">앞으로 예정</div>
-    ${kv([['방문 잡힘', booked.length ? booked.map((x) => `${FACTORIES[x.fid].name} ${s.visits[x.fid]}`).join('<br>') : '없음'],
-      ['승인 기다림', waiting.length ? waiting.map((x) => FACTORIES[x.fid].name).join('<br>') : '없음'],
-      ['예약 필요', need.length ? need.map((x) => FACTORIES[x.fid].name).join('<br>') : '없음']])}
-    <div class="lbl">특이 사항${done ? '' : ' (안 골라도 돼요)'}</div>
-    ${done ? `<div class="stat"><div class="ck">${I('check', 26)}</div><div><div class="mid">${done.at} ${esc(done.by)} 냄</div>
-        <div class="small ink">${tags.length ? tags.map((x) => tg(x)).join('') + '<br>' : ''}${done.memo ? esc(done.memo) : tags.length ? '' : '특이 사항 없음'}</div></div></div>`
-      : `<div class="wktg">${WK_TAGS.map((x) => `<button class="${tags.includes(x) ? 'on' : ''}" data-act="wkTag" data-v="${x}" aria-pressed="${tags.includes(x)}">${x}</button>`).join('')}</div>
-      <textarea class="input" id="wkMemo" placeholder="덧붙일 말 (예: 향남 공장 한 곳이 점검을 거부함)">${esc(UI.wkMemo || '')}</textarea>`}
-    <div class="small">조장이 확인하는지는 아직 몰라요<span class="hyp">가설</span></div>
-  </div><div class="ft">${done ? '<button class="btn ghost" data-go="">홈으로</button>' : '<button class="btn" data-act="sendWeekly">주간 보고 내기</button>'}</div></div>`;
+    <div class="lbl">기본 정보</div>
+    ${kv([['점검조', TEAM.name], ['권역', `<select class="input wksel" id="wkArea" data-wk="area" aria-label="권역">${opts}</select>`], ['기간', WEEK.label], ['기업수', `${w.firms}곳`]])}
+    <div class="lbl">점검한 기업</div>
+    <div class="wkr">${RESULTS.map((r) => `<div><b>${w.c[r]}</b><span>${r}</span></div>`).join('')}</div>
+    ${w.ins.length ? `<div class="gstack">${w.ins.map(firm).join('')}</div>` : '<div class="cnone">이번 주 이 권역에서 점검한 기업이 없어요</div>'}
+    <div class="lbl wklh">중점점검항목${done ? '' : `<button class="fbtn line wkadd" data-act="wkAdd">${I('plus', 15)}더하기</button>`}</div>
+    ${focus.length ? `<div class="gstack">${focus.map(frow).join('')}</div>` : `<div class="cnone">${done ? '적은 항목이 없어요' : '더하기를 눌러 적어요'}</div>`}
+    ${done ? `<div class="stat"><div class="ck">${I('check', 26)}</div><div class="mid">${done.at} ${esc(done.by)} 냄</div></div>` : ''}
+  </div><div class="ft">${done ? '<button class="btn ghost" data-go="">홈으로</button>' : `<button class="btn" data-act="sendWeekly">${area} 주간 보고 내기</button>`}</div></div>`;
 }
+// 주간 보고 칸은 적는 대로 담아 둔다 — 화면이 다시 그려져도(다른 기기 반영 등) 적던 것이 남게. 권역을 바꾸면 다시 그린다
+document.addEventListener('input', (e) => {
+  const k = e.target.dataset && e.target.dataset.wk; if (!k) return;
+  if (k === 'area') { UI.wk.area = e.target.value; render(); return; }
+  const [kind, a, b] = k.split(':');
+  if (kind === 'note') UI.wk.note[a] = e.target.value;
+  else if (kind === 'f') wkFocus(wkArea(DB.s))[+a][b] = e.target.value;
+});
 
 /* ---------- 로그인 (2026-09-23) ----------
    아이디·비밀번호 (사용자가 고름). 로그인 상태 유지는 켜 둔 채로 연다 — 현장에서 날마다 다시 치지 않게 */
@@ -1296,12 +1296,16 @@ const ACTS = {
     });
     UI.cpage = 0; R.go('list');
   },
-  // 칩을 누르면 다시 그린다 — 적던 덧붙일 말은 먼저 담아 둔다
-  wkTag({ v }) { UI.wkMemo = $('#wkMemo') ? $('#wkMemo').value : ''; UI.wkTags = UI.wkTags.includes(v) ? UI.wkTags.filter((x) => x !== v) : [...UI.wkTags, v]; render(); },
+  // 주간 보고 — 중점점검항목 줄 더하기·지우기, 권역 하나씩 내기 (2026-10-01 기존 웹 양식대로)
+  wkAdd() { wkFocus(wkArea(DB.s)).push({ fld: '', item: '', txt: '', note: '' }); render(); },
+  wkDel({ n }) { wkFocus(wkArea(DB.s)).splice(+n, 1); render(); },
   sendWeekly() {
-    const memo = ($('#wkMemo') ? $('#wkMemo').value : '').trim(), w = weekCounts(DB.s);
-    DB.act((s) => { s.weekly = s.weekly || {}; s.weekly[WEEK.key] = { by: ME, at: '9/17', memo, tags: [...UI.wkTags], firms: w.firms, c: w.c }; DB.log(`${TEAM.name} 주간 보고 냄`); });
-    toast('주간 보고를 냈어요');
+    const area = wkArea(DB.s), w = weekCounts(DB.s, area);
+    const notes = Object.fromEntries(w.ins.map((i) => [i.id, (UI.wk.note[i.id] || '').trim()]).filter(([, v]) => v));
+    const focus = wkFocus(area).map((r) => ({ fld: r.fld, item: r.item.trim(), txt: r.txt.trim(), note: r.note.trim() })).filter((r) => r.fld || r.item || r.txt || r.note);
+    DB.act((s) => { s.weekly = s.weekly || {}; s.weekly[wkKey(area)] = { by: ME, at: '9/17', area, firms: w.firms, c: w.c, notes, focus }; DB.log(`${TEAM.name} ${area} 주간 보고 냄`); });
+    delete UI.wk.focus[area];
+    toast(`${area} 주간 보고를 냈어요`);
   },
   sheetPhoto() { UI.sheet.photo = true; render(); },
   saveBad() {

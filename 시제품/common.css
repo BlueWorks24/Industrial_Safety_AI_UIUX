@@ -540,6 +540,7 @@ span.gtdtg{cursor:default}
 .gtab.on{color:var(--ink);border-bottom-color:var(--brand)}
 /* 공장 카드 — 왼쪽 사진, 오른쪽 이름·위치·거리·단추 */
 .fcard{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid var(--line2);border-radius:14px;padding:14px}
+.hlist{display:flex;flex-direction:column;gap:10px}  /* 홈 공장 카드 사이 간격 (2026-10-01 사용자 — 붙어 보였다) */
 .fphw{flex:none;width:104px;height:78px;padding:0;border:none;border-radius:10px;overflow:hidden;background:none;cursor:pointer}
 .fph{display:block;width:100%;height:100%}
 .fbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
@@ -578,7 +579,7 @@ span.gtdtg{cursor:default}
 .gvph .fph{width:100%;height:100%}
 /* 파란 칸 아래쪽의 작은 단추 둘 — 가로로 나란히 (2026-09-22 사용자 지시) */
 .gacts{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18)}
-.gact{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 10px;border:none;border-radius:8px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer}
+.gact{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 10px;border:none;border-radius:8px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:none}
 .gact:active{background:rgba(255,255,255,.24)}
 .gact{flex:1 1 0;min-width:0}
 @media (max-width:359px){.gact{font-size:13px;padding:0 6px;gap:4px}.gact svg{display:none}}  /* 작은 폰에서 두 단추가 칸을 넘지 않게 */
@@ -915,37 +916,18 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
   .rotmask b{font-size:18px;font-weight:800}
   .rotmask span{font-size:14px;color:var(--mid)}
 }
-/* ===== 주간 보고 (2026-09-28) — 요약 숫자·지난주 대비 → 요일별 막대 → 테마별 문제 → 처리 상태 → 앞으로 예정 → 특이 사항 칩 ===== */
-.wks{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:14px}
-.wkh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
-.wkh > span{width:100%;font-size:13px;font-weight:700;color:var(--mid)}
-.wkh b{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
-.wkh b small{font-size:16px;font-weight:700;margin-left:2px}
-.wkh em{font-style:normal;font-size:13px;font-weight:700;color:var(--mid)}
-.wkh em.up{color:var(--green)}
-.wkh em.down{color:var(--amber)}
-.wkr{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:12px}
+/* ===== 주간 보고 (2026-09-28, 2026-10-01 기존 웹 등록 양식대로 다시 그림) — 기본 정보 → 점검한 기업(결과별 수 + 기업마다 한 칸) → 중점점검항목 ===== */
+.wkr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .wkr > div{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;border-radius:10px;background:#f5f6f8}
 .wkr b{font-size:18px;font-weight:800}
 .wkr span{font-size:12px;font-weight:700;color:var(--mid);white-space:nowrap}
-.wkr .bad{background:var(--amber-l)}
-.wkr .bad b,.wkr .bad span{color:var(--amber)}
-.wkr.wkst{grid-template-columns:repeat(3,1fr);margin-top:0}
-.wkr.wkst > div{background:#fff;border:1px solid var(--line2)}
-.wkr.wkst > div.bad{background:var(--amber-l);border-color:var(--amber-b)}
-.wkd{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;height:120px;padding:10px 12px 8px;background:#fff;border:1px solid var(--line2);border-radius:14px}
-.wkd > div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;min-height:0}
-.wkd i{display:block;width:60%;min-height:3px;border-radius:5px 5px 2px 2px;background:#c9d3e3}
-.wkd em{font-style:normal;font-size:13px;font-weight:800;color:var(--ink);min-height:18px}
-.wkd span{font-size:12px;font-weight:700;color:var(--mid)}
-.wkd .now i{background:var(--brand)}
-.wkd .now span{color:var(--brand)}
-.wkt{display:flex;flex-direction:column;gap:10px}
-.wkt > div{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;align-items:center;gap:10px;font-size:14px;font-weight:700}
-.wkt > div > span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.wkt i{display:block;height:8px;border-radius:4px;background:#eef1f5;overflow:hidden}
-.wkt i b{display:block;height:100%;border-radius:4px;background:var(--amber)}
-.wkt em{font-style:normal;font-size:13px;color:var(--amber);font-weight:800}
-.wktg{display:flex;flex-wrap:wrap;gap:6px}
-.wktg button{min-height:40px;padding:0 14px;border:1px solid var(--line2);border-radius:999px;background:#fff;color:var(--mid);font:inherit;font-size:14px;font-weight:700;cursor:pointer}
-.wktg button.on{border-color:var(--ink);background:var(--ink);color:#fff}
+.wksel{padding:8px 12px;font-weight:700}
+.wkco{display:flex;flex-direction:column;gap:8px}
+.wkco .rowx b{font-size:16px}
+.gkv.wksm{margin:0;font-size:13px;gap:3px 12px}
+.wkin{padding:10px 12px}
+.wkf{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;align-items:center}
+.wkf label{font-size:13px;font-weight:700;color:var(--mid)}
+.lbl.wklh{display:flex;justify-content:space-between;align-items:center}
+.wkadd{margin-top:0;gap:4px;padding:0 12px;font-size:14px}
+.wkdel{display:inline-flex;align-items:center;gap:3px;min-height:40px;padding:0 4px;border:none;background:none;color:var(--mid);font:inherit;font-size:13px;font-weight:700;cursor:pointer}

@@ -211,8 +211,11 @@ const SEED = {
       items: BASE_ITEMS['금속가공'].map((t, i) => ({ id: fid + i, text: t, src: 'base', answer: 'ok' })) })),
     // 이번 주(9/15~) 다른 조원들이 한 점검 (2026-09-28) — 주간 보고를 채워 보이려고. 할 일이 없는 공장이라 홈 목록은 그대로.
     // bad: 문제로 찍은 문항 [영역 키-번호]. 동화정공은 아직 운영자 검사 대기
-    ...[['ujin', '9/15', '박지킴', 'ok', '점검완료', ['a3-0', 'a3-3']], ['donghwa', '9/16', '최지킴', 'wait', '점검완료', ['a2-0', 'a3-1', 'a5-2']],
-      ['mirae', '9/16', '이조장', 'ok', '패트롤', []]].map(([fid, date, by, st, result, bad]) => ({
+    // 2026-10-01 사용자 요청으로 3건 더함 — 결과 네 종류가 다 나오고 요일별 막대(월1·화2·수3)가 보이게. 반려는 홈 맨 위 할 일이 되므로 넣지 않는다
+    ...[['saehan', '9/14', '최지킴', 'ok', '점검완료', ['a1-2', 'a4-1']],
+      ['ujin', '9/15', '박지킴', 'ok', '점검완료', ['a3-0', 'a3-3']], ['seongwon', '9/15', '박지킴', 'wait', '재점검', []],
+      ['donghwa', '9/16', '최지킴', 'wait', '점검완료', ['a2-0', 'a3-1', 'a5-2']],
+      ['mirae', '9/16', '이조장', 'ok', '패트롤', []], ['hangyeol', '9/16', '이조장', 'ok', '기타', ['a4-0']]].map(([fid, date, by, st, result, bad]) => ({
       id: 'w' + fid, fid, date, by, locked: true, st, result,
       items: CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => ({ id: `${fid}-${a.key}-${i}`, text: t, src: 'base', area: a.key,
         answer: bad.includes(`${a.key}-${i}`) ? 'bad' : 'ok' }))) })),
