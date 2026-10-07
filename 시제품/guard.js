@@ -88,17 +88,16 @@ function facMini(fid, AR = 4 / 3) {  // AR: 칸 가로:세로
 }
 // 공장 카드 — 위치 지도 · 이름 + 상태 · 위치 · 거리 · 방문일 · 그 상태에 맞는 단추 하나
 function fcard(s, x) {
-  const f = FACTORIES[x.fid], v = s.visits[x.fid], b = bookOf(s, x.fid);
+  const f = FACTORIES[x.fid], v = s.visits[x.fid];
   const go = `${I('chevron', 16)}`;
+  const going = s.draft && s.draft.kind === 'first' && !s.draft.redo && s.draft.fid === x.fid;
+  // 예약을 걷었다 (2026-10-07 사용자 지시) — 공장주와 따로 날을 맞추거나 불시에 가므로 점검 시작은 늘 열려 있다.
+  // 방문일은 지킴이가 스스로 적어 두는 것(캘린더·일정순에 쓰임)이라 옆에 작은 단추로 둔다
   const btn = x.kind === 'back' ? `<button class="fbtn" data-act="redo" data-id="${x.ins.id}">고쳐서 다시 내기 ${go}</button>`
-    // 공장주가 승인해야 방문일이 생긴다 — 그전엔 예약 단추만 (2026-09-22 사용자 결정)
-    : !v ? `<button class="fbtn line" data-act="date" data-fid="${x.fid}">${b ? b.st === 'no' ? '다시 예약하기' : '예약 변경' : '예약하기'} ${go}</button>`
-    // 방문일이 있으면 "예약 변경"을 점검 시작 옆에 나란히 — 날짜 줄 끝의 글자 링크는 단추로 안 보였다 (2026-09-22 사용자 지시)
-    : `<div class="fbtns"><button class="fbtn" data-act="newDraft" data-fid="${x.fid}">점검 시작 ${go}</button>
-      <button class="fbtn line fsub" data-act="date" data-fid="${x.fid}">${I('calendar', 15)} 예약 변경</button></div>`;
-  const req = !b ? '' : b.st === 'no' ? `<div class="fwhen no">${b.v} 예약 거절됨</div>` : `<div class="fwhen wait">${b.v} 공장주 승인 기다림</div>`;
+    : `<div class="fbtns"><button class="fbtn" data-act="newDraft" data-fid="${x.fid}">${going ? '이어서 점검' : '점검 시작'} ${go}</button>
+      <button class="fbtn line fsub" data-act="date" data-fid="${x.fid}">${I('calendar', 15)} ${v ? '일정 변경' : '방문일 정하기'}</button></div>`;
   const when = x.kind === 'back' ? `<div class="fwhen">${x.ins.back.at} 운영자 반려</div><div class="fwhen note">${esc(x.ins.back.note)}</div>`
-    : (v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문</div>` : b ? '' : '<div class="fwhen none">예약 안 함</div>') + req;
+    : v ? `<div class="fwhen${v.startsWith('오늘') ? ' now' : ''}">${I('calendar', 14)} ${v} 방문</div>` : '';
   return `<div class="fcard">
     <button class="fphw" data-go="pre/${x.fid}" aria-label="${f.name} 자세히">${facMini(x.fid)}</button>
     <div class="fbody">
@@ -201,7 +200,7 @@ function homeActs(s) {
 }
 
 /* ---------- G10 캘린더 (2026-09-22 사용자 요청) ----------
-   따로 예약 목록을 두지 않고 방문일(s.visits)에서 바로 그린다 — 공장주가 예약을 승인하면 그 칸에 저절로 올라간다.
+   방문일(s.visits)에서 바로 그린다 — 지킴이가 방문일을 정하면 그 칸에 저절로 올라간다 (2026-10-07 예약·공장주 승인을 걷음). 불시 방문은 달력에 없다.
    반려는 방문이 아니라서 달력에 올리지 않는다. 이야기 속 오늘은 2026-09-17(목). */
 const TODAY = { y: 2026, m: 9, d: 17 };
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -481,8 +480,8 @@ function nvPaint() {
   });
   NV.labs.forEach((m) => m.setVisible(!sel));  // 구 이름은 전체일 때만
 }
-// 방문 예약 — 달력에서 날짜를 누르고 시·분 바퀴를 굴려 시간을 고른다 (2026-09-22 사용자 요청: 날짜 다섯 개 단추 → 달력, 오전/오후 → 시·분 따로 스크롤, 방문일 정하기 → 예약).
-// 지난 날은 못 고르고, 다른 공장 방문이 잡힌 날엔 막대가 뜬다. 보내면 공장주에게 예약 요청이 가고, 승인되면 캘린더에 오른다.
+// 방문일 정하기 — 달력에서 날짜를 누르고 시·분 바퀴를 굴려 시간을 고른다 (2026-09-22 사용자 요청: 날짜 다섯 개 단추 → 달력, 오전/오후 → 시·분 따로 스크롤).
+// 지난 날은 못 고르고, 다른 공장 방문이 잡힌 날엔 막대가 뜬다. 저장하면 바로 캘린더에 오른다 (2026-10-07 공장주 예약 승인을 걷음).
 const P2 = (n) => String(n).padStart(2, '0');
 const WHEEL = { h: Array.from({ length: 24 }, (_, i) => P2(i)), m: Array.from({ length: 12 }, (_, i) => P2(i * 5)) };  // 분은 5분 단위
 const WH = 44;  // 바퀴 한 칸 높이(px) — CSS .wcol b 와 같게
@@ -527,14 +526,15 @@ function dateSheet(s) {
   }).join('');
   const picked = sh.d ? `${sh.pm}월 ${sh.d}일 (${WD[new Date(y, sh.pm - 1, sh.d).getDay()]})` : '';
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet dsheet"><div class="grip"></div>
-    <div class="mid">${f.name} 방문 예약</div>
+    <div class="mid">${f.name} 방문일</div>
     <div class="calh"><button class="cmv" data-act="sheetM" data-v="-1" aria-label="이전 달"${m <= TODAY.m ? ' disabled' : ''}>${I('back', 20)}</button><b>${y}년 ${m}월</b>
       <button class="cmv nx" data-act="sheetM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
     <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
     <div class="lbl">시간</div>
     <div class="twheel">${wheelCol('h', sh.tm.slice(0, 2))}<span class="wsep">:</span>${wheelCol('m', sh.tm.slice(3))}</div>
     <div class="dpick${picked ? '' : ' none'}">${picked ? `${I('calendar', 16)} ${picked} <span class="tt">${sh.tm}</span> 방문` : '달력에서 날짜를 골라 주세요'}</div>
-    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveDate" ${sh.d ? '' : 'disabled'}>예약 요청 보내기</button></div>
+    ${s.visits[sh.fid] ? `<button class="add" data-act="clearDate">잡아 둔 방문일 지우기</button>` : ''}
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveDate" ${sh.d ? '' : 'disabled'}>저장</button></div>
   </div>`;
 }
 
@@ -582,7 +582,7 @@ function nvFacMount() {
 function prevTimeline(e) {
   const row = (when, what, sub = '', cls = '') => `<li class="${cls}"><span class="gtlw">${when}</span><span class="gtlx"><b>${what}</b>${sub ? `<small>${sub}</small>` : ''}</span></li>`;
   const at = (l) => `${l.at}${l.tm ? `<i>${l.tm}</i>` : ''}`;
-  const rows = [row(e.ins.date, '점검에서 문제 발견', esc(e.ins.by))];
+  const rows = [row(e.ins.date, '점검에서 불량 발견', esc(e.ins.by))];
   (e.it.log || []).forEach((l) => rows.push(l.t === 'fix'
     ? row(at(l), '공장주가 고쳤다고 알림', l.note ? `"${esc(l.note)}"` : '', 'fix')
     : row(at(l), l.result === 'fixed' ? '점검에서 고쳐짐 확인' : '점검에서 안 고쳐짐', l.reason ? esc(l.reason) : '', l.result === 'fixed' ? 'fix' : 'bad')));
@@ -593,7 +593,7 @@ function prevTimeline(e) {
 function prevNote(e) {
   const last = (e.it.log || []).slice(-1)[0];
   const next = last ? (last.t === 'fix' ? `${last.at} 공장주 "고쳤어요"${last.note ? `<br>"${esc(last.note)}"` : ''}` : last.result === 'not' ? `${last.at} 점검에서 안 고쳐짐` : '') : '공장주가 아직 안 고침';
-  return `${e.ins.date} 문제 있음${next ? '<br>' + next : ''}`;
+  return `${e.ins.date} 불량${next ? '<br>' + next : ''}`;
 }
 // 공장 창의 점검 이력 — 최근 3건을 한 줄씩, 누르면 이 공장 점검 결과 화면 (2026-09-22 사용자 지시)
 function insHist(s, fid, all) {
@@ -601,7 +601,7 @@ function insHist(s, fid, all) {
   if (!list.length) return `<div><div class="lbl">점검 이력</div><div class="cnone">아직 점검한 적이 없어요</div></div>`;
   return `<div><div class="lbl">점검 이력 ${list.length}건</div>
     <div class="ghist">${(all ? list : list.slice(0, 3)).map((i) => { const st = i.st || 'ok', b = i.items.filter((x) => x.answer === 'bad').length;
-      return `<button class="ghr" data-go="records/${fid}/pre"><span class="ghd">${i.date}</span><span class="ghn"><b>${i.result || RESULTS[0]}</b><small>${i.by}</small></span>${b ? tg(`문제 ${b}`, 'warn') : ''}${tg(ST_WORD[st], 's-' + st)}</button>`; }).join('')}
+      return `<button class="ghr" data-go="records/${fid}/pre"><span class="ghd">${i.date}</span><span class="ghn"><b>${i.result || RESULTS[0]}</b><small>${i.by}</small></span>${b ? tg(`불량 ${b}`, 'warn') : ''}${tg(ST_WORD[st], 's-' + st)}</button>`; }).join('')}
       <button class="ghall" data-go="records/${fid}/pre">점검 결과 전체 보기 ${I('chevron', 16)}</button></div></div>`;
 }
 // 기업 정보 — 기존 화성 웹의 기업정보 항목을 묶어 보인다 (2026-09-23 사용자 요청).
@@ -629,10 +629,8 @@ const prevBlock = (q) => `<div class="gpv"><div class="gpvh">${I('alert', 18)}<b
 function pre(s, fid) {
   const f = FACTORIES[fid], q = openIssues(s, fid);
   const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid);
-  const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
-  // 아래 단추 둘 — 예약 | 점검 시작. 점검 시작은 공장주가 예약을 승인해야 열린다(날짜는 안 따짐).
-  // 잠긴 채로 두되 누르면 까닭을 알려 준다 (2026-09-22 사용자 결정 — AI 체크리스트 생성은 점검 시작 다음 화면에서)
-  const bk = bookOf(s, fid);
+  const going = s.draft && s.draft.kind === 'first' && !s.draft.redo && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
+  // 아래 단추 둘 — 방문일 | 점검 시작. 점검 시작은 늘 열려 있다 (2026-10-07 사용자 지시로 예약·공장주 승인을 걷음 — 불시에 가기도 한다)
   const tab = UI.ftab[fid] || 'info';  // 공장마다 마지막에 본 탭을 기억한다 (점검 결과를 보고 돌아와도 기록 탭 그대로)
   return `${sbar(f.name)}<div class="scr"><div class="bd">
     ${head(f.name, UI.preBack[fid] || '', `<span class="small">${q.length ? `지난번 미흡 ${q.length}개` : '점검'}</span>`)}
@@ -642,12 +640,11 @@ function pre(s, fid) {
     ${tab === 'info' ? firmInfo(fid) : tab === 'log' ? `
     ${hist.length ? senBlock(hist) : `<div><div class="lbl">센서 이상 기록</div><div class="cnone">센서 이상 기록이 없어요</div></div>`}
     ${insHist(s, fid, true)}` : `
-    ${kv([['방문', s.visits[fid] || '아직 안 잡힘'], bk && ['예약 요청', `${bk.v} ${bk.st === 'no' ? '거절됨' : '승인 기다림'}`]])}
+    ${kv([['방문', s.visits[fid] || '안 정함']])}
     ${q.length ? prevBlock(q) : `<div><div class="lbl">지난번 미흡 항목</div><div class="cnone">고칠 게 남은 항목이 없어요</div></div>`}`}
   </div><div class="ft">
-    <div class="gft2"><button class="btn ghost" data-act="date" data-fid="${fid}">${bk && bk.st === 'no' ? '다시 예약하기' : bk || s.visits[fid] ? '예약 변경' : '예약하기'}</button>
-    ${going || s.visits[fid] ? `<button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button>`
-      : `<button class="btn glocked" data-act="lockedStart" data-fid="${fid}">${I('lock', 17)} 점검 시작</button>`}</div>
+    <div class="gft2"><button class="btn ghost" data-act="date" data-fid="${fid}">${s.visits[fid] ? '일정 변경' : '방문일 정하기'}</button>
+    <button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button></div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 
@@ -698,12 +695,70 @@ function aiWait(s) {
     </div>
   </div><div class="ft"><button class="btn ghost" data-act="toList">기다리지 않고 기본 체크리스트로</button></div></div>`;
 }
+/* ---------- G4-나 장비 고르기 · AI (2026-10-07 사용자 지시 — 사진 AI는 그대로 두고 길을 하나 더) ----------
+   대표 장비를 고르거나 목록에 없는 장비는 이름을 적는다 → AI가 장비마다 체크리스트를 만든다.
+   적은 장비는 AI가 무엇인지 알아보고 그에 맞는 항목을 짓는다(시제품은 seed.js guessEquip 흉내). 장비마다 점검의 한 쪽이 된다.
+   사진 AI와 상태를 따로 둔다 — aiState·ai(사진) / eqState·eqGen(장비). 둘 다 받아도 된다 */
+const eqSelOf = (d) => d.eqSel || [];
+const eqSelfOf = (d) => d.eqSelf || [];
+const eqCount = (d) => eqSelOf(d).length + eqSelfOf(d).length;
+const EQ_ORDER = Object.keys(EQ);
+// 나이 있는 지킴이도 읽고 누르기 쉽게 (2026-10-07 사용자: 글씨가 작고 알약이 빽빽해 읽기 어렵다) —
+// 두 칸 격자의 큰 단추(17px, 높이 56px), 왼쪽 동그라미가 비었나 찼나로 고른 것을 보이고, 묶음 제목 옆에 몇 개 골랐는지
+function equipScreen(s) {
+  const d = s.draft, f = FACTORIES[d.fid], sel = eqSelOf(d), mine = eqSelfOf(d), n = eqCount(d);
+  const card = (e) => { const on = sel.includes(e.key);
+    return `<button class="geq${on ? ' on' : ''}" data-act="eqTg" data-k="${e.key}" aria-pressed="${on}"><span class="geqc">${on ? I('check', 16) : ''}</span><span class="geqn">${e.name}</span></button>`; };
+  return `${sbar(f.name)}<div class="scr"><div class="bd geqbd">
+    ${head(f.name + ' 점검', 'pick')}
+    <div class="geqtop"><b>점검할 장비를 골라 주세요</b><span>여러 개 고를 수 있어요</span></div>
+    ${EQUIP.map((c) => { const k = c.list.filter((e) => sel.includes(e.key)).length;
+      return `<div class="geqh"><b>${c.cat}</b>${k ? `<em>${k}개 고름</em>` : ''}</div><div class="geqs">${c.list.map(card).join('')}</div>`; }).join('')}
+    <div class="geqh"><b>목록에 없는 장비</b>${mine.length ? `<em>${mine.length}개 적음</em>` : ''}</div>
+    <div class="geqin"><input class="input" id="eqIn" value="${esc(UI.eqIn || '')}" placeholder="장비 이름 적기" autocomplete="off" enterkeyhint="done" aria-label="목록에 없는 장비 이름"><button class="btn" data-act="eqAdd">더하기</button></div>
+    ${mine.length ? `<div class="geqmine">${mine.map((t, i) => `<div class="geqm"><span>${esc(t)}</span><button class="geqx" data-act="eqDel" data-i="${i}">${I('close', 16)} 빼기</button></div>`).join('')}</div>` : ''}
+    <div class="geqnote">${I('info', 18)}<span>적은 장비는 AI가 알아보고 항목을 만들어요. 틀릴 수 있어요.</span></div>
+  </div><div class="ft">
+    <button class="btn gaisend${n ? '' : ' glocked'}" data-act="${n ? 'askEq' : 'noEquip'}">${n ? `${I('sparkle', 18)} 장비 ${n}개로 체크리스트 만들기` : `${I('lock', 17)} 장비를 골라 주세요`}</button>
+    <button class="btn ghost" data-act="toList">기본 체크리스트로 돌아가기</button>
+  </div></div>`;
+}
+// 목록에 없는 장비 칸 — 적는 대로 담아 둔다 (장비를 누르면 화면을 다시 그려 칸이 비던 것을 막는다). 엔터로도 더한다
+document.addEventListener('input', (e) => { if (e.target.id === 'eqIn') UI.eqIn = e.target.value; });
+document.addEventListener('keydown', (e) => { if (e.target.id === 'eqIn' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); ACTS.eqAdd(); } });
+// 장비 AI 기다리기 — 사진 AI 기다리기와 같은 모양에 고른 장비 이름을 훑는다
+const EQ_STEPS = ['고른 장비를 확인하고 있어요', '직접 적은 장비가 무엇인지 알아보고 있어요', '장비마다 위험과 점검 기준을 맞춰 보고 있어요'];
+function eqWait(s) {
+  const d = s.draft, f = FACTORIES[d.fid];
+  const names = [...eqSelOf(d).map((k) => EQ[k].name), ...eqSelfOf(d)];
+  if (d.eqState === 'fail') {
+    return `${sbar(f.name)}<div class="scr"><div class="bd">${head(f.name + ' 점검', 'equip')}
+      <div class="gaiw"><div class="donemark" style="border-style:dashed">${I('alert', 38)}</div>
+      <div class="center big">AI가 지금<br>답하지 않아요</div>
+      <div class="center small">기본 체크리스트는 그대로 점검할 수 있어요.</div></div>
+    </div><div class="ft"><button class="btn" data-act="toList">기본 체크리스트로 점검하기</button><button class="btn ghost" data-act="askEq">다시 해 보기</button></div></div>`;
+  }
+  const steps = eqSelfOf(d).length ? EQ_STEPS : [EQ_STEPS[0], '비슷한 사고 사례를 찾고 있어요', EQ_STEPS[2]];  // 한 줄 2초씩 세 줄이 6초에 한 바퀴
+  const show = names.slice(0, 4), more = names.length - show.length;
+  return `${sbar(f.name)}<div class="scr"><div class="bd">${head(f.name + ' 점검', 'equip')}
+    <div class="gaiw" role="status" aria-live="polite">
+      <div class="gorb"><i class="gring"></i><span class="gcore">${I('sparkle', 34)}</span></div>
+      <div class="center big">장비 ${names.length}개에 맞는<br>체크리스트를 만들고 있어요</div>
+      <div class="gsteps" aria-hidden="true">${steps.map((w, i) => `<span style="animation-delay:${i * 2}s">${w}</span>`).join('')}</div>
+      <div class="gscan eqn">${show.map((w, i) => `<span style="animation-delay:${i * 0.18}s"><em>${esc(w)}</em></span>`).join('')}${more > 0 ? `<span class="more">+${more}</span>` : ''}<i class="gbeam"></i></div>
+      <div class="gdots" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="center small">보통 10초쯤 걸려요</div>
+    </div>
+  </div><div class="ft"><button class="btn ghost" data-act="toList">기다리지 않고 기본 체크리스트로</button></div></div>`;
+}
+// 기본 체크리스트 고르기 — AI는 두 길: 사진 찍어 AI 제안(골라서 더함) · 장비 골라 AI 체크리스트(장비마다 통째로) (2026-10-07)
 function pickScreen(s) {
   const d = s.draft, f = FACTORIES[d.fid];
   const nBase = CHECKLIST.areas.reduce((n, a) => n + a.items.length, 0);
   const nSel = d.ai.filter((x) => x.sel).length;
-  const nPrev = openIssues(s, d.fid).length, total = nPrev + nBase + nSel + d.self.length;
-  const asked = d.aiState === 'done';
+  const gen = d.eqGen || [], nEq = gen.reduce((n, g) => n + g.items.length, 0);
+  const nPrev = openIssues(s, d.fid).length, total = nPrev + nBase + nSel + nEq + d.self.length;
+  const asked = d.aiState === 'done', eqDone = d.eqState === 'done' && gen.length;
   const answered = d.items.some((x) => x.answer);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
     ${head(f.name + ' 점검', 'pre/' + d.fid)}
@@ -712,9 +767,10 @@ function pickScreen(s) {
     <div class="grp">기본 체크리스트<span class="must">${CHECKLIST.ver}</span><span class="must">${nBase}문항</span></div>
     ${CHECKLIST.areas.map(ckArea).join('')}
     ${asked ? aiPicks(d, nSel) : `<div class="grp">AI 제안</div>`}
-    ${asked ? `
-    <button class="gai" data-act="goPhoto">${I('sparkle', 18)} 사진 더 찍어 다시 받기</button>` : `
-    <button class="gai" data-act="goPhoto">${I('sparkle', 18)} 사진 찍어 AI 제안 받기</button>`}
+    <button class="gai" data-act="goPhoto">${I('camera', 18)} ${asked ? '사진 더 찍어 다시 받기' : '사진 찍어 AI 제안 받기'}</button>
+    ${eqDone ? `<div class="gaip"><span class="gaic">${I('sparkle', 20)}</span><div><b>AI 장비 체크리스트</b><small>장비 ${gen.length}개 ${nEq}문항</small></div></div>
+    ${gen.map(eqArea).join('')}` : ''}
+    <button class="gai" data-act="goEquip">${I('tool', 18)} ${eqDone ? '장비 바꾸거나 더하기' : '장비 골라 AI 체크리스트 받기'}</button>
     ${d.self.length ? `<div class="grp">직접 추가<span class="must">${d.self.length}개</span></div>` : ''}
     ${d.self.map((t) => `<div class="item sel"><div class="bul">${I('plus', 14)}</div><div><div class="t">${esc(t)}</div><div class="why">직접 추가</div></div></div>`).join('')}
     <button class="add" data-act="addSelf">＋ 항목 직접 추가</button>
@@ -729,6 +785,15 @@ function ckArea(a) {
       <span class="gckt"><span class="t">${a.no} ${a.name}</span><span class="why">${tg(a.common ? '공통' : '설비별')}${tg(a.items.length + '문항')}${a.common ? '' : '<br>없는 설비는 해당 없음으로'}</span></span>
       <span class="gtdar${open ? ' on' : ''}">${I('chevron', 18)}</span></button>
     <div class="gckl"${open ? '' : ' inert'}><div><ol>${a.items.map((q) => `<li>${esc(q)}</li>`).join('')}</ol></div></div></div>`;
+}
+// AI가 만든 장비 체크리스트 — 기본 체크리스트 영역과 같은 모양으로 장비마다 접어 둔다. 직접 적은 장비는 AI가 무엇으로 알아봤는지 같이
+function eqArea(g) {
+  const k = 'eq-' + g.key, open = !!UI.ckOpen[k];
+  return `<div class="item gck${open ? ' open' : ''}">
+    <button class="gckh" data-act="ckTg" data-k="${k}" aria-expanded="${open}"><span class="bul gbai">${I('tool', 14)}</span>
+      <span class="gckt"><span class="t">${esc(g.name)}</span><span class="why">${tg(g.items.length + '문항')}${g.from ? tg('직접 적음') : ''}${g.from ? `<br>AI가 알아본 것: ${esc(g.seen)}${g.unsure ? ' (확실하지 않음)' : ''}` : ''}</span></span>
+      <span class="gtdar${open ? ' on' : ''}">${I('chevron', 18)}</span></button>
+    <div class="gckl"${open ? '' : ' inert'}><div><ol>${g.items.map((q) => `<li>${esc(q)}</li>`).join('')}</ol></div></div></div>`;
 }
 // AI 제안 고르기 (2026-09-23 사용자 지시: AI답게) — 보라→파랑 머리 칸(개수, 모두 고르기), 카드마다 어느 사진에서 무엇을 봤는지 꼬리표,
 // 고르면 물빛 테두리. 처음 받았을 때만 카드가 차례로 떠오른다 (고를 때마다 다시 뜨면 거슬려서)
@@ -764,25 +829,29 @@ function selfSheet() {
   </div>`;
 }
 
-/* ---------- G5 점검 — 목록 한 장에서 줄마다 바로 답하기 (2026-09-18 사용자 결정). 답 순서는 해당 없음 | 문제 있음 | 이상 없음 (2026-09-28 사용자 지시) ---------- */
-const ANS = { ok: '이상 없음', bad: '문제 있음', na: '해당 없음' };
+/* ---------- G5 점검 — 목록 한 장에서 줄마다 바로 답하기 (2026-09-18 사용자 결정). 답 순서는 2026-10-07부터 양호 | 보통 | 불량 | 해당 없음 ---------- */
+// 답은 넷 — 양호 | 보통 | 불량 | 해당 없음 (2026-10-07 사용자 지시. 전에는 이상 없음 · 문제 있음 · 해당 없음 셋).
+// 저장 값은 ok · mid · bad · na — 옛 기록의 ok(이상 없음)는 양호로, bad(문제 있음)는 불량으로 읽는다. 공장주에게 개선 요청이 가는 것은 불량뿐
+const ANS = { ok: '양호', mid: '보통', bad: '불량', na: '해당 없음' };
+const ANS_ORDER = ['ok', 'mid', 'bad', 'na'];
+const ansCls = (v) => (v === 'mid' ? 'amid' : v);  // .mid는 이미 제목 글씨 규칙이라 겹치지 않게
+const ANS_ICO = { ok: '✓', mid: '<i class="cmid"></i>', bad: '⚠', na: '—' };
 const GRP = { base: '기본 체크리스트', ai: 'AI 제안', self: '직접 추가' };
-// 묶음 — 기본 체크리스트는 영역(01~05)마다, 나머지는 출처마다 (2026-09-22)
+// 묶음 — 기본 체크리스트는 영역(01~05)마다, AI 장비 체크리스트는 장비마다(2026-10-07), 나머지는 출처마다 (2026-09-22)
 const AREA = Object.fromEntries(CHECKLIST.areas.map((a) => [a.key, a]));
-const gkey = (x) => (x.src === 'base' ? x.area || 'base' : x.src);
-const gname = (k) => (AREA[k] ? `${AREA[k].no} ${AREA[k].name}` : GRP[k] || SRC[k]);
+const gkey = (x) => (x.src === 'base' ? x.area || 'base' : x.src === 'ai' && x.eq ? 'eq:' + x.eq : x.src);
+const gname = (k) => (AREA[k] ? `${AREA[k].no} ${AREA[k].name}` : k.startsWith('eq:') ? k.slice(3) : GRP[k] || SRC[k]);
 function checkList(s) {
   const d = s.draft, f = FACTORIES[d.fid];
   const redo = d.redo && s.inspections.find((i) => i.id === d.redo);
   const n = (v) => d.items.filter((x) => x.answer === v).length;
-  const nOk = n('ok'), nBad = n('bad'), nNa = n('na');
-  const done = nOk + nBad + nNa, left = d.items.length - done;
+  const done = ANS_ORDER.reduce((a, v) => a + n(v), 0), left = d.items.length - done;
   const bad = d.items.filter((x) => x.answer === 'bad');
-  // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
+  // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다. 해당 없음은 있을 때만 센다
   const top = `<div class="apptop">${band(f.name + (redo ? ' 고쳐 내기' : ' 점검'), redo ? '' : 'pick')}${bar()}
     <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
-    <div class="prog">${['ok', 'bad', 'na'].map((v) => `<i class="${v}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div>
-    <div class="tally"><span class="ok">✓ ${ANS.ok} ${nOk}</span><span class="bad">⚠ ${ANS.bad} ${nBad}</span>${nNa ? `<span class="na">— ${ANS.na} ${nNa}</span>` : ''}${left ? `<span>안 본 것 ${left}</span>` : ''}</div></div></div>`;
+    <div class="prog">${ANS_ORDER.map((v) => `<i class="${ansCls(v)}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div>
+    <div class="tally">${ANS_ORDER.filter((v) => v !== 'na' || n(v)).map((v) => `<span class="${ansCls(v)}">${ANS_ICO[v]} ${ANS[v]} ${n(v)}</span>`).join('')}${left ? `<span>안 본 것 ${left}</span>` : ''}</div></div></div>`;
   // 테마(묶음)마다 한 쪽 — 한 테마를 다 보고 다음 쪽으로 넘긴다. 맨 끝은 마무리 쪽 (2026-09-28 사용자 지시)
   const pages = [...new Set(d.items.map(gkey))].map((k) => {
     const l = d.items.map((x, i) => [x, i]).filter(([x]) => gkey(x) === k);
@@ -793,24 +862,25 @@ function checkList(s) {
   const chips = `<div class="cpg" role="tablist">${pages.map((p, i) => `<button class="${i === cur ? 'on' : ''}${p.rest ? '' : ' done'}" data-act="cpage" data-v="${i}" aria-selected="${i === cur}">
       ${p.rest ? `<em>${p.rest}</em>` : I('check', 13)}${short(p.k)}</button>`).join('')}
     <button class="${cur === endI ? 'on' : ''}" data-act="cpage" data-v="${endI}" aria-selected="${cur === endI}">${I('flag', 13)}마무리</button></div>`;
+  // 한 줄 = 문항 + 답 넷(양호 | 보통 | 불량 | 해당 없음) + 평가 내용 (2026-10-07 사용자 지시).
+  // 불량은 예전처럼 사진과 위험요인을 적는 창이 뜬다. 평가 내용(잘한 점 같은 것)은 어느 답이든 적을 수 있다
   const row = ([x, i]) => {
     const st = x.answer || '';
-    const mark = [x.memo ? '메모: ' + esc(x.memo) : '', x.shot ? '사진 1장' : ''].filter(Boolean).join('<br>');
-    return `<div class="crow ${st}">
+    const rk = st === 'bad' && (x.risks || []).length ? `<div class="crisk">${x.risks.map((r) => tg(r, 'warn')).join('')}</div>` : '';
+    const mark = st === 'bad' ? [x.memo ? '위험요인 내용: ' + esc(x.memo) : '', x.shot ? '사진 1장' : ''].filter(Boolean).join('<br>') : '';
+    return `<div class="crow ${ansCls(st)}">
       <div class="ctop"><span class="cnum">${i + 1}</span><div class="t">${esc(x.text)}</div></div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
-      <div class="cans">
-        <button class="${st === 'na' ? 'on na' : ''}" data-act="ans" data-n="${i}" data-v="na">${ANS.na}</button>
-        <button class="${st === 'bad' ? 'on bad' : ''}" data-act="ansBad" data-n="${i}">${ANS.bad}</button>
-        <button class="${st === 'ok' ? 'on ok' : ''}" data-act="ans" data-n="${i}" data-v="ok">${ANS.ok}</button>
-      </div>
-      ${st === 'bad' && mark ? `<div class="cmemo">${mark}</div>` : ''}
+      <div class="cans c4">${ANS_ORDER.map((v) => `<button class="${st === v ? 'on ' + ansCls(v) : ''}" data-act="${v === 'bad' ? 'ansBad' : 'ans'}" data-n="${i}" data-v="${v}" aria-pressed="${st === v}">${ANS[v]}</button>`).join('')}</div>
+      ${rk}${mark ? `<div class="cmemo">${mark}</div>` : ''}
+      ${x.eval ? `<button class="ceval has" data-act="evalOpen" data-n="${i}"><b>평가 내용</b><span>${esc(x.eval)}</span></button>`
+        : `<button class="ceval" data-act="evalOpen" data-n="${i}">${I('plus', 14)} 평가 내용</button>`}
     </div>`;
   };
   const res = d.result || RESULTS[0];
   let body, foot;
   if (cur < endI) {
     const p = pages[cur], k = p.k;
-    const tag = AREA[k] ? tg(AREA[k].common ? '공통' : '설비별') : k === 'prev' ? tg('이상 없음 = 고쳐짐') : '';
+    const tag = AREA[k] ? tg(AREA[k].common ? '공통' : '설비별') : k === 'prev' ? tg('불량 = 아직 안 고쳐짐') : k.startsWith('eq:') ? tg('AI 장비 체크리스트') : '';
     body = `<div class="cph"><span class="cpn">${cur + 1} / ${endI}</span><b>${gname(k)}</b></div>
       <div class="cpt">${tag}${tg(`${p.l.length}개`)}${p.rest ? tg(`안 본 것 ${p.rest}`, 'now') : `<span class="alldone">${I('check', 13)}다 답함</span>`}</div>
       <div class="clist">${p.l.map(row).join('')}</div>`;
@@ -823,10 +893,10 @@ function checkList(s) {
     const todo = pages.map((p, i) => [p, i]).filter(([p]) => p.rest);
     body = `<div class="cph"><span class="cpn">마무리</span><b>점검 결과 내기</b></div>
       ${todo.length ? `<div class="lbl">아직 안 본 항목</div><div class="clist">${todo.map(([p, i]) => `<button class="cgo" data-act="cpage" data-v="${i}"><span>${gname(p.k)}</span>${tg(`안 본 것 ${p.rest}`, 'now')}${I('chevron', 16)}</button>`).join('')}</div>` : ''}
-      ${bad.length ? `<div class="lbl">문제로 찍은 항목 ${bad.length}개</div><ul class="q gul">${bad.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ul>` : `<div class="small">문제로 찍은 항목이 없어요</div>`}
+      ${bad.length ? `<div class="lbl">불량으로 찍은 항목 ${bad.length}개</div><ul class="q gul">${bad.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ul>` : `<div class="small">불량으로 찍은 항목이 없어요</div>`}
       ${left ? '' : `<div class="lbl">점검 결과<span class="hyp">가설</span></div>
       <div class="seg">${RESULTS.map((r) => `<button class="${res === r ? 'on' : ''}" data-act="pickResult" data-v="${r}">${r}</button>`).join('')}</div>
-      <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">운영자가 검사해요. 반려되면 고쳐서 다시 낼 수 있어요.<br>승인되면 문제 항목이 공장주에게 개선 요청으로 가요.</div></div>`}`;
+      <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">운영자가 검사해요. 반려되면 고쳐서 다시 낼 수 있어요.<br>승인되면 불량 항목이 공장주에게 개선 요청으로 가요.</div></div>`}`;
     // 안 본 것이 남으면 내기 단추는 잠그고, 누르면 까닭을 알린다 (못 누르는 단추 규칙, 2026-09-22)
     const go = redo ? '고쳐서 다시 내기' : '점검 결과 내기';
     foot = `<div class="gft2"><button class="btn ghost" data-act="cpage" data-v="${endI - 1}">${I('back', 18)} 이전</button>
@@ -836,20 +906,40 @@ function checkList(s) {
     ${redo && redo.back ? `<div class="warnbar"><span class="ic">${I('alert', 22)}</span><div><div class="mid">${redo.back.at} 운영자가 반려했어요</div><div class="small ink">"${esc(redo.back.note)}"</div></div></div>` : ''}
     ${chips}
     ${body}
-  </div><div class="ft">${foot}</div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}`;
+  </div><div class="ft">${foot}</div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'eval' ? evalSheet(s) : ''}`;
 }
+// 불량 창을 다시 그리기 전에 적던 글을 담아 둔다 (사진 찍기·사정 고르기가 창을 다시 그린다)
+function keepSheetText() { if ($('#memoIn')) UI.sheet.memo = $('#memoIn').value; if ($('#evalIn')) UI.sheet.eval = $('#evalIn').value; }
+// 평가 내용 칸 — 불량 창과 평가 내용 창이 같이 쓴다
+const EVAL_PH = '예: 소화기 위치 표시와 월간 점검표를 잘 관리하고 있음';
 function badSheet(s) {
   const it = s.draft.items[UI.sheet.n];
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="mid">${esc(it.text)}</div>
-    <div class="ans">${it.ref ? '아직 안 고쳐짐' : '문제 있음'}</div>
+    <div class="ans">${it.ref ? '불량 (아직 안 고쳐짐)' : '불량'}</div>
     ${it.ref ? `<div class="lbl">공장주에게 들은 사정 (안 골라도 돼요)</div>
       ${['큰 공사가 필요해요', '부품이나 업체를 기다려요', '이유를 몰라요'].map((r) => `<button class="pick${UI.sheet.reason === r ? ' on' : ''}" data-act="pickReason" data-v="${r}">${r}</button>`).join('')}` : ''}
     <div class="lbl">지금 모습 (안 찍어도 돼요)</div>
     <div class="row"><div class="thumb">${UI.sheet.photo ? '📷 1장' : '없음'}</div><button class="btn ghost sm" data-act="sheetPhoto">＋ 사진 찍기</button></div>
-    <div class="lbl">메모 (안 써도 돼요)</div>
-    <textarea class="input" id="memoIn" placeholder="예: 바닥에 늘어진 전선 피복이 벗겨짐">${esc(it.memo || '')}</textarea>
-    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveBad">저장</button></div>
+    <div class="srh"><b>위험요인</b><span>여러 개 고를 수 있어요</span></div>
+    <div class="geqs srisk">${RISKS.map((r) => { const on = UI.sheet.risks.includes(r);
+      return `<button class="geq${on ? ' on' : ''}" data-act="riskTg" data-v="${r}" aria-pressed="${on}"><span class="geqc">${on ? I('check', 16) : ''}</span><span class="geqn">${r}</span></button>`; }).join('')}</div>
+    <div class="lbl">위험요인 내용 (안 써도 돼요)</div>
+    <textarea class="input" id="memoIn" placeholder="예: 바닥에 늘어진 전선 피복이 벗겨짐">${esc(UI.sheet.memo ?? it.memo ?? '')}</textarea>
+    <div class="lbl">평가 내용 (안 써도 돼요)</div>
+    <textarea class="input" id="evalIn" placeholder="${EVAL_PH}">${esc(UI.sheet.eval ?? it.eval ?? '')}</textarea>
+    <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveBad">저장</button></div>
+  </div>`;
+}
+// 평가 내용 — 어느 답이든 적을 수 있다. 무엇을 잘했는지 같은 것 (2026-10-07 사용자 지시)
+function evalSheet(s) {
+  const it = s.draft.items[UI.sheet.n];
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="mid">${esc(it.text)}</div>
+    ${it.answer ? `<div class="ans">${ANS[it.answer]}</div>` : ''}
+    <div class="lbl">평가 내용</div>
+    <textarea class="input" id="evalIn" placeholder="${EVAL_PH}">${esc(it.eval || '')}</textarea>
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveEval">저장</button></div>
   </div>`;
 }
 /* G6 재점검 화면은 2026-09-22 걷었다 — 지난번 미흡 항목은 다음 점검의 체크리스트에 붙는다 */
@@ -878,7 +968,7 @@ function recCard(i, byFac, from = '') {
     : st === 'wait' ? '운영자 검사를 기다려요' : '';
   const mine = i.by === ME;
   return `<div class="q${st === 'back' && mine ? ' now' : ''}"><div class="rowx"><span class="t">${byFac ? `${i.date} 점검` : FACTORIES[i.fid].name}</span><span class="stt s-${st}">${ST_WORD[st]}</span></div>
-    ${kv([!byFac && ['점검일', i.date], byFac && ['점검자', mine ? `${i.by} (나)` : i.by], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['항목', `${i.items.length}개`], ['문제', `${bad.length}개`], how && ['처리', how]])}
+    ${kv([!byFac && ['점검일', i.date], byFac && ['점검자', mine ? `${i.by} (나)` : i.by], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['항목', `${i.items.length}개`], ['불량', `${bad.length}개`], how && ['처리', how]])}
     ${st === 'back' && mine ? `<div class="small ink">반려 사유: "${esc(i.back.note)}"</div><button class="btn ghost sm" data-act="redo" data-id="${i.id}">고쳐서 다시 내기</button>` : ''}
     <button class="ginsp" data-go="insp/${i.id}${from ? '/' + from : ''}">${I('list', 16)} 점검 내용 보기 ${I('chevron', 16)}</button></div>`;
 }
@@ -895,18 +985,18 @@ function inspView(s, id, from) {
     if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g, l: [] });
     groups[groups.length - 1].l.push([x, k]);
   });
-  const ICO = { ok: I('check', 15), bad: I('alert', 15), na: '—' };
+  const ICO = { ok: I('check', 15), mid: ANS_ICO.mid, bad: I('alert', 15), na: '—' };
   const rows = groups.map(({ g, l }) => `<div class="grp">${gname(g) || '점검 항목'}<span class="must">${l.length}개</span></div>
     <div class="rlist">${l.map(([x, k]) => {
       const a = x.answer || '';
-      const sub = [x.ref && x.reason ? `안 고쳐진 사정: ${esc(x.reason)}` : '', x.memo ? `메모: ${esc(x.memo)}` : '', x.shot ? '사진 1장' : ''].filter(Boolean).join('<br>');
-      return `<div class="vrow"><span class="rno">${k + 1}</span><div class="rtx"><div class="t">${esc(x.text)}</div>${sub ? `<small>${sub}</small>` : ''}</div><span class="rans ${a}">${ICO[a] || ''}${ANS[a] || '답 없음'}</span></div>`;
+      const sub = [x.ref && x.reason ? `안 고쳐진 사정: ${esc(x.reason)}` : '', (x.risks || []).length ? `위험요인: ${x.risks.map(esc).join(', ')}` : '', x.memo ? `위험요인 내용: ${esc(x.memo)}` : '', x.shot ? '사진 1장' : '', x.eval ? `평가 내용: ${esc(x.eval)}` : ''].filter(Boolean).join('<br>');
+      return `<div class="vrow"><span class="rno">${k + 1}</span><div class="rtx"><div class="t">${esc(x.text)}</div>${sub ? `<small>${sub}</small>` : ''}</div><span class="rans ${ansCls(a)}">${ICO[a] || ''}${ANS[a] || '답 없음'}</span></div>`;
     }).join('')}</div>`).join('');
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
     ${head(`${f.name} 점검 내용`, `records/${i.fid}${from ? '/' + from : ''}`)}
     <div class="glock">${I('lock', 16)} 낸 점검이라 고칠 수 없어요</div>
     ${kv([['점검일', i.date], ['점검자', i.by === ME ? `${i.by} (나)` : i.by], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['상태', tg(ST_WORD[st], 's-' + st)]])}
-    <div class="gview-t"><span class="ok">✓ ${ANS.ok} ${n('ok')}</span><span class="bad">⚠ ${ANS.bad} ${n('bad')}</span>${n('na') ? `<span class="na">— ${ANS.na} ${n('na')}</span>` : ''}</div>
+    <div class="gview-t">${ANS_ORDER.filter((v) => n(v) || v === 'ok' || v === 'bad').map((v) => `<span class="${ansCls(v)}">${ANS_ICO[v]} ${ANS[v]} ${n(v)}</span>`).join('')}</div>
     ${rows}
   </div></div>`;
 }
@@ -1054,7 +1144,8 @@ function meScreen(s) {
     <div class="help">
       <a class="hrow" href="tel:031-000-0000"><span class="hic">${I('phone', 20)}</span><div><b>운영센터</b><div class="small">031-000-0000 (가상)<br>평일 9시부터 18시까지</div></div></a>
     </div>
-    ${n ? `<button class="btn glocked gout" data-act="lockedOut">${I('lock', 17)} 로그아웃</button>`
+    ${!DB.remote ? ''  // 서버 없이 연 시험판(지킴이 설문, 2026-10-07)은 로그인할 곳이 없다 — 로그아웃하면 다시 못 들어오니 단추를 두지 않는다
+      : n ? `<button class="btn glocked gout" data-act="lockedOut">${I('lock', 17)} 로그아웃</button>`
       : `<button class="btn ghost gout" data-act="askOut">로그아웃</button>`}
   </div></div>
   ${sh && sh.type === 'pw' ? pwSheet(sh) : ''}
@@ -1086,7 +1177,7 @@ function render() {
   if (location.hash !== lastHash) { UI.mapFull = false; UI.sheet = null; }  // 다른 화면으로 가면(폰의 뒤로 가기 등) 지도 전체화면과 열린 창을 닫는다
   const d = s.draft;
   let html;
-  const needFirst = ['photo', 'ai', 'pick', 'list', 'ans', 'sum'].includes(p[0]);
+  const needFirst = ['equip', 'eqai', 'photo', 'ai', 'pick', 'list', 'ans', 'sum'].includes(p[0]);
   if (needFirst && !(d && d.kind === 'first')) { R.go(''); return; }
   if (p[0] === 'todo') { R.go(''); return; }  // 옛 주소 — 내 할 일은 홈 목록이 되었다 (2026-09-22)
   else if (p[0] === 'map') html = mapScreen(s);
@@ -1100,7 +1191,9 @@ function render() {
     html = pre(s, p[1]) + mapFullView(p[1]);
   }
   else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
+  else if (p[0] === 'equip') html = equipScreen(s);
   else if (p[0] === 'photo') html = photo(s);
+  else if (p[0] === 'eqai') html = eqWait(s);
   else if (p[0] === 'ai') html = aiWait(s);
   else if (p[0] === 'pick') html = pickScreen(s);
   else if (p[0] === 'list') html = checkList(s);
@@ -1156,7 +1249,7 @@ const ACTS = {
     if (!v.pwOld) return bad('pwOld', '지금 비밀번호를 적어 주세요');
     if (v.pwNew.length < 4) return bad('pwNew', '새 비밀번호는 4자 이상이어야 해요');
     if (v.pwNew !== v.pwNew2) return bad('pwNew2', '새 비밀번호가 서로 달라요');
-    if (!DB.remote) { sheet(null); toast('시제품 서버로 열었을 때만 바뀌어요'); return; }
+    if (!DB.remote) { sheet(null); toast('시험판이라 비밀번호는 바뀌지 않아요'); return; }
     const r = await fetch('api/password?app=guard', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ old: v.pwOld, new: v.pwNew }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) return bad(j.field === 'new' ? 'pwNew' : 'pwOld', j.error || '바꾸지 못했어요');
@@ -1171,7 +1264,7 @@ const ACTS = {
     R.go(''); render();
   },
   date({ fid }) {
-    const b = bookOf(DB.s, fid), v = (b && b.v) || DB.s.visits[fid], d = visitDay(v);  // 보낸 요청이나 잡힌 날이 있으면 그 달·그 날을 골라 둔 채로 연다
+    const v = DB.s.visits[fid], d = visitDay(v);  // 잡아 둔 날이 있으면 그 달·그 날을 골라 둔 채로 연다
     sheet({ type: 'date', fid, m: d ? d.m : TODAY.m, pm: d ? d.m : null, d: d ? d.d : null, tm: tmOf(v) });
   },
   pickD({ v }) { UI.sheet.pm = UI.sheet.m; UI.sheet.d = +v; render(); },
@@ -1180,15 +1273,50 @@ const ACTS = {
   saveDate() {
     const sh = UI.sheet, isToday = sh.pm === TODAY.m && sh.d === TODAY.d;
     const v = isToday ? `오늘 ${sh.tm}` : `${sh.pm}/${sh.d}(${WD[new Date(TODAY.y, sh.pm - 1, sh.d).getDay()]}) ${sh.tm}`;
-    DB.act((s) => bookRequest(s, sh.fid, v, ME));  // 방문일은 공장주가 승인할 때 들어간다
-    UI.sheet = null; toast(`${FACTORIES[sh.fid].name}에 예약 요청을 보냈어요. 공장주가 승인하면 캘린더에 올라가요`); render();
+    // 지킴이가 정한 방문일이 바로 들어간다 — 공장주 승인을 거치지 않는다 (2026-10-07 사용자 지시로 예약을 걷음)
+    DB.act((s) => { s.visits[sh.fid] = v; DB.log(`${ME} 방문일 정함 · ${FACTORIES[sh.fid].name} ${v}`); });
+    UI.sheet = null; toast(`${fmtDates(v)} 방문을 캘린더에 올렸어요`); render();
+  },
+  clearDate() {
+    const fid = UI.sheet.fid;
+    DB.act((s) => { s.visits[fid] = null; DB.log(`${ME} 방문일 지움 · ${FACTORIES[fid].name}`); });
+    UI.sheet = null; toast('방문일을 지웠어요'); render();
   },
   newDraft({ fid }) { startDraft(fid); R.go('pick'); },
-  lockedStart({ fid }) {
-    const b = bookOf(DB.s, fid);
-    toast(!b ? '예약하고 공장주가 승인하면 점검할 수 있어요' : b.st === 'no' ? '예약이 거절됐어요. 다시 예약해 주세요' : `공장주 승인을 기다리고 있어요 (${fmtDates(b.v)})`);
-  },
   openMap() { toast('실제 앱은 여기서 지도 앱으로 넘어가요'); },
+  // 장비 고르기 (2026-10-07) — 누르면 고르고, 다시 누르면 풀린다
+  goEquip() { R.go('equip'); },
+  eqTg({ k }) { DB.act((s) => { const d = s.draft, l = eqSelOf(d); d.eqSel = l.includes(k) ? l.filter((x) => x !== k) : [...l, k]; }); },
+  eqAdd() {
+    const el = $('#eqIn'), v = ((el && el.value) || UI.eqIn || '').trim().replace(/\s+/g, ' ');
+    if (!v) { toast('장비 이름을 적어 주세요'); return; }
+    // 목록에 있는 이름을 적으면 그 장비를 고른다 (같은 장비가 두 번 들어가지 않게)
+    const known = Object.values(EQ).find((e) => e.name.replace(/\s/g, '') === v.replace(/\s/g, ''));
+    UI.eqIn = '';
+    if (known) { DB.act((s) => { const d = s.draft; if (!eqSelOf(d).includes(known.key)) d.eqSel = [...eqSelOf(d), known.key]; }); toast(`목록에 있는 장비라 ${known.name} 칸을 골랐어요`); return; }
+    if (eqSelfOf(DB.s.draft).includes(v)) { render(); toast('이미 더한 장비예요'); return; }
+    DB.act((s) => { s.draft.eqSelf = [...eqSelfOf(s.draft), v]; });
+    setTimeout(() => $('#eqIn') && $('#eqIn').focus(), 0);
+  },
+  eqDel({ i }) { DB.act((s) => { s.draft.eqSelf = eqSelfOf(s.draft).filter((_, j) => j !== +i); }); },
+  noEquip() { toast('장비를 하나 이상 고르거나 적어 주세요'); },
+  // 장비 AI — 사진 AI와 따로 기다린다 (eqState). 장비마다 체크리스트 한 묶음 — 목록 장비는 목록 차례대로, 직접 적은 것은 AI가 알아본 종류로
+  askEq() {
+    DB.act((s) => { s.draft.eqState = 'wait'; });
+    R.go('eqai');
+    clearTimeout(UI.eqTimer);
+    UI.eqTimer = setTimeout(() => {
+      if (!DB.s.draft || DB.s.draft.eqState !== 'wait') return;
+      if (DB.s.aiDown) { DB.act((s) => { s.draft.eqState = 'fail'; }); return; }
+      DB.act((s) => {
+        const d = s.draft, sel = [...eqSelOf(d)].sort((a, b) => EQ_ORDER.indexOf(a) - EQ_ORDER.indexOf(b));
+        d.eqGen = [...sel.map((k) => ({ key: k, name: EQ[k].name, items: [...EQ[k].items] })),
+          ...eqSelfOf(d).map((t) => { const g = guessEquip(t); return { key: 'u-' + t, name: t, from: t, seen: g.seen, unsure: !!g.unsure, items: [...g.items] }; })];
+        d.eqState = 'done';
+      });
+      if (R.path()[0] === 'eqai') R.go('pick');  // 기다리다 다른 화면으로 갔으면 끌고 오지 않는다
+    }, 2500);
+  },
   goPhoto() { R.go('photo'); },
   addPhoto() {
     DB.act((s) => {
@@ -1220,10 +1348,14 @@ const ACTS = {
       if (R.path()[0] === 'ai') R.go('pick');  // 기다리다 다른 화면으로 갔으면 끌고 오지 않는다
     }, 2500);
   },
-  // AI를 안 받거나 기다리지 않고 기본 체크리스트로 돌아간다 (이미 받아 둔 제안과 고른 것은 그대로)
+  // AI를 안 받거나 기다리지 않고 기본 체크리스트로 돌아간다 (이미 받아 둔 제안·장비 체크리스트와 고른 것은 그대로)
   toList() {
-    clearTimeout(UI.aiTimer);
-    DB.act((s) => { if (s.draft.aiState !== 'done') s.draft.aiState = s.draft.ai.length ? 'done' : null; });
+    clearTimeout(UI.aiTimer); clearTimeout(UI.eqTimer);
+    DB.act((s) => {
+      const d = s.draft;
+      if (d.aiState !== 'done') d.aiState = d.ai.length ? 'done' : null;
+      if (d.eqState !== 'done') d.eqState = (d.eqGen || []).length ? 'done' : null;
+    });
     R.go('pick');
   },
   allAI({ v }) { DB.act((s) => { s.draft.ai.forEach((x) => { x.sel = v === '1'; }); }); },
@@ -1239,17 +1371,33 @@ const ACTS = {
     DB.act((s) => {
       const d = s.draft;
       const base = CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => ({ id: `c${a.key}-${i}`, text: t, src: 'base', area: a.key })));
+      // 사진 AI 제안은 고른 것만 "AI 제안" 한 쪽에, AI 장비 체크리스트는 장비마다 한 쪽 (eq = 장비 이름). 출처는 둘 다 'ai'라 운영자 통계 "AI 제안 쓰임"에 같이 셈한다
       const ai = d.ai.filter((x) => x.sel).map((x) => ({ id: 'a' + x.idx, text: AI_SUGGEST[x.idx].text, src: 'ai', photo: x.photo }));
+      const eq = (d.eqGen || []).flatMap((g) => g.items.map((t, i) => ({ id: `e-${g.key}-${i}`, text: t, src: 'ai', eq: g.name })));
       const self = d.self.map((t, i) => ({ id: 's' + i, text: t, src: 'self' }));
       // 지난번 미흡 항목 — 맨 앞 묶음. 원래 항목을 ref로 가리키고, 승인되면 답이 원래 항목에 적힌다 (common.js settlePrev)
       const prev = openIssues(s, d.fid).map((e) => ({ id: `p-${e.ins.id}-${e.it.id}`, text: e.it.text, src: 'prev', ref: { ins: e.ins.id, id: e.it.id }, note: prevNote(e) }));
       const old = Object.fromEntries(d.items.map((x) => [x.id, x]));
-      d.items = [...prev, ...base, ...ai, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot } : { answer: null }));
+      d.items = [...prev, ...base, ...ai, ...eq, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot, eval: old[x.id].eval, risks: old[x.id].risks } : { answer: null }));
     });
     R.go('list');
   },
-  ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; }); },
-  ansBad({ n }) { const it = DB.s.draft.items[+n]; sheet({ type: 'bad', n: +n, photo: !!it.shot, reason: it.reason || null }); },
+  // 불량이 아닌 답으로 바꾸면 위험요인·사진은 지운다 (불량에만 붙는 것). 평가 내용은 어느 답이든 남는다
+  ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; it.risks = []; }); },
+  ansBad({ n }) { const it = DB.s.draft.items[+n]; sheet({ type: 'bad', n: +n, photo: !!it.shot, reason: it.reason || null, risks: [...(it.risks || [])] }); },
+  // 위험요인 고르기 (2026-10-07) — 창을 다시 그리면 위로 튀고 올라오는 움직임이 다시 나와서, 누른 칸의 표시만 바꾼다
+  riskTg({ v }, el) {
+    const l = UI.sheet.risks, on = !l.includes(v);
+    UI.sheet.risks = on ? [...l, v] : l.filter((x) => x !== v);
+    el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
+    el.querySelector('.geqc').innerHTML = on ? I('check', 16) : '';
+  },
+  evalOpen({ n }) { sheet({ type: 'eval', n: +n }); setTimeout(() => $('#evalIn') && $('#evalIn').focus(), 50); },
+  saveEval() {
+    const n = UI.sheet.n, v = $('#evalIn').value.trim();
+    UI.sheet = null;
+    DB.act((s) => { s.draft.items[n].eval = v; });
+  },
   // 점검 쪽 넘기기 — 넘기면 맨 위로, 위 칩 줄은 지금 쪽이 보이게 민다
   cpage({ v }) {
     UI.cpage = +v; render(); scrollTo(0, 0);
@@ -1307,16 +1455,18 @@ const ACTS = {
     delete UI.wk.focus[area];
     toast(`${area} 주간 보고를 냈어요`);
   },
-  sheetPhoto() { UI.sheet.photo = true; render(); },
+  sheetPhoto() { keepSheetText(); UI.sheet.photo = true; render(); },
   saveBad() {
-    const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ph = UI.sheet.photo, reason = UI.sheet.reason || '';
+    const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ev = $('#evalIn').value.trim(), ph = UI.sheet.photo, reason = UI.sheet.reason || '';
+    const risks = RISKS.filter((r) => UI.sheet.risks.includes(r));  // 목록 차례대로
     UI.sheet = null;
-    DB.act((s) => { const it = s.draft.items[n]; it.answer = 'bad'; it.memo = memo; it.shot = ph; it.reason = reason; });
+    DB.act((s) => { const it = s.draft.items[n]; it.answer = 'bad'; it.memo = memo; it.eval = ev; it.shot = ph; it.reason = reason; it.risks = risks; });
   },
   submitFirst() {
     const d = DB.s.draft;
     const data = { kind: 'first', fid: d.fid, redo: d.redo || null, by: ME, team: TEAM.name, ver: CHECKLIST.ver, result: d.result || RESULTS[0],
-      items: d.items.map((x) => ({ id: x.id, text: x.text, src: x.src, area: x.area, answer: x.answer, memo: x.memo || '', log: [],
+      items: d.items.map((x) => ({ id: x.id, text: x.text, src: x.src, area: x.area, answer: x.answer, memo: x.memo || '', eval: x.eval || '', log: [],
+        ...(x.eq ? { eq: x.eq } : {}), ...(x.shot && !x.ref ? { shot: true } : {}), ...((x.risks || []).length ? { risks: x.risks } : {}),
         ...(x.ref ? { ref: x.ref, note: x.note, reason: x.reason || '', shot: !!x.shot } : {}) })) };
     DB.act((s) => {
       if (s.net.guard) applyInspection(s, data); else s.outbox.guard.push({ type: 'inspection', data });
@@ -1327,7 +1477,7 @@ const ACTS = {
     UI.sentFresh = true;
     R.go('sent/first/' + d.fid);
   },
-  pickReason({ v }) { UI.sheet.reason = UI.sheet.reason === v ? null : v; render(); },
+  pickReason({ v }) { keepSheetText(); UI.sheet.reason = UI.sheet.reason === v ? null : v; render(); },
 };
 
 (async () => {

@@ -222,17 +222,14 @@ function openIssues(s, fid) {
 }
 // 그중 공장주가 "고쳤어요"를 누른 것 — 이게 있으면 다시 가 볼 공장이 된다
 const recheckQueue = (s, fid) => openIssues(s, fid).filter((e) => itemState(e.it) === 'claimed');
-// 방문 예약 (2026-09-22 사용자 결정, 가설: 기존 웹의 사전조사를 공장주와 맞추는 예약으로 본다)
-// 지킴이가 날짜·시간을 골라 요청 → 공장주가 승인하면 그때 방문일(s.visits)에 들어간다. 거절하면 지킴이가 다시 예약한다.
-const bookOf = (s, fid) => (s.books || {})[fid] || null;
-function bookRequest(s, fid, v, by) { s.books = s.books || {}; s.books[fid] = { v, st: 'wait', by, at: hm(s.clock) }; DB.log(`${by} 방문 예약 요청 · ${FACTORIES[fid].name} ${v}`); }
-function bookApprove(s, fid, by) { const b = bookOf(s, fid); if (!b) return; s.visits[fid] = b.v; delete s.books[fid]; DB.log(`${by} 방문 예약 승인 · ${FACTORIES[fid].name} ${b.v}`); }
-function bookReject(s, fid, by) { const b = bookOf(s, fid); if (!b) return; b.st = 'no'; b.noAt = hm(s.clock); DB.log(`${by} 방문 예약 거절 · ${FACTORIES[fid].name} ${b.v}`); }
-// 운영자가 점검을 승인할 때 — 붙었던 미흡 항목의 답을 원래 항목에 적는다 (이상 없음 = 고쳐짐, 문제 있음 = 안 고쳐짐)
+// 방문 예약(지킴이 요청 → 공장주 승인)은 2026-10-07 사용자 지시로 걷었다 — 실제로는 예약 시스템이 없고, 공장주와 따로 날을 맞추거나 불시에 간다.
+// 지킴이가 정해 둔 방문일(s.visits)만 남는다
+// 운영자가 점검을 승인할 때 — 붙었던 미흡 항목의 답을 원래 항목에 적는다 (양호·보통 = 고쳐짐, 불량 = 안 고쳐짐 — 2026-10-07 답이 넷이 됨)
+const FIXED_ANS = (a) => a === 'ok' || a === 'mid';
 function settlePrev(s, ins) {
-  ins.items.filter((x) => x.ref && (x.answer === 'ok' || x.answer === 'bad')).forEach((x) => {
+  ins.items.filter((x) => x.ref && (FIXED_ANS(x.answer) || x.answer === 'bad')).forEach((x) => {
     const o = s.inspections.find((i) => i.id === x.ref.ins), it = o && o.items.find((y) => y.id === x.ref.id);
-    if (it) (it.log = it.log || []).push({ t: 'recheck', at: ins.date, result: x.answer === 'ok' ? 'fixed' : 'not', reason: x.reason || '', photo: !!x.shot });
+    if (it) (it.log = it.log || []).push({ t: 'recheck', at: ins.date, result: FIXED_ANS(x.answer) ? 'fixed' : 'not', reason: x.reason || '', photo: !!x.shot });
   });
 }
 
@@ -327,10 +324,6 @@ function drawCtl() {
   ${s.inspections.filter((i) => i.st === 'wait').map((i) => `<div class="al"><b>${esc(FACTORIES[i.fid].name)}</b> · ${esc(i.by)} · ${i.sentAt || i.date} 냄<br>
      <button class="cb" data-c="approve" data-id="${i.id}">승인</button>
      <button class="cb" data-c="reject" data-id="${i.id}">반려</button></div>`).join('') || '<div class="small">검사 기다리는 점검 없음</div>'}
-  <h3>공장주 방문 예약 승인 (계정 없는 공장 흉내)</h3>
-  ${Object.entries(s.books || {}).filter(([, b]) => b.st === 'wait').map(([f, b]) => `<div class="al"><b>${esc(FACTORIES[f].name)}</b> · ${esc(b.v)} · ${esc(b.by)} 요청<br>
-     <button class="cb" data-c="bookOk" data-f="${f}">승인</button>
-     <button class="cb" data-c="bookNo" data-f="${f}">거절</button></div>`).join('') || '<div class="small">승인 기다리는 예약 없음</div>'}
   <h3>근로자 의견 (공장주 화면이 생기기 전 흉내)</h3>
   <button class="cb" data-c="vread">최근 의견 · 대표님 읽음</button>
   <button class="cb" data-c="vreply">최근 의견 · 대표님 답</button>
@@ -362,9 +355,7 @@ document.addEventListener('click', (e) => {
     if (c === 'ai') s.aiDown = !s.aiDown;
     const ins = (c === 'approve' || c === 'reject') && s.inspections.find((i) => i.id === b.dataset.id);
     if (ins && c === 'approve') approveInsp(s, ins, '운영자');
-    if (ins && c === 'reject') rejectInsp(s, ins, '운영자', '문제 항목의 메모가 짧아요. 무엇이 어떻게 문제인지 적어 다시 내 주세요.');
-    if (c === 'bookOk') bookApprove(s, b.dataset.f, OWNER_NAME[b.dataset.f] || '공장주');
-    if (c === 'bookNo') bookReject(s, b.dataset.f, OWNER_NAME[b.dataset.f] || '공장주');
+    if (ins && c === 'reject') rejectInsp(s, ins, '운영자', '불량 항목의 위험요인이 짧아요. 무엇이 어떻게 위험한지 적어 다시 내 주세요.');
     const v = (s.voices || [])[0];
     if (v && c === 'vread') { v.readAt = '9/17'; DB.log('대표님 의견 읽음'); }
     if (v && c === 'vreply') {

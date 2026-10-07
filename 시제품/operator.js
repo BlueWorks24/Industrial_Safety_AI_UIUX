@@ -139,7 +139,7 @@ const OPER = (() => {
     });
     (s.faults || []).filter((f) => f.status === 'open').forEach((f) => out.push({ lv: 0, k: 'fault', fid: f.fid, ic: 'tool', go: `factory/${f.fid}`, tag: '고장 신고', t: FACTORIES[f.fid].name, w: SENSORS[f.key].title, d: [`${f.at} ${f.by} 신고`, `"${f.reason}"`] }));
     Object.keys(SENSORS).filter((k) => SIM.sensor(s, k).state === 'unknown').forEach((k) => out.push({ lv: 1, k: 'fault', fid: SENSORS[k].fid, ic: 'signal', go: `factory/${SENSORS[k].fid}`, tag: '값 끊김', t: FACTORIES[SENSORS[k].fid].name, w: SENSORS[k].title, d: [`${SIM.sensor(s, k).since}부터 값이 안 와요`] }));
-    waiting(s).forEach((i) => out.push({ lv: 2, k: 'wait', fid: i.fid, ic: 'clipboard', go: `insp/v/${i.id}`, tag: (i.backs || []).length ? '다시 냄' : '검사 대기', t: FACTORIES[i.fid].name, w: i.result || RESULTS[0], d: [i.by, `${i.date} 점검`, `문제 ${badOf(i).length}개`] }));
+    waiting(s).forEach((i) => out.push({ lv: 2, k: 'wait', fid: i.fid, ic: 'clipboard', go: `insp/v/${i.id}`, tag: (i.backs || []).length ? '다시 냄' : '검사 대기', t: FACTORIES[i.fid].name, w: i.result || RESULTS[0], d: [i.by, `${i.date} 점검`, `불량 ${badOf(i).length}개`] }));
     const ap = pendingApps(s);
     if (ap.length) out.push({ lv: 3, k: 'apply', ic: 'user', go: 'squads/guards', tag: '지킴이', t: `가입 신청 ${ap.length}명`, w: '', d: ap.map((a) => `${a.name}(${a.field})`) });
     return out.sort((a, b) => a.lv - b.lv);
@@ -537,7 +537,7 @@ const OPER = (() => {
     const nx = w[0];
     const cNext = nx ? `<div class="opnext"><div class="opnt">다음 검사<span class="opdate">${I('calendar', 15)} ${nx.date} 점검</span></div>
         <div class="opnxr"><div class="opnxt"><b>${FACTORIES[nx.fid].name}</b>
-          <dl class="opnkv"><dt>점검번호</dt><dd>${insNo(s, nx)}</dd><dt>지킴이</dt><dd>${esc(nx.by)}</dd><dt>위치</dt><dd>화성시 ${FACTORIES[nx.fid].dong}</dd><dt>문제</dt><dd>${badOf(nx).length}개</dd></dl>
+          <dl class="opnkv"><dt>점검번호</dt><dd>${insNo(s, nx)}</dd><dt>지킴이</dt><dd>${esc(nx.by)}</dd><dt>위치</dt><dd>화성시 ${FACTORIES[nx.fid].dong}</dd><dt>불량</dt><dd>${badOf(nx).length}개</dd></dl>
           <button class="opgo" data-go="insp/v/${nx.id}">검사하기 ${chev(16)}</button></div>
           <button class="opmw" data-go="factory/${nx.fid}" aria-label="${FACTORIES[nx.fid].name} 공장 보기">${miniMap(nx.fid)}</button></div>
         <div class="opacts"><a class="opact2" href="tel:010-0000-02${String(qs.findIndex((x) => x.members.includes(nx.by)) + 1).padStart(2, '0')}">${I('phone', 17)}지킴이에게 전화</a>
@@ -576,24 +576,25 @@ const OPER = (() => {
   }
   function inspDetail(s, i, act) {
     const f = FACTORIES[i.fid], st = stOf(i), prev = i.items.filter((x) => x.ref), bad = badOf(i);
-    const ok = i.items.filter((x) => x.answer === 'ok' && !x.ref), na = i.items.filter((x) => x.answer === 'na' && !x.ref), none = i.items.filter((x) => !x.answer);
-    const noMemo = bad.filter((x) => !x.memo), hist = [...(i.backs || []), ...(i.back ? [i.back] : [])];
-    const line = (x, w) => `<div class="small">· ${esc(x.text)} — ${w}</div>`;
+    // 답은 양호 · 보통 · 불량 · 해당 없음 (2026-10-07). 개선 요청은 불량만
+    const ok = i.items.filter((x) => x.answer === 'ok' && !x.ref), mid = i.items.filter((x) => x.answer === 'mid' && !x.ref), na = i.items.filter((x) => x.answer === 'na' && !x.ref), none = i.items.filter((x) => !x.answer);
+    const noMemo = bad.filter((x) => !x.memo && !(x.risks || []).length), hist = [...(i.backs || []), ...(i.back ? [i.back] : [])];
+    const line = (x, w) => `<div class="small">· ${esc(x.text)} — ${w}${x.eval ? ` (${esc(x.eval)})` : ''}</div>`;
     return `
       <div class="rowx"><span class="opttl">${f.name}</span>${stPill(i)}</div>
       ${kv([['점검번호', insNo(s, i)], ['점검일', i.date], ['지킴이', `${insTeam(i)} ${esc(i.by)}`], ['읍·면·동', f.dong], ['업종', f.type], ['결과', i.result || RESULTS[0]], ['판', i.ver || CHECKLIST.ver], ['문항', i.items.length + '개']])}
       ${hist.map((b) => `<div class="warn"><b>${b.at} 반려</b> · ${esc(b.note)}${b === i.back ? '' : ' → 고쳐서 다시 냄'}</div>`).join('')}
-      ${prev.length ? `<div class="lbl">지난번 미흡 확인 ${prev.length}개</div>${prev.map((x) => `<div class="item2${x.answer === 'bad' ? ' strong' : ''}"><div class="rowx"><b>${esc(x.text)}</b><span class="state">${x.answer === 'ok' ? '✓ 고쳐짐' : x.answer === 'bad' ? '⚠ 안 고쳐짐' : '답 없음'}</span></div>
-        ${x.reason ? `<div class="small">안 고쳐진 사정: ${esc(x.reason)}</div>` : ''}${x.memo ? `<div class="small">메모: ${esc(x.memo)}</div>` : ''}</div>`).join('')}` : ''}
-      <div class="lbl">문제 있음 ${bad.length}개</div>
+      ${prev.length ? `<div class="lbl">지난번 미흡 확인 ${prev.length}개</div>${prev.map((x) => `<div class="item2${x.answer === 'bad' ? ' strong' : ''}"><div class="rowx"><b>${esc(x.text)}</b><span class="state">${FIXED_ANS(x.answer) ? '✓ 고쳐짐' : x.answer === 'bad' ? '⚠ 안 고쳐짐' : '답 없음'}</span></div>
+        ${x.reason ? `<div class="small">안 고쳐진 사정: ${esc(x.reason)}</div>` : ''}${(x.risks || []).length ? `<div class="small">위험요인: ${x.risks.map(esc).join(', ')}</div>` : ''}${x.memo ? `<div class="small">위험요인 내용: ${esc(x.memo)}</div>` : ''}</div>`).join('')}` : ''}
+      <div class="lbl">불량 ${bad.length}개</div>
       ${bad.map((x) => `<div class="item2 strong"><div class="rowx"><b>${esc(x.text)}</b>${srcTag(x)}</div>
-        <div class="small">${x.memo ? `지킴이 메모: ${esc(x.memo)}` : '<b class="opno">메모 없음</b>'}${x.shot ? ' · 📷 사진 1장' : ''}</div></div>`).join('') || '<div class="small">문제 없음</div>'}
-      <button class="add" data-act="okToggle">이상 없음 ${ok.length}개${na.length ? ` · 해당 없음 ${na.length}개` : ''}${none.length ? ` · 답 없음 ${none.length}개` : ''} ${UI.okOpen ? '▾ 접기' : '▸ 펼치기'}</button>
-      ${UI.okOpen ? [...none.map((x) => line(x, '<b class="ink">답 없음</b>')), ...ok.map((x) => line(x, '이상 없음')), ...na.map((x) => line(x, '해당 없음'))].join('') : ''}
+        ${(x.risks || []).length ? `<div class="small">위험요인: <b class="ink">${x.risks.map(esc).join(', ')}</b></div>` : ''}<div class="small">${x.memo ? `위험요인 내용: ${esc(x.memo)}` : '<b class="opno">위험요인 내용 없음</b>'}${x.shot ? ' · 📷 사진 1장' : ''}</div>${x.eval ? `<div class="small">평가 내용: ${esc(x.eval)}</div>` : ''}</div>`).join('') || '<div class="small">불량 없음</div>'}
+      <button class="add" data-act="okToggle">양호 ${ok.length}개${mid.length ? ` · 보통 ${mid.length}개` : ''}${na.length ? ` · 해당 없음 ${na.length}개` : ''}${none.length ? ` · 답 없음 ${none.length}개` : ''} ${UI.okOpen ? '▾ 접기' : '▸ 펼치기'}</button>
+      ${UI.okOpen ? [...none.map((x) => line(x, '<b class="ink">답 없음</b>')), ...ok.map((x) => line(x, '양호')), ...mid.map((x) => line(x, '보통')), ...na.map((x) => line(x, '해당 없음'))].join('') : ''}
       ${act && st === 'wait' ? `
-        ${noMemo.length || none.length ? `<div class="warn"><b>살펴볼 점</b>${noMemo.length ? `<br>· 문제 항목 ${noMemo.length}개에 메모가 없어요` : ''}${none.length ? `<br>· 답하지 않은 항목이 ${none.length}개 있어요` : ''}</div>` : ''}
+        ${noMemo.length || none.length ? `<div class="warn"><b>살펴볼 점</b>${noMemo.length ? `<br>· 불량 항목 ${noMemo.length}개에 위험요인이 없어요` : ''}${none.length ? `<br>· 답하지 않은 항목이 ${none.length}개 있어요` : ''}</div>` : ''}
         <div class="row opact"><button class="btn ghost inl" data-act="backOpen" data-id="${i.id}">반려</button><button class="btn inl" data-act="okOpenDlg" data-id="${i.id}">승인</button></div>` : ''}
-      ${st === 'ok' ? `<div class="small">🔒 ${i.okAt ? `${i.okAt} ${esc(i.okBy || '운영자')} 승인 · ` : ''}승인한 점검은 고칠 수 없어요${bad.length ? ` · 문제 ${bad.length}개는 공장주에게 개선 요청으로 갔어요` : ''}</div>` : ''}
+      ${st === 'ok' ? `<div class="small">🔒 ${i.okAt ? `${i.okAt} ${esc(i.okBy || '운영자')} 승인 · ` : ''}승인한 점검은 고칠 수 없어요${bad.length ? ` · 불량 ${bad.length}개는 공장주에게 개선 요청으로 갔어요` : ''}</div>` : ''}
       ${st === 'back' ? '<div class="small">지킴이가 고쳐서 다시 내기를 기다려요</div>' : ''}`;
   }
   function review(s, id) {
@@ -603,7 +604,7 @@ const OPER = (() => {
     return frame('insp', `${inspTabs(s, 'insp')}
       <div class="split"><div class="list"><div class="lbl">오래된 것부터 ${list.length}건</div>
         ${list.map((i) => `<button class="q ${i === cur ? 'now' : ''}" data-go="insp/v/${i.id}"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span>${(i.backs || []).length ? '<span class="pill amber">다시 냄</span>' : ''}</div>
-          <div class="small">${insTeam(i)} ${esc(i.by)} · ${i.date} 점검<br>${i.result || RESULTS[0]} · 문제 ${badOf(i).length}개</div></button>`).join('')}</div>
+          <div class="small">${insTeam(i)} ${esc(i.by)} · ${i.date} 점검<br>${i.result || RESULTS[0]} · 불량 ${badOf(i).length}개</div></button>`).join('')}</div>
       <div class="detail">${inspDetail(s, cur, true)}</div></div>`);
   }
   function inspView(s, id) {
@@ -622,7 +623,7 @@ const OPER = (() => {
       <div class="opf">${sel('rec.sq', F.sq, [['', '모든 조'], ...sq.map((q) => [q.name, q.name])], '점검조')}
         ${sel('rec.st', F.st, [['', '전체'], ['draft', '점검중'], ['wait', '검사 대기'], ['ok', '승인'], ['back', '반려']], '점검과정')}
         ${sel('rec.res', F.res, [['', '전체'], ...RESULTS.map((r) => [r, r])], '점검결과')}${find('rec.q', F.q, '공장 이름')}</div>
-      <div class="tscroll"><table><tr><th>점검번호</th><th>점검일</th><th>공장</th><th>읍·면·동</th><th>점검조</th><th>지킴이</th><th>결과</th><th>문제</th><th>과정</th><th></th></tr>
+      <div class="tscroll"><table><tr><th>점검번호</th><th>점검일</th><th>공장</th><th>읍·면·동</th><th>점검조</th><th>지킴이</th><th>결과</th><th>불량</th><th>과정</th><th></th></tr>
         ${draft ? `<tr><td>—</td><td>9/17</td><td><b>${d.name}</b></td><td>${d.dong}</td><td>${TEAM.name}</td><td>—</td><td>—</td><td>—</td><td><span class="pill gray">점검중</span></td><td></td></tr>` : ''}
         ${rows.map((i) => `<tr class="click" data-go="insp/v/${i.id}"><td>${insNo(s, i)}</td><td>${i.date}</td><td><b>${FACTORIES[i.fid].name}</b></td><td>${FACTORIES[i.fid].dong}</td>
           <td>${insTeam(i)}</td><td>${esc(i.by)}</td><td>${i.result || RESULTS[0]}</td><td>${badOf(i).length}개</td><td>${stPill(i)}</td><td class="go">보기 ›</td></tr>`).join('')}
@@ -630,22 +631,20 @@ const OPER = (() => {
       ${rows.length || draft ? '' : '<div class="small">맞는 점검이 없어요.</div>'}
       <div class="proto">시제품 · 점검 기록은 ${TEAM.name} 것만 있어요</div>`);
   }
-  // 방문 일정 — 지킴이가 예약하고 공장주가 승인한다 (2026-09-22). 운영자는 보기만 한다 (가설: 기존 웹 "사전조사")
+  // 방문 일정 — 지킴이가 정해 둔 방문일. 운영자는 보기만 한다 (2026-10-07 예약·공장주 승인을 걷음 — 불시에 가기도 해서 여기 없는 방문도 있다)
   const visitKey = (v) => (String(v).startsWith('오늘') ? 917 : mdNum(v)) * 10000 + +(String(v).match(/(\d\d):(\d\d)/) || [0, 0, 0]).slice(1).join('');
   function visits(s) {
     const rows = [];
     Object.keys(FACTORIES).forEach((fid) => {
-      const v = s.visits[fid], b = bookOf(s, fid);
-      if (b) rows.push({ fid, when: b.v, st: b.st === 'wait' ? ['공장주 승인 기다림', 'blue'] : ['공장주가 거절함', 'amber'], by: b.by, note: v ? `지금 잡힌 방문 ${v}` : '' });
-      else if (v) rows.push({ fid, when: v, st: ['확정', 'green'], by: '' });
+      const v = s.visits[fid];
+      if (v) rows.push({ fid, when: v });
     });
     rows.sort((a, b) => visitKey(a.when) - visitKey(b.when));
-    const none = allFids(s).filter((fid) => !s.visits[fid] && !bookOf(s, fid)).length;
+    const none = allFids(s).filter((fid) => !s.visits[fid]).length;
     return frame('insp', `${inspTabs(s, 'insp/visits')}
-      <div class="small">방문 날짜는 지킴이가 공장주와 맞춰요. 운영자는 보기만 해요. 방문이 안 잡힌 공장 ${none}곳.</div>
-      <div class="tscroll"><table><tr><th>방문</th><th>공장</th><th>읍·면·동</th><th>점검조</th><th>상태</th><th>요청한 지킴이</th><th></th></tr>
-        ${rows.map((r) => { const f = FACTORIES[r.fid], q = sqOfDong(s, f.dong); return `<tr class="click" data-go="factory/${r.fid}"><td><b>${esc(r.when)}</b></td><td>${f.name}</td><td>${f.dong}</td><td>${q ? q.name : '—'}</td>
-          <td><span class="pill ${r.st[1]}">${r.st[0]}</span>${r.note ? `<br><span class="small">${esc(r.note)}</span>` : ''}</td><td>${esc(r.by) || '—'}</td><td class="go">보기 ›</td></tr>`; }).join('')}
+      <div class="small">지킴이가 정해 둔 방문일이에요. 공장주와 따로 날을 맞추거나 미리 안 정하고 가기도 해요. 방문일이 없는 공장 ${none}곳.</div>
+      <div class="tscroll"><table><tr><th>방문</th><th>공장</th><th>읍·면·동</th><th>점검조</th><th></th></tr>
+        ${rows.map((r) => { const f = FACTORIES[r.fid], q = sqOfDong(s, f.dong); return `<tr class="click" data-go="factory/${r.fid}"><td><b>${esc(r.when)}</b></td><td>${f.name}</td><td>${f.dong}</td><td>${q ? q.name : '—'}</td><td class="go">보기 ›</td></tr>`; }).join('')}
       </table></div>`);
   }
   function fixList(s) {
@@ -656,12 +655,12 @@ const OPER = (() => {
     const chips = [['all', `전체 ${all.length}`], ['todo', `아직 안 고침 ${cnt('todo')}`], ['claimed', `고쳤다고 함 ${cnt('claimed')}`], ['back', `안 고쳐짐 ${cnt('back')}`], ['fixed', `고쳐짐 확인 ${cnt('fixed')}`]];
     return frame('insp', `${inspTabs(s, 'insp/fix')}
       <div class="wseg">${chips.map(([v, t]) => `<span class="${k === v ? 'on' : ''}" data-act="fixF" data-v="${v}">${t}</span>`).join('')}</div>
-      <div class="tscroll"><table><tr><th>공장</th><th>문제 항목</th><th>찾은 날</th><th>지킴이</th><th>상태</th><th>마지막 소식</th><th></th></tr>
+      <div class="tscroll"><table><tr><th>공장</th><th>불량 항목</th><th>찾은 날</th><th>지킴이</th><th>상태</th><th>마지막 소식</th><th></th></tr>
         ${rows.map((e) => `<tr class="click" data-go="factory/${e.ins.fid}"><td><b>${FACTORIES[e.ins.fid].name}</b></td><td>${esc(e.it.text)}</td><td>${e.ins.date}</td><td>${esc(e.ins.by)}</td>
           <td><span class="pill ${WORD[e.st][1]}">${WORD[e.st][0]}</span></td><td class="small">${news(e)}</td><td class="go">보기 ›</td></tr>`).join('')}
       </table></div>
       ${rows.length ? '' : '<div class="small">맞는 항목이 없어요.</div>'}
-      <div class="small">승인한 점검의 문제 항목이 공장주에게 개선 요청으로 가요. 고쳐졌는지는 다음 점검 때 지킴이가 확인하고, 그 점검을 승인하면 상태가 바뀌어요.</div>
+      <div class="small">승인한 점검의 불량 항목이 공장주에게 개선 요청으로 가요. 고쳐졌는지는 다음 점검 때 지킴이가 확인하고, 그 점검을 승인하면 상태가 바뀌어요.</div>
       <div class="proto">시제품 · 개선 요청 목록은 ${TEAM.name} 것만 있어요</div>`);
   }
   // 주간 보고 — 진흥원 답을 받은 뒤 다시 만든다 (2026-10-01 사용자 결정). 지금은 기존 웹 목록 칸 그대로 받은 것만 보인다
@@ -756,8 +755,8 @@ const OPER = (() => {
     if (!f) return facList(s);
     const fm = firmOf(s, fid), isNew = !FACTORIES[fid], q = sqOfDong(s, f.dong), hasS = HAS_SENSORS(fid);
     const list = s.inspections.filter((i) => i.fid === fid).sort((a, b) => mdNum(b.date) - mdNum(a.date));
-    const open = tracked(s, fid).filter((e) => e.st !== 'fixed'), b = bookOf(s, fid), v = s.visits[fid];
-    const visit = v || (b ? `${b.v} · ${b.st === 'wait' ? '공장주 승인 기다림' : '공장주가 거절함'}` : '안 잡힘');
+    const open = tracked(s, fid).filter((e) => e.st !== 'fixed'), v = s.visits[fid];
+    const visit = v || '안 정함';
     const live = s.alarms.filter((a) => alarmFid(a) === fid && SIM.live(a)), al = s.alarms.filter((a) => alarmFid(a) === fid);
     const info = kv([['대표', esc(fm.ceo)], ['사업자번호', esc(fm.biz)], ['업종', esc(fm.ksic ? `${f.type} (${fm.ksic[0]})` : f.type)], ['기업 종류', fm.kind], ['소유 형태', fm.own || '—'],
       ['근로자', `${f.workers || '—'}명${fm.foreign ? ` (외국인 ${fm.foreign})` : ''}`], ['주소', `화성시 ${f.dong} ${esc(fm.addr || '')}`], ['전화', esc(fm.tel)], ['등록사유', fm.why]]);
@@ -773,7 +772,7 @@ const OPER = (() => {
           <div class="small">화성시 ${f.dong} ${esc(fm.addr || '')}${NV.st === 'fail' ? ' · 네이버 지도를 불러오지 못해 그림 지도로 보여요' : ''}</div></div>` : ''}
         <div class="kcard"><div class="kt">지킴이 점검 ${list.length}건</div>
           <div class="small">다음 방문: <b class="ink">${esc(visit)}</b></div>
-          ${list.map((i) => `<button class="rrow oprr" data-go="insp/v/${i.id}"><span><b>${i.date}</b> ${esc(i.by)} · ${i.result || RESULTS[0]}</span><span>문제 ${badOf(i).length}개 ${stPill(i)}</span></button>`).join('')
+          ${list.map((i) => `<button class="rrow oprr" data-go="insp/v/${i.id}"><span><b>${i.date}</b> ${esc(i.by)} · ${i.result || RESULTS[0]}</span><span>불량 ${badOf(i).length}개 ${stPill(i)}</span></button>`).join('')
             || `<div class="small">${fm.why === '점검거부' ? '점검을 거부한 공장이에요 · 기록으로만 남겨요' : '아직 점검 기록이 없어요'}</div>`}</div>
         <div class="kcard"><div class="kt">남은 개선 요청 ${open.length}개</div>
           ${open.map((e) => `<div class="rrow"><span>${esc(e.it.text)}<br><span class="small">${e.ins.date} 점검</span></span><span class="pill ${WORD[e.st][1]}">${WORD[e.st][0]}</span></div>`).join('') || '<div class="small">남은 것 없음</div>'}
@@ -904,10 +903,10 @@ const OPER = (() => {
       </table></div>
       <div class="kt plain">AI 제안</div>
       <div class="kgrid">
-        ${kcard({ t: 'AI 제안 쓰임', v: pct(ai.length, withAi.length * AI_SHOWN), unit: withAi.length ? '%' : '', rows: [['보여 준 제안', withAi.length * AI_SHOWN + '개'], ['지킴이가 더함', ai.length + '개'], ['그중 문제 있음', ai.filter((x) => x.answer === 'bad').length + '개']] })}
+        ${kcard({ t: 'AI 제안 쓰임', v: pct(ai.length, withAi.length * AI_SHOWN), unit: withAi.length ? '%' : '', rows: [['보여 준 제안', withAi.length * AI_SHOWN + '개'], ['지킴이가 더함', ai.length + '개'], ['그중 불량', ai.filter((x) => x.answer === 'bad').length + '개']] })}
         ${kcard({ t: '지킴이가 직접 더한 문항', v: items.filter((x) => x.src === 'self').length, unit: '개', rows: [['AI를 쓴 점검', withAi.length + '건'], ['모든 점검', s.inspections.length + '건']] })}
       </div>
-      <div class="small">AI 제안은 지킴이가 원할 때만 써요. 기본 체크리스트가 먼저예요. 더한 제안에서 "문제 있음"이 많이 나올수록 쓸모 있는 제안이에요.</div>
+      <div class="small">AI 제안은 지킴이가 원할 때만 써요. 기본 체크리스트가 먼저예요. 더한 제안에서 "불량"이 많이 나올수록 쓸모 있는 제안이에요.</div>
       <div class="proto">시제품 · 다른 조 숫자와 4~8월은 가상이에요. AI·센서 숫자는 ${TEAM.name}과 센서 사이트 3곳 기록에서 셌어요</div>`);
   }
 
@@ -976,13 +975,13 @@ const OPER = (() => {
       <div class="row" style="justify-content:flex-end;flex-wrap:wrap"><button class="btn ghost inl" data-act="opReject" data-k="${k}">센서 정상 · 신고 닫기</button><button class="btn inl" data-act="close">돌리지 않기</button><button class="btn ghost inl danger" data-act="opRepair" data-k="${k}">수리 중으로 돌리기</button></div>
     </div>`;
   }
-  const WHY = ['문제 항목에 메모가 없어요', '사진이 필요해요', '답하지 않은 항목이 있어요', '결과 종류를 다시 골라 주세요'];
+  const WHY = ['불량 항목에 위험요인이 없어요', '사진이 필요해요', '답하지 않은 항목이 있어요', '결과 종류를 다시 골라 주세요'];
   function okDlg(s) {
     const i = s.inspections.find((x) => x.id === UI.dlg.id), prev = i.items.filter((x) => x.ref), n = badOf(i).length;
     return `<div class="ov" data-act="close"></div><div class="dlg wide">
       <div class="mid" style="font-size:20px">${FACTORIES[i.fid].name} 점검을 승인할까요?</div>
-      <div class="warn">승인하면<br>· ${n ? `문제 ${n}개가 공장주에게 <b>개선 요청</b>으로 가요` : '문제 항목이 없어 개선 요청은 안 가요'}
-        ${prev.length ? `<br>· 지난번 미흡 ${prev.length}개의 결과(고쳐짐 ${prev.filter((x) => x.answer === 'ok').length} · 안 고쳐짐 ${prev.filter((x) => x.answer === 'bad').length})가 정해져요` : ''}
+      <div class="warn">승인하면<br>· ${n ? `불량 ${n}개가 공장주에게 <b>개선 요청</b>으로 가요` : '불량 항목이 없어 개선 요청은 안 가요'}
+        ${prev.length ? `<br>· 지난번 미흡 ${prev.length}개의 결과(고쳐짐 ${prev.filter((x) => FIXED_ANS(x.answer)).length} · 안 고쳐짐 ${prev.filter((x) => x.answer === 'bad').length})가 정해져요` : ''}
         <br>· 승인한 점검은 지킴이도 운영자도 <b>고칠 수 없어요</b></div>
       <div class="row" style="justify-content:flex-end"><button class="btn ghost inl" data-act="close">취소</button><button class="btn inl" data-act="doOk" data-id="${i.id}">승인</button></div></div>`;
   }

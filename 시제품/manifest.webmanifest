@@ -1,7 +1,7 @@
 {
   "name": "산업안전 시제품",
   "short_name": "안전 시제품",
-  "start_url": "index.html",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
