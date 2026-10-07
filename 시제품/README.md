@@ -37,6 +37,7 @@ cd Industrial_Safety_AI_UIUX/시제품 && ./serve.sh
 - **서버 없는 Render 정적 사이트**(무료, 잠들지 않음). 서버가 없으면 앱이 폰에 데이터를 둔다 — 지킴이마다 따로라 동시에 써도 안 섞인다. 대신 지킴이가 넣은 점검을 운영자 화면에서 모아 볼 수는 없다(사용자 결정).
 - **첫 화면이 바로 지킴이 앱**(김지킴, 로그인 없음). 올릴 때 `시제품/`을 `dist/`에 복사하고 `guard.html`을 `index.html` 자리에 복사한다 — Render의 Root Directory·Publish Directory 칸이 한글을 안 받아서 영문 폴더로 옮긴다. Render 설정: Root Directory 비움 · Build Command `mkdir -p dist && cp -r 시제품/. dist/ && cp dist/guard.html dist/index.html` · Publish Directory `dist` · Branch `survey`. 이 판에서는 로그아웃 단추를 숨긴다(다시 들어올 길이 없어서), 비밀번호 바꾸기는 "시험판이라 바뀌지 않아요".
 - **`survey` 가지만 따라간다** — main에서 고쳐도 설문 화면은 그대로. 설문판을 바꿀 때만 main을 survey에 합쳐 올린다.
+- **홈 화면에 추가하면 "안전지킴이"** — 지킴이 앱만 따로 `guard.webmanifest`와 PNG 아이콘(`guard-icon-180/192/512.png`, 원본 `guard-icon.svg`: 앱 머리글의 파란 방패)을 쓴다(같은 날 사용자 요청). 공용 `manifest.webmanifest`는 이름이 "안전 시제품"이고 아이콘이 SVG라, 아이폰은 아이콘 대신 화면 캡처가 뜨고 크롬은 "설치"를 안 내줄 수 있었다. 크롬 설치 가능 여부는 CDP `Page.getInstallabilityErrors`로 확인했다(문제 없음).
 - 네이버 지도는 NCP 콘솔에 새 주소를 더해야 뜬다(안 하면 그림 지도로 물러난다 — 쓰는 데는 지장 없음).
 - 이야기 속 오늘은 그대로 9/17(목)이다. 폰의 브라우저 데이터를 지우면 처음 상태로 돌아간다.
 
