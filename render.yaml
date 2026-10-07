@@ -14,11 +14,11 @@ services:
   # 지킴이 설문용 시험판 (2026-10-07) — 서버 없는 정적 사이트. 지킴이 앱만, 로그인 없이 김지킴으로 바로 들어간다.
   # 서버가 없으면 앱이 폰(브라우저 저장소)에 데이터를 둔다 — 지킴이마다 따로, 서로 안 섞이고, 잠들지 않는다(사용자 결정).
   # 첫 화면의 역할 고르기가 보이면 안 돼서, 올릴 때 guard.html을 index.html 자리에 복사한다(저장소의 index.html은 그대로).
+  # Render는 Root Directory·Publish Directory에 영문·숫자·-_./만 받는다(2026-10-07 확인) — 그래서 시제품/을 영문 폴더 dist/에 복사해 올린다
   # main에서 계속 고치는 동안 설문 화면이 바뀌지 않게 survey 가지만 따라간다 — 설문판을 바꿀 때만 main을 survey에 합친다.
   - type: web
     name: industrial-safety-guard-survey
     runtime: static
     branch: survey
-    rootDir: 시제품
-    buildCommand: cp guard.html index.html
-    staticPublishPath: .
+    buildCommand: mkdir -p dist && cp -r 시제품/. dist/ && cp dist/guard.html dist/index.html
+    staticPublishPath: dist
