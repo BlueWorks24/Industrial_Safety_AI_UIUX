@@ -258,6 +258,7 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 .appbar small{display:block;font-size:11px;color:var(--soft)}
 .appbar .ar{margin-left:auto;flex:none}
 .appbar .me{background:none;border:none;min-height:44px;padding:0 4px;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer}
+.app .appbar .me{display:inline-flex;align-items:center;gap:5px}
 .app .head{min-height:46px;padding:0 12px 0 4px;gap:2px;font-size:15px;font-weight:700;margin-bottom:2px}
 .app .head .back{min-width:44px;justify-content:center;padding:0;font-size:20px}
 .app .head .hm{background:none;border:none;color:#fff;min-width:40px;min-height:44px;font-size:19px;cursor:pointer;padding:0}
@@ -522,17 +523,6 @@ span.gtdtg{cursor:default}
 .gtdh b{font-size:18px;font-weight:800;letter-spacing:-.03em}
 .gtdh em{font-style:normal;font-size:13px;font-weight:800;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px}
 .gtdcal{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:32px;padding:0 4px;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer}
-/* 홈 우리 조 공장 상태 숫자 칸 (2026-10-13) — 오늘 할 일 칸과 같은 흰 칸. 숫자를 누르면 그 상태로 거른 공장 전체보기 */
-.gfst{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:10px 14px 12px;margin:0 0 10px}
-.gfsth{display:flex;align-items:center;gap:8px;min-height:32px}
-.gfsth b{font-size:18px;font-weight:800;letter-spacing:-.03em}
-.gfsth em{font-style:normal;font-size:13px;font-weight:800;color:var(--mid);background:#f1f2f4;border-radius:999px;padding:2px 9px}
-.gfstr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
-.gfstr button{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:64px;justify-content:center;border:1px solid var(--line2);border-radius:10px;background:#fff;font:inherit;color:var(--ink);cursor:pointer;padding:0 2px}
-.gfstr b{font-size:22px;font-weight:850;letter-spacing:-.03em}
-.gfstr span{font-size:13px;font-weight:700;color:var(--mid);white-space:nowrap}
-.gfstr button.late b,.gfstr button.late span{color:var(--amber)}
-.gfstr button:active{background:#f4f6f9}
 .gtdr{display:flex;flex-direction:column;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
 .gtdrow{display:flex;align-items:flex-start;gap:12px;width:100%;padding:0;border:none;background:none;font:inherit;text-align:left;color:var(--ink);cursor:pointer}
 /* 방문 시각 — 색 칸 없이 굵은 숫자와 작은 "방문", 오른쪽 가는 선으로 가른다 (2026-09-28 사용자 지시: AI스럽지 않게) */
@@ -649,6 +639,23 @@ span.gtdtg{cursor:default}
 .fall .gchev{flex:none;color:var(--soft);display:inline-flex}
 .fst{display:flex;gap:12px;border-bottom:1px solid var(--line);margin:0 -16px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
 .fst::-webkit-scrollbar{display:none}
+/* 공장 탭 상태 숫자 칸 (2026-10-13) — 재점검 · 점검완료 · 패트롤 · 기타. 고른 칸은 파란 테두리와 옅은 바탕 */
+.gfstr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.gfstr button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:72px;padding:0 2px;border:1px solid var(--line2);border-radius:12px;background:#fff;font:inherit;color:var(--ink);cursor:pointer}
+.gfstr b{font-size:26px;font-weight:850;letter-spacing:-.03em;line-height:1.1}
+.gfstr span{font-size:14px;font-weight:700;color:var(--mid);white-space:nowrap}
+.gfstr button.late b,.gfstr button.late span{color:var(--amber)}
+.gfstr button.on{border:2px solid var(--brand);background:var(--brand-l)}
+.gfstr button.on span{color:var(--brand)}
+.gfstr button.on.late span{color:var(--amber)}
+/* 공장 탭 점검 기간 단추와 직접 고르기 칸 (2026-10-13) — 권역 단추와 같은 테두리 */
+.hper{display:flex;align-items:center;gap:6px;width:100%;min-height:48px;padding:0 12px;border:1.5px solid var(--line2);border-radius:var(--r-s);background:#fff;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer}
+.hper b{flex:1;min-width:0;text-align:right;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hper.on{border-color:var(--brand);background:var(--brand-l);color:var(--brand)}
+.hper.on b{color:var(--brand)}
+.gper{display:flex;align-items:center;gap:8px;margin-top:8px}
+.gper .input{flex:1;min-width:0}
+.gper span{color:var(--mid);font-weight:700}
 .fst button{display:inline-flex;align-items:center;gap:4px;min-height:42px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;padding:0;font:inherit;font-size:14px;font-weight:700;color:var(--soft);white-space:nowrap;cursor:pointer}
 .fst em{font-style:normal;font-size:12px;font-weight:800;color:var(--mid);background:#f1f2f4;border-radius:999px;padding:1px 6px}
 .fst button.on em{color:#fff;background:var(--ink)}

@@ -23,7 +23,8 @@ function tasks(s) {
   return t;
 }
 // 앱 머리글 + 위치 띠 — 웹과 같은 결
-const bar = () => appBar('안전지킴이', '산업안전지킴이', `<button class="me" data-go="me">${ME} ›</button>`);
+// 이름만으로는 내 정보로 가는 단추인지 알기 어려워 사람 아이콘을 붙였다 (2026-10-13 사용자 지시 — 하단바에서 내 정보를 뺌)
+const bar = () => appBar('안전지킴이', '산업안전지킴이', `<button class="me" data-go="me" aria-label="내 정보">${I('user', 18)}${ME} ›</button>`);
 const head = (title, go = '', end = '') => `<div class="apptop">${band(title, go, end)}${bar()}</div>`;
 const unsentN = (s) => s.outbox.guard.length;
 // 여러 정보를 "·"로 한 줄에 잇지 않는다 (2026-09-22 사용자 지시) — 이름표·값 두 칸 표와 작은 꼬리표로 나눠 보인다
@@ -119,20 +120,17 @@ function home(s) {
   locate();
   const all = tasks(s);
   const t = sortTasks(s, all.filter((x) => inAreas(x.fid) && matchQ(x.fid)), UI.sort);
-  const nAll = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area)).length;
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
     <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
     <div class="ghello"><span class="gav">${I('user', 30)}</span><div>
       <span class="ghdate">9월 17일 목요일</span><b>안녕하세요, ${ME}님</b></div>
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
     ${todayCard(s, all)}
-    ${facStCard(s)}
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     ${recentVisit(s)}
     ${findRow('home')}
     <div class="gtabs" role="tablist">${SORTS.map(([k, w]) => `<button class="gtab${UI.sort === k ? ' on' : ''}" role="tab" aria-selected="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>
     <div id="fres" class="hlist">${t.map((x) => fcard(s, x)).join('') || `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}</div>
-    <button class="hall" data-go="factories">${I('factory', 18)} 공장 전체보기<em>${nAll}곳</em>${I('chevron', 18)}</button>
     <div class="proto">가상 데이터로 만든 시제품이에요</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}${UI.sheet && UI.sheet.type === 'brief' ? briefSheet(s) : ''}`;
 }
@@ -182,15 +180,6 @@ function todayCard(s, all) {
       <span class="gtdt"><b>${visitDay(s.visits[x.fid]).tm}</b><small>방문</small></span>
       <span class="gtdn"><b>${f.name}</b><small>화성시 ${f.dong}</small></span>${I('chevron', 18)}</button>
       <button class="gtdai" data-act="brief" data-fid="${x.fid}" aria-label="${f.name} AI 요약 자세히">${I('sparkle', 14)}<span><em>AI 요약</em>${esc(aiBrief(s, x.fid))}</span>${I('chevron', 14)}</button></div>`; }).join('')}</div></div>` : ''}</div>`;
-}
-// 우리 조 공장 상태 숫자 칸 (2026-10-13 사용자 결정) — 공장 전체보기가 홈 맨 아래라 못 볼 수 있어서 위에 숫자로.
-// 누르면 그 상태로 거른 공장 전체보기. 재점검 기한이 지난 곳이 있으면 재점검 숫자를 주황으로
-function facStCard(s) {
-  const team = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area));
-  const n = (k) => team.filter((f) => facSt(s, f) === k).length;
-  const late = team.some((f) => facSt(s, f) === 'rck' && rckKey(s, f) < 0);
-  return `<div class="gfst"><div class="gfsth"><b>우리 조 공장</b><em>${team.length}곳</em></div>
-    <div class="gfstr">${FAC_ST.filter(([k]) => k !== 'never').map(([k, w]) => `<button class="${k === 'rck' && late ? 'late' : ''}" data-act="fstGo" data-v="${k}"><b>${n(k)}</b><span>${w}</span></button>`).join('')}</div></div>`;
 }
 function recentVisit(s) {
   const ins = s.inspections.find((i) => i.by === ME);
@@ -284,10 +273,35 @@ function facRow(s, fid, tk) {
       ${tags ? `<span class="fwhen">${tags}</span>` : ''}</span>
     <span class="gchev">${I('chevron', 18)}</span></button>`;
 }
+// 점검 기간으로 거르기 (2026-10-13 사용자 지시) — 마지막 점검일이 그 기간에 든 공장만. 숫자 칸도 그 공장들로 다시 센다.
+// 기간을 고르면 점검 기록이 없는 공장(아직 안 감)은 빠진다. 이야기 속 오늘은 9/17
+const PERS = [['week', '이번 주', '9/14', '9/18'], ['month', '이번 달', '9/1', '9/30'], ['last', '지난달', '8/1', '8/31']];
+const perWord = () => (!UI.per ? '전체' : UI.per.k === 'self' ? `${UI.per.from} ~ ${UI.per.to}` : PERS.find(([k]) => k === UI.per.k)[1]);
+const inPer = (s, fid) => { if (!UI.per) return true; const li = facLast(s, fid); return !!li && mdNum(li.date) >= mdNum(UI.per.from) && mdNum(li.date) <= mdNum(UI.per.to); };
+const isoOf = (md) => { const [m, d] = md.split('/'); return `2026-${m.padStart(2, '0')}-${d.padStart(2, '0')}`; };
+const mdOf = (iso) => { const [, m, d] = iso.split('-').map(Number); return `${m}/${d}`; };
+function perSheet() {
+  const sh = UI.sheet, cur = sh.k;
+  const row = (k, w, sub) => `<button class="arow${cur === k ? ' on' : ''}" data-act="perPick" data-v="${k}" aria-pressed="${cur === k}"><span class="achk">${cur === k ? I('check', 16) : ''}</span><b>${w}</b>${sub ? `<em>${sub}</em>` : ''}</button>`;
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="mid">점검 기간 <span class="small">마지막 점검일 기준</span></div>
+    ${row('all', '전체', '')}${PERS.map(([k, w, f, t]) => row(k, w, `${f} ~ ${t}`)).join('')}${row('self', '직접 고르기', '')}
+    ${cur === 'self' ? `<div class="gper"><input class="input" id="perFrom" type="date" min="2026-01-01" max="2026-12-31" value="${isoOf(sh.from)}" aria-label="시작일">
+      <span>~</span><input class="input" id="perTo" type="date" min="2026-01-01" max="2026-12-31" value="${isoOf(sh.to)}" aria-label="끝일"></div>` : ''}
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="perApply">적용하기</button></div>
+  </div>`;
+}
+// 상태 숫자 칸 넷 (2026-10-13 사용자 지시 — 칩이 작아 잘 안 보여서, 홈에 잠깐 있던 숫자 칸 모양으로 크게).
+// 누르면 그 상태만, 다시 누르면 전체. 재점검 기한이 지난 곳이 있으면 재점검 숫자를 주황으로
+function facStCells(s, inTeam, n) {
+  const late = inTeam.some((f) => facSt(s, f) === 'rck' && rckKey(s, f) < 0);
+  return `<div class="gfstr">${FAC_ST.filter(([k]) => k !== 'never').map(([k, w]) => { const on = UI.fst === k;
+    return `<button class="${on ? 'on' : ''}${k === 'rck' && late ? ' late' : ''}" data-act="fst" data-v="${k}" aria-pressed="${on}"><b>${n(k)}</b><span>${w}</span></button>`; }).join('')}</div>`;
+}
 function factoriesScreen(s) {
   locate();
   const t = tasks(s), tk = (fid) => t.filter((x) => x.fid === fid);
-  const team = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area)), inTeam = team.filter(inAreas);
+  const team = Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area)), inTeam = team.filter(inAreas).filter((f) => inPer(s, f));
   // 점검 상태로 나눈다 — 2026-10-13부터 공장 상태(마지막 점검 결과) 기준. 전에는 점검 예정 · 미흡 남음 · 아직 안 감이라 한 공장이 여러 칸에 들었다
   const pick = UI.fst === 'all' || !FAC_ST.some(([k]) => k === UI.fst) ? () => true : (f) => facSt(s, f) === UI.fst;
   const q = UI.fq.trim();
@@ -297,11 +311,13 @@ function factoriesScreen(s) {
     .sort((a, b) => (UI.fst === 'rck' ? rckKey(s, a) - rckKey(s, b) : 0) || near(a, b));
   const n = (k) => (k === 'all' ? inTeam.length : inTeam.filter((f) => facSt(s, f) === k).length);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('공장 전체보기', '', `<span class="small">${TEAM.name}</span>`)}
+    ${head('공장', '', `<span class="small">${TEAM.name}</span>`)}
     ${findRow('fac')}
-    <div class="fst">${[['all', '전체'], ...FAC_ST].map(([k, w]) => `<button class="${UI.fst === k ? 'on' : ''}" data-act="fst" data-v="${k}">${w}<em>${n(k)}</em></button>`).join('')}</div>
+    <button class="hper${UI.per ? ' on' : ''}" data-act="perOpen">${I('calendar', 16)}<span>점검 기간</span><b>${perWord()}</b>${I('chevron', 14)}</button>
+    ${facStCells(s, inTeam, n)}
+    <div class="fst">${[['all', '전체'], ...(UI.per ? [] : [FAC_ST.find(([k]) => k === 'never')])].map(([k, w]) => `<button class="${UI.fst === k ? 'on' : ''}" data-act="fst" data-v="${k}">${w}<em>${n(k)}</em></button>`).join('')}</div>
     <div id="fres">${list.map((fid) => facRow(s, fid, tk(fid))).join('') || `<div class="cnone">${q ? `"${esc(q)}"에 맞는 공장이 없어요` : '공장이 없어요'}</div>`}</div>
-  </div></div>${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
+  </div></div>${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}${UI.sheet && UI.sheet.type === 'per' ? perSheet() : ''}`;
 }
 // 찾기 칸과 권역 칩 — 홈과 공장 전체보기가 같이 쓴다 (2026-09-22 사용자 지시: 공장 탭을 없애고 찾기·권역을 홈으로).
 // 권역은 누를 때마다 켜고 끄는 토글이고 여러 개 켤 수 있다. 하나도 안 켜면 전체
@@ -348,7 +364,9 @@ function mapScreen(s) {
   </div></div>${UI.mapFull ? UI.mapFullHtml : ''}${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
 }
 // 하단바 — 첫 단계 화면에만 붙는다 (점검 도중에는 없음)
-const NAV = [['', '홈', 'home'], ['cal', '캘린더', 'calendar'], ['map', '지도', 'pin'], ['weekly', '주간 보고', 'list'], ['me', '내 정보', 'user']];  // 공장 탭은 빼고 홈의 "공장 전체보기"로 (2026-09-22)
+// 2026-10-13 사용자 결정 — 공장 탭을 다시 두고(상태별로 나눠 보기) 내 정보는 뺀다. 내 정보는 머리글의 사람 아이콘 + 이름으로 들어간다.
+// (2026-09-22에는 공장 탭을 빼고 홈의 "공장 전체보기"로 합쳤었다)
+const NAV = [['', '홈', 'home'], ['factories', '공장', 'factory'], ['map', '지도', 'pin'], ['cal', '캘린더', 'calendar'], ['weekly', '주간 보고', 'list']];
 const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, ic]) => `<button class="${on === go ? 'on' : ''}" data-go="${go}"${on === go ? ' aria-current="page"' : ''}>${I(ic, 22)}<span>${w}</span></button>`).join('')}</nav>`;
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
@@ -935,6 +953,8 @@ function checkList(s) {
   </div><div class="ft">${foot}</div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'eval' ? evalSheet(s) : ''}`;
 }
 // 불량 창을 다시 그리기 전에 적던 글을 담아 둔다 (사진 찍기·사정 고르기가 창을 다시 그린다)
+// 점검 기간 창의 날짜 칸 값을 담아 둔다 (다시 그리면 칸이 새로 만들어진다)
+function perKeep() { if ($('#perFrom') && $('#perFrom').value) UI.sheet.from = mdOf($('#perFrom').value); if ($('#perTo') && $('#perTo').value) UI.sheet.to = mdOf($('#perTo').value); }
 function keepSheetText() { if ($('#memoIn')) UI.sheet.memo = $('#memoIn').value; if ($('#evalIn')) UI.sheet.eval = $('#evalIn').value; }
 // 평가 내용 칸 — 불량 창과 평가 내용 창이 같이 쓴다
 const EVAL_PH = '예: 소화기 위치 표시와 월간 점검표를 잘 관리하고 있음';
@@ -1286,7 +1306,7 @@ function render() {
   const caret = keep && typeof ae.selectionStart === 'number' ? [ae.selectionStart, ae.selectionEnd] : null;
   const top = p.join('/');
   html = fmtDates(html);
-  if (['', 'cal', 'map', 'weekly', 'me'].includes(top)) html += gnav(top);  // 공장 전체보기는 홈에서 들어가는 안쪽 화면  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
+  if (['', 'factories', 'cal', 'map', 'weekly', 'me'].includes(top)) html += gnav(top);  // 공장은 2026-10-13부터 하단바 탭. 내 정보는 하단바에서 빠졌지만 하단바는 그대로 보인다  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
   // 찾기 칸에 입력 중이면 결과 목록만 갈아 끼운다 — 칸을 건드리지 않아야 한글 조합이 이어진다
   if (keep === 'fq' && location.hash === lastHash && !UI.sheet && $('#fres')) {
     const tmp = document.createElement('div'); tmp.innerHTML = html;
@@ -1501,8 +1521,19 @@ const ACTS = {
     c.querySelector('.gtdar').classList.toggle('on', UI.today);
     if (l) l.inert = !UI.today;
   },
-  fst({ v }) { UI.fst = v; render(); },
-  fstGo({ v }) { UI.fst = v; R.go('factories'); },
+  // 점검 기간 (2026-10-13) — 고르기만 하고 적용해야 목록이 바뀐다 (권역 창과 같게)
+  perOpen() { const p = UI.per || { k: 'all', from: '9/1', to: '9/17' }; sheet({ type: 'per', k: p.k, from: p.from, to: p.to }); },
+  perPick({ v }) { perKeep(); UI.sheet.k = v; render(); },
+  perApply() {
+    perKeep();
+    const { k, from, to } = UI.sheet;
+    if (k === 'self' && mdNum(from) > mdNum(to)) { toast('시작일이 끝일보다 늦어요'); return; }
+    const p = PERS.find(([x]) => x === k);
+    UI.per = k === 'all' ? null : p ? { k, from: p[2], to: p[3] } : { k, from, to };
+    if (UI.per && UI.fst === 'never') UI.fst = 'all';  // 기간을 고르면 아직 안 감은 없다
+    sheet(null);
+  },
+  fst({ v }) { UI.fst = UI.fst === v && v !== 'all' ? 'all' : v; render(); },  // 고른 칸을 다시 누르면 전체
   areaOpen({ v }) { sheet({ type: 'area', v, pick: [...UI.areas] }); },
   areaPick({ v }) { const p = UI.sheet.pick; UI.sheet.pick = p.includes(v) ? p.filter((a) => a !== v) : [...p, v]; render(); },
   areaClear() { UI.sheet.pick = []; render(); },
