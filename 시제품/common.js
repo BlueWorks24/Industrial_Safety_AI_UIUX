@@ -211,7 +211,8 @@ function itemState(it) {
 }
 // 운영자가 승인한 점검만 공장주에게 가고 재점검 목록에 오른다 (2026-09-22, 흐름도 B⑥-1). 상태가 없는 옛 기록은 승인된 것으로 읽는다.
 const APPROVED = (ins) => (ins.st || 'ok') === 'ok';
-// 지난번 미흡 항목 (2026-09-22 사용자 결정 — 따로 재점검하지 않는다. 다음에 그 공장을 점검할 때 이 항목들이 체크리스트에 붙는다)
+// 지난번 미흡 항목 — 다음에 그 공장을 점검할 때 이 항목들이 체크리스트에 붙는다 (2026-09-22).
+// 2026-10-13부터는 재점검에서 "안 고쳐짐"으로 남은 항목이 여기로 온다
 // 새 점검에 다시 붙은 복사본(ref가 있는 것)은 원래 항목 하나로만 센다 — 같은 문제를 두 번 세지 않게
 const TRACKED = (it) => it.answer === 'bad' && !it.ref;
 function openIssues(s, fid) {
@@ -220,8 +221,24 @@ function openIssues(s, fid) {
     ins.items.filter((it) => TRACKED(it) && itemState(it) !== 'fixed').forEach((it) => out.push({ ins, it })));
   return out;
 }
-// 그중 공장주가 "고쳤어요"를 누른 것 — 이게 있으면 다시 가 볼 공장이 된다
-const recheckQueue = (s, fid) => openIssues(s, fid).filter((e) => itemState(e.it) === 'claimed');
+// 그중 공장주가 "고쳤어요"를 누른 것 — 이게 있으면 다시 가 볼 공장이 된다.
+// 재점검 중인 점검의 항목은 뺀다 — 그건 2주 안에 사진으로 판정한다 (아래 재점검)
+const recheckQueue = (s, fid) => openIssues(s, fid).filter((e) => itemState(e.it) === 'claimed' && !inRecheck(e.ins));
+
+/* ---------- 재점검 (2026-10-13 사용자 결정 — 2026-09-22 "재점검은 따로 없다"를 뒤집음) ----------
+   1단계 점검을 낼 때 결과가 저절로 정해진다: 불량 없음 → 점검완료, 불량 있음 → 재점검.
+   재점검이면 공장이 2주 안에 고쳐서 사진을 보내고(공장주 "고쳤어요"), 지킴이가 사진을 보고 항목마다 고쳐짐·안 고쳐짐을 정한 뒤
+   점검완료 · 패트롤 · 기타 중 하나를 직접 고른다. 둘째 단계는 앱이 미리 골라 주지 않는다 (사람이 보고 판단할 일) */
+const RECHECK_DAYS = 14;
+const FINAL_RESULTS = ['점검완료', '패트롤', '기타'];
+const autoResult = (items) => (items.some((x) => x.answer === 'bad') ? '재점검' : '점검완료');
+const inRecheck = (ins) => !!ins && APPROVED(ins) && ins.result === '재점검';
+// 날짜는 "9/17" 꼴. 이야기 속 오늘은 9/17 (2026년)
+const mdDate = (md) => { const [m, d] = String(md).split('/').map(Number); return new Date(2026, m - 1, d); };
+const dateMd = (t) => `${t.getMonth() + 1}/${t.getDate()}`;
+const recheckDue = (ins) => { const t = mdDate(ins.date); t.setDate(t.getDate() + RECHECK_DAYS); return dateMd(t); };
+const daysLeft = (md) => Math.round((mdDate(md) - mdDate('9/17')) / 86400000);
+const dWord = (n) => (n > 0 ? `D-${n}` : n === 0 ? 'D-day' : `${-n}일 지남`);
 // 방문 예약(지킴이 요청 → 공장주 승인)은 2026-10-07 사용자 지시로 걷었다 — 실제로는 예약 시스템이 없고, 공장주와 따로 날을 맞추거나 불시에 간다.
 // 지킴이가 정해 둔 방문일(s.visits)만 남는다
 // 운영자가 점검을 승인할 때 — 붙었던 미흡 항목의 답을 원래 항목에 적는다 (양호·보통 = 고쳐짐, 불량 = 안 고쳐짐 — 2026-10-07 답이 넷이 됨)
@@ -394,12 +411,16 @@ function applyInspection(s, d) {
       s.inspections.unshift({ id: 'i' + Date.now().toString(36), fid: d.fid, date: '9/17', by: d.by || '김지킴', team: d.team, ver: d.ver,
         result: d.result, st: 'wait', sentAt: '9/17', locked: false, items: d.items });
     }
-  } else {
+  } else if (d.kind === 'recheck') {
+    // 재점검 판정 (2026-10-13) — 항목마다 고쳐짐·안 고쳐짐을 원래 항목에 적고, 점검 결과를 지킴이가 고른 것으로 바꾼다
+    const ins = s.inspections.find((i) => i.id === d.insId);
+    if (!ins || !inRecheck(ins)) return;
     d.results.forEach((r) => {
-      const ins = s.inspections.find((i) => i.id === r.insId);
-      const it = ins && ins.items.find((x) => x.id === r.itemId);
-      if (it) it.log.push({ t: 'recheck', at: '9/17', result: r.result, reason: r.reason || '', photo: !!r.photo });
+      const it = ins.items.find((x) => x.id === r.itemId);
+      if (it) (it.log = it.log || []).push({ t: 'recheck', at: '9/17', result: r.result, by: d.by, photo: !!r.photo });
     });
+    ins.final = { from: '재점검', at: '9/17', by: d.by, fixed: d.results.filter((r) => r.result === 'fixed').length, total: d.results.length };
+    ins.result = d.result;
   }
 }
 

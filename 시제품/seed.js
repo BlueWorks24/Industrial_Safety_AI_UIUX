@@ -134,7 +134,7 @@ const CHECKLIST = {
 const TEAM = { name: '전기 1조', lead: '이조장', members: ['이조장', '김지킴', '박지킴', '최지킴'], areas: ['동탄', '향남', '봉담', '우정'],
   // 권역 이름 → 그 안의 읍·면·동 (지도 테두리용, geo.js의 이름과 같다)
   dongs: { '동탄': ['동탄1동', '동탄2동', '동탄3동', '동탄4동', '동탄5동', '동탄6동', '동탄7동', '동탄8동', '동탄9동'], '향남': ['향남읍'], '봉담': ['봉담읍'], '우정': ['우정읍'] } };
-// 점검 결과 종류 — 기존 웹의 "점검결과" 칸. 패트롤·기타가 무엇인지는 아직 모른다 (가설)
+// 점검 결과 종류 — 기존 웹의 "점검결과" 칸. 처음 점검은 점검완료·재점검 중 저절로, 재점검 판정에서 점검완료·패트롤·기타 중 지킴이가 고른다 (2026-10-13, common.js 재점검)
 const RESULTS = ['점검완료', '재점검', '패트롤', '기타'];
 
 /* ---------- 운영자 웹 (2026-10-01) — 점검조 · 지킴이 명단 · 체크리스트 판 · 공지 · 자료. 모두 가상 ----------
@@ -275,12 +275,16 @@ function guessEquip(t) {
 function daesungInspection() {
   const base = BASE_ITEMS['금속가공'].map((t, i) => ({ id: 'd' + i, text: t, src: 'base', answer: 'ok' }));
   return {
+    // 2026-10-13 재점검: 재점검(9/08)에서 하나는 고쳐짐, 하나는 안 고쳐짐 → 50%라 점검완료. 안 고쳐진 것을 공장주가 9/12에 다시 고쳤어요로 알려
+    // 오늘 방문 때 지난번 미흡으로 붙는다
     id: 'i0828', fid: 'daesung', date: '8/28', by: '김지킴', locked: true, st: 'ok', result: '점검완료',
+    final: { from: '재점검', at: '9/08', by: '김지킴', fixed: 1, total: 2 },
     items: [
       { id: 'dp', text: '분전반 앞에 물건이 쌓여 있지 않나?', src: 'prev', answer: 'bad', memo: '분전반 앞에 상자 적재',
-        log: [ { t: 'fix', at: '9/5', tm: '16:40', note: '상자 창고로 옮김' } ] },
+        log: [ { t: 'fix', at: '9/5', tm: '16:40', note: '상자 창고로 옮김', photo: true }, { t: 'recheck', at: '9/08', by: '김지킴', result: 'fixed', photo: true } ] },
       { id: 'da1', text: '전선 피복이 벗겨진 곳이 없나?', src: 'ai', answer: 'bad', memo: '바닥에 늘어진 전선 피복이 벗겨짐',
-        log: [ { t: 'fix', at: '9/5', tm: '16:42', note: '' } ] },
+        log: [ { t: 'fix', at: '9/5', tm: '16:42', note: '', photo: true }, { t: 'recheck', at: '9/08', by: '김지킴', result: 'not', photo: true },
+          { t: 'fix', at: '9/12', tm: '11:05', note: '피복 벗겨진 전선 새로 깖', photo: true } ] },
       { id: 'da2', text: '분전반 문이 닫혀 있고 잠겨 있나?', src: 'ai', answer: 'ok' },
       { id: 'da3', text: '이동식 전선 릴에 과열 흔적이 없나?', src: 'ai', answer: 'ok' },
       ...base,
@@ -291,7 +295,7 @@ function daesungInspection() {
 }
 
 const SEED = {
-  v: 6,
+  v: 7,                               // 2026-10-13 재점검 데이터로 바뀌어 올림
   clock: 9 * 60 + 10,                 // 가상 시각 09:10 (분)
   net: { worker: true, guard: true },
   offlineSince: { worker: null },
@@ -321,16 +325,25 @@ const SEED = {
     // 이번 주(9/15~) 다른 조원들이 한 점검 (2026-09-28) — 주간 보고를 채워 보이려고. 할 일이 없는 공장이라 홈 목록은 그대로.
     // bad: 문제로 찍은 문항 [영역 키-번호]. 동화정공은 아직 운영자 검사 대기
     // 2026-10-01 사용자 요청으로 3건 더함 — 결과 네 종류가 다 나오고 요일별 막대(월1·화2·수3)가 보이게. 반려는 홈 맨 위 할 일이 되므로 넣지 않는다
-    ...[['saehan', '9/14', '최지킴', 'ok', '점검완료', ['a1-2', 'a4-1']],
-      ['ujin', '9/15', '박지킴', 'ok', '점검완료', ['a3-0', 'a3-3']], ['seongwon', '9/15', '박지킴', 'wait', '재점검', []],
-      ['donghwa', '9/16', '최지킴', 'wait', '점검완료', ['a2-0', 'a3-1', 'a5-2']],
-      ['mirae', '9/16', '이조장', 'ok', '패트롤', []], ['hangyeol', '9/16', '이조장', 'ok', '기타', ['a4-0']]].map(([fid, date, by, st, result, bad]) => ({
+    // 2026-10-13 재점검: 불량이 있으면 처음 결과는 재점검이다. 점검완료·패트롤·기타로 끝난 곳은 재점검 판정(final)까지 마친 것으로 둔다.
+    // claim: 공장주가 고쳤어요(사진)를 보낸 문항 · fixed: 지킴이가 고쳐짐으로 판정한 문항 · fin: 판정한 날
+    ...[['saehan', '9/14', '최지킴', 'ok', '점검완료', ['a1-2', 'a4-1'], ['a1-2', 'a4-1'], ['a1-2', 'a4-1'], '9/16'],
+      ['ujin', '9/15', '박지킴', 'ok', '점검완료', ['a3-0', 'a3-3'], ['a3-0', 'a3-3'], ['a3-0'], '9/16'],
+      ['seongwon', '9/15', '박지킴', 'ok', '재점검', ['a1-0', 'a3-2'], ['a1-0']],
+      ['donghwa', '9/16', '최지킴', 'wait', '재점검', ['a2-0', 'a3-1', 'a5-2']],
+      ['mirae', '9/16', '이조장', 'ok', '패트롤', ['a1-0', 'a2-1'], [], [], '9/17'],
+      ['hangyeol', '9/16', '이조장', 'ok', '기타', ['a4-0', 'a1-1', 'a3-2'], ['a1-1', 'a3-2'], ['a1-1', 'a3-2'], '9/17'],
+    ].map(([fid, date, by, st, result, bad, claim = [], fixed = [], fin]) => ({
       id: 'w' + fid, fid, date, by, locked: true, st, result,
-      items: CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => ({ id: `${fid}-${a.key}-${i}`, text: t, src: 'base', area: a.key,
-        answer: bad.includes(`${a.key}-${i}`) ? 'bad' : 'ok' }))) })),
-    { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '점검완료', items: [
+      ...(fin ? { final: { from: '재점검', at: fin, by, fixed: fixed.length, total: bad.length } } : {}),
+      items: CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => { const k = `${a.key}-${i}`;
+        return { id: `${fid}-${k}`, text: t, src: 'base', area: a.key, answer: bad.includes(k) ? 'bad' : 'ok',
+          ...(bad.includes(k) ? { log: [...(claim.includes(k) ? [{ t: 'fix', at: date, tm: '17:30', note: '', photo: true }] : []),
+            ...(fin ? [{ t: 'recheck', at: fin, by, result: fixed.includes(k) ? 'fixed' : 'not', photo: claim.includes(k) }] : [])] } : {}) }; })) })),
+    // 동방산업 — 재점검 기한(9/03)이 지났는데 공장주 사진은 와 있다 (2026-10-13)
+    { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '재점검', items: [
       { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블',
-        log: [ { t: 'fix', at: '8/30', tm: '14:20', note: '케이블 걸이 설치' } ] },
+        log: [ { t: 'fix', at: '8/30', tm: '14:20', note: '케이블 걸이 설치', photo: true } ] },
       ...BASE_ITEMS['금속가공'].map((t, i) => ({ id: 'b' + (i + 2), text: t, src: 'base', answer: 'ok' })),
     ] },
   ],

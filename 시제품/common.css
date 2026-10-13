@@ -522,6 +522,17 @@ span.gtdtg{cursor:default}
 .gtdh b{font-size:18px;font-weight:800;letter-spacing:-.03em}
 .gtdh em{font-style:normal;font-size:13px;font-weight:800;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px}
 .gtdcal{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:32px;padding:0 4px;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer}
+/* 홈 우리 조 공장 상태 숫자 칸 (2026-10-13) — 오늘 할 일 칸과 같은 흰 칸. 숫자를 누르면 그 상태로 거른 공장 전체보기 */
+.gfst{background:#fff;border:1px solid var(--line2);border-radius:14px;padding:10px 14px 12px;margin:0 0 10px}
+.gfsth{display:flex;align-items:center;gap:8px;min-height:32px}
+.gfsth b{font-size:18px;font-weight:800;letter-spacing:-.03em}
+.gfsth em{font-style:normal;font-size:13px;font-weight:800;color:var(--mid);background:#f1f2f4;border-radius:999px;padding:2px 9px}
+.gfstr{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.gfstr button{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:64px;justify-content:center;border:1px solid var(--line2);border-radius:10px;background:#fff;font:inherit;color:var(--ink);cursor:pointer;padding:0 2px}
+.gfstr b{font-size:22px;font-weight:850;letter-spacing:-.03em}
+.gfstr span{font-size:13px;font-weight:700;color:var(--mid);white-space:nowrap}
+.gfstr button.late b,.gfstr button.late span{color:var(--amber)}
+.gfstr button:active{background:#f4f6f9}
 .gtdr{display:flex;flex-direction:column;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
 .gtdrow{display:flex;align-items:flex-start;gap:12px;width:100%;padding:0;border:none;background:none;font:inherit;text-align:left;color:var(--ink);cursor:pointer}
 /* 방문 시각 — 색 칸 없이 굵은 숫자와 작은 "방문", 오른쪽 가는 선으로 가른다 (2026-09-28 사용자 지시: AI스럽지 않게) */
@@ -562,6 +573,11 @@ span.gtdtg{cursor:default}
 .fname{flex:1;min-width:0;padding:0;border:none;background:none;text-align:left;font:inherit;font-size:18px;font-weight:800;letter-spacing:-.03em;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .ftag{flex:none;font-size:12px;font-weight:800;border-radius:6px;padding:2px 7px;margin-top:2px}
 .ftag.t-back{background:var(--amber);color:#fff}
+.ftag.t-rck{background:var(--brand-l);color:var(--brand)}
+/* 재점검 (2026-10-13) — 항목마다 공장주가 보낸 사진 한 줄 */
+.rckph{display:flex;align-items:center;gap:10px;margin:2px 0 6px 30px}
+.rckph div{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:14px}
+.rckph small{font-size:13px;color:var(--mid)}
 .floc,.fmeta{font-size:14px;color:var(--mid)}
 .fwhen{display:flex;align-items:center;gap:4px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink)}
 .fwhen.now{color:var(--brand)}
@@ -631,7 +647,8 @@ span.gtdtg{cursor:default}
 .fall .fbody > span{display:block}
 .fall .fname{font-size:18px;font-weight:800;letter-spacing:-.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fall .gchev{flex:none;color:var(--soft);display:inline-flex}
-.fst{display:flex;gap:12px;border-bottom:1px solid var(--line);margin:0 -16px;padding:0 16px}
+.fst{display:flex;gap:12px;border-bottom:1px solid var(--line);margin:0 -16px;padding:0 16px;overflow-x:auto;scrollbar-width:none}
+.fst::-webkit-scrollbar{display:none}
 .fst button{display:inline-flex;align-items:center;gap:4px;min-height:42px;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;padding:0;font:inherit;font-size:14px;font-weight:700;color:var(--soft);white-space:nowrap;cursor:pointer}
 .fst em{font-style:normal;font-size:12px;font-weight:800;color:var(--mid);background:#f1f2f4;border-radius:999px;padding:1px 6px}
 .fst button.on em{color:#fff;background:var(--ink)}
