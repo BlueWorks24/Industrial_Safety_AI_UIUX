@@ -1113,3 +1113,56 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
 @media (prefers-reduced-motion:reduce){.bcdots i{animation:none;opacity:.8}}
 .bcok{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--green-l);color:var(--green);font-size:15px;font-weight:700}
 .bcok svg{flex:none}
+/* 사진 AI — 점검하다가 그때그때 (2026-10-14). 체크리스트 아래 단추 줄 바로 위: 왼쪽 AI 소식 띠, 오른쪽 늘 있는 카메라 */
+.gcamrow{display:flex;align-items:center;gap:8px}
+.gaibd{flex:1;min-width:0;min-height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;border:none;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--line2);font:inherit;font-size:15px;font-weight:700;color:var(--ink);text-align:left}
+.gaibd span{flex:1;min-width:0}
+.gaibd b{flex:none;font-size:15px;font-weight:800}
+.gaibd.new{background:var(--violet-l);box-shadow:inset 0 0 0 1.5px var(--violet);color:var(--violet);cursor:pointer}
+.gaibd.new span{color:var(--ink)}
+.gaibd.fail{color:var(--amber);cursor:pointer}
+.gaibd.fail span{color:var(--ink)}
+.gaibd.none{visibility:hidden}
+.gspin{flex:none;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--violet-l);border-top-color:var(--violet);animation:gspin .9s linear infinite}
+@keyframes gspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.gspin{animation:none}}
+.gcam{flex:none;width:64px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:none;border-radius:14px;background:var(--navy);color:#fff;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
+.gcam:active{transform:scale(.96)}
+.sheet.keep,.ov.keep{animation:none}
+.gaish .gaip{margin-top:0}
+.gaiph{display:flex;align-items:center;gap:4px;margin-top:4px}
+.gais{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+.gais .t{font-size:16px;font-weight:700;line-height:1.4;color:var(--ink)}
+.gais .why{font-size:13px;line-height:1.5;color:var(--mid)}
+/* AI가 보는 중 띠 (2026-10-14 사용자: 더 AI답게) — 보라→파랑 테두리, 도는 빛 고리 속 반짝이, 빛나는 글자, 바뀌는 한 줄, 훑는 빛줄기 */
+.gaibd.busy{position:relative;overflow:hidden;gap:10px;border:1.5px solid transparent;background:linear-gradient(#f7f4ff,#f7f4ff) padding-box,linear-gradient(100deg,#7b55e6,#4f7cf0) border-box;box-shadow:0 2px 12px rgba(110,68,216,.16)}
+.gaibd .gaiorb{flex:none;position:relative;width:30px;height:30px;display:grid;place-items:center;color:#fff}
+.gaiorb i{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#6e44d8,#4f7cf0,#9fd0ff,#6e44d8);animation:gspin 2.4s linear infinite}
+.gaiorb svg{position:relative}
+.gaibd .gaitx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.gaitx b{font-size:15px;font-weight:800;background:linear-gradient(90deg,#6e44d8 0%,#2f63e0 40%,#9a7cf0 50%,#2f63e0 60%,#6e44d8 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gshine 2.4s linear infinite}
+.gaistep{position:relative;display:block;height:17px;font-style:normal;font-size:12px;font-weight:600;color:var(--mid)}
+.gaistep span{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;animation:gstep 6s infinite}
+.gaibeam{position:absolute;top:0;bottom:0;left:0;width:70px;background:linear-gradient(90deg,rgba(123,85,230,0),rgba(123,85,230,.16),rgba(79,124,240,0));animation:gbeam 2.2s ease-in-out infinite;pointer-events:none}
+@keyframes gshine{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.gaiorb i,.gaitx b,.gaibeam{animation:none}.gaistep span{animation:none}.gaistep span:first-child{opacity:1}}
+/* 찍은 사진 작은 칸 · 크게 보기 (2026-10-14 사용자: AI 제안이 무슨 사진에서 나왔는지 보이게) — 진짜 사진 대신 번호마다 다른 현장 그림 */
+.gsth{position:relative;flex:none;width:64px;height:48px;padding:0;border:none;border-radius:10px;overflow:hidden;background:#dfe4ea;box-shadow:inset 0 0 0 1px rgba(23,32,51,.08);cursor:pointer}
+.gsth .gshart{display:block;width:100%;height:100%}
+.gsth em{position:absolute;left:0;right:0;bottom:0;padding:1px 0 2px;font-style:normal;font-size:11px;font-weight:800;color:#fff;background:linear-gradient(transparent,rgba(15,21,34,.7));text-align:center}
+.crow .ctop .t{flex:1;min-width:0}
+.gaiph{display:flex;align-items:center;gap:12px;margin-top:6px}
+.gaiph .gsth{width:88px;height:66px}
+.gaiph div{display:flex;flex-direction:column;gap:2px}
+.gaiph b{font-size:16px;font-weight:800;color:var(--ink)}
+.gaiph span{font-size:13px;font-weight:600;color:var(--mid)}
+.gshvt{flex:1;padding-left:6px;font-size:17px;font-weight:800;color:#fff}
+.gshvb{position:relative;width:100%;aspect-ratio:4/3}
+.gshvb .gshart{display:block;width:100%;height:100%}
+.gshbox{position:absolute;border:2px solid rgba(178,156,255,.75);border-radius:8px;background:rgba(110,68,216,.10)}
+.gshbox em{position:absolute;left:-2px;top:-24px;padding:2px 7px;border-radius:6px;background:rgba(110,68,216,.75);color:#fff;font-style:normal;font-size:12px;font-weight:800;white-space:nowrap}
+.gshbox.on{border:3px solid #fff;background:rgba(110,68,216,.22);z-index:1}
+.gshbox.on em{background:var(--violet)}
+.rphvf b.dim{color:#aab3c2;font-weight:600}
+.gaish .row.sstick{display:grid;grid-template-columns:auto minmax(0,1fr)}
+.gaish .row.sstick .btn{width:auto;white-space:nowrap;padding-left:16px;padding-right:16px}

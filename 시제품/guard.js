@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 주간 보고. 운영자 제출 검사(승인·반려)는 2026-10-14 사용자 지시로 뺐다 — 아직 정해진 게 아니다.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { sheet: null, aiTimer: null, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {}, preBack: {}, wk: { area: null, note: {}, focus: {} } };
+const UI = { sheet: null, aiT: {}, aiPick: {}, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {}, preBack: {}, wk: { area: null, note: {}, focus: {} } };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -751,57 +751,125 @@ function pre(s, fid) {
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && (UI.sheet.type === 'firm' || UI.sheet.type === 'card') ? firmSheet(s) : ''}`;
 }
 
-/* ---------- G4 사진 · AI ---------- */
-// G4 사진 찍기 (2026-09-23 사용자 지시: 너무 단순하다 → 읽기 쉽고 AI답게, 찍은 사진 지우기)
-// 사진은 번호로 기억한다 — 지워도 다른 사진의 번호가 바뀌지 않게 (AI 제안이 "사진 3에서 봤어요"라고 가리키므로)
-const SHOT_MAX = 10;
+/* ---------- G4 사진 AI — 점검하다가 그때그때 (2026-10-14 사용자 지시) ----------
+   전에는 공장을 한 바퀴 돌며 사진을 몰아 찍어 AI 제안을 받은 뒤, 체크리스트를 들고 다시 한 바퀴 돌았다(두 바퀴).
+   기존 업무는 한 바퀴 — 점검하다가 지적할 것이 보이면 그 자리에서 사진을 찍는다. 그래서 체크리스트 화면 아래에 카메라를 늘 두고,
+   찍으면 기다리지 않고 점검을 이어 가며 AI는 뒤에서 본다. 다 보면 아래 띠로만 알리고(창을 띄우지 않는다), 지킴이가 누를 때 그 자리에서 답한다.
+   불량 창에서 찍은 사진도 AI에 같이 보낸다 — 사진 한 번으로 증거와 제안을 다 얻는다.
+   걸리는 시간은 사진 한 장에 몇 초~20초쯤으로 본다(가설). 시제품은 3~5초 흉내. 전파가 없으면 사진을 들고 있다가 잡히면 보낸다 */
+// 사진은 번호로 기억한다 — AI 제안이 "사진 3에서 봤어요"라고 가리키므로
+const SHOT_MAX = 30;
 const shotsOf = (d) => d.shots || Array.from({ length: d.photos || 0 }, (_, i) => i + 1);  // 예전 초안은 장수만 있다
-const SHOT_TIPS = ['분전반', '전선과 콘센트', '기계 주변', '통로와 비상구', '약품 보관함'];
-function photo(s) {
-  const d = s.draft, f = FACTORIES[d.fid], shots = shotsOf(d), n = shots.length, full = n >= SHOT_MAX;
-  return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head(f.name + ' 점검', 'pick')}
-    <div class="gaih"><span class="gaic">${I('sparkle', 22)}</span><div><b>사진으로 AI 제안 받기</b><small>사진 속 위험을 찾아 더 볼 항목을 골라 줘요</small></div></div>
-    <div class="lbl">이런 곳을 찍어 주세요</div>
-    <div class="gtips">${SHOT_TIPS.map((w) => `<span>${w}</span>`).join('')}</div>
-    <div class="gshh"><span class="lbl">찍은 사진</span><b>${n}<small> / ${SHOT_MAX}장</small></b></div>
-    <div class="gshots">${shots.map((k) => `<div class="gshot"><span class="gshim">${I('camera', 22)}<em>사진 ${k}</em></span>
-        <button class="gshx" data-act="delPhoto" data-k="${k}" aria-label="사진 ${k} 지우기">${I('close', 14)}</button></div>`).join('')}
-      ${full ? '' : `<button class="gshadd" data-act="addPhoto">${I('camera', 24)}<span>사진 찍기</span></button>`}</div>
-    <div class="gainote">${I('info', 16)}<span>AI는 사진에 찍힌 것만 봐요. 틀릴 수 있어요.</span></div>
-  </div><div class="ft">
-    <button class="btn gaisend${n ? '' : ' glocked'}" data-act="${n ? 'askAI' : 'noPhoto'}">${n ? `${I('sparkle', 18)} AI에게 사진 ${n}장 보내기` : `${I('lock', 17)} AI에게 보내기`}</button>
-    <button class="btn ghost" data-act="toList">기본 체크리스트로 돌아가기</button>
-  </div></div>`;
+const aiqOf = (d) => d.aiq || [];
+// 사진 한 장을 찍어 AI에 맡긴다. from: cam(카메라 단추) · bad(불량 창)
+function shootAI(d, from) {
+  d.shotN = Math.max(d.shotN || 0, ...shotsOf(d), 0) + 1;
+  d.shots = [...shotsOf(d), d.shotN]; d.photos = d.shots.length;
+  d.aiq = [...aiqOf(d), { k: d.shotN, from, st: 'wait' }];
+  return d.shotN;
 }
-// AI 기다리기 (2026-09-23 사용자 지시: 위에 쏠려 있다 → 가운데로, 멈춘 것처럼 보이지 않게 AI다운 움직임)
-// 도는 빛 고리 + 찍은 사진을 훑는 빛줄기 + 하는 일을 바꿔 보여 주는 한 줄. 움직임은 CSS로만 — 데이터가 와서 다시 그려도 멈추지 않게
+// 기다리는 사진마다 시계를 건다 — 그릴 때마다 불러도 한 번만 걸린다. 전파가 없으면 걸지 않고 기다린다
+function aiPump() {
+  const d = DB.s.draft;
+  if (!d || d.kind !== 'first' || !DB.s.net.guard) return;
+  aiqOf(d).filter((q) => q.st === 'wait' && !UI.aiT[q.k]).forEach((q) => {
+    UI.aiT[q.k] = setTimeout(() => { delete UI.aiT[q.k]; aiDone(q.k); }, 3000 + (q.k % 3) * 1000);
+  });
+}
+function aiDone(k) {
+  const d0 = DB.s.draft;
+  if (!d0 || !aiqOf(d0).some((q) => q.k === k && q.st === 'wait') || !DB.s.net.guard) return;  // 그사이 전파가 끊겼으면 잡힐 때 다시 건다
+  let n = 0;
+  DB.act((s) => {
+    const d = s.draft, q = d.aiq.find((x) => x.k === k);
+    if (s.aiDown) { q.st = 'fail'; return; }
+    // 사진마다 3개 (2026-10-14 사용자 지시, 전에는 1~3개) — 이미 보여 준 제안은 다시 내지 않는다
+    const used = new Set(d.ai.map((x) => x.idx)), pick = AI_SUGGEST.map((_, i) => i).filter((i) => !used.has(i)).slice(0, 3);
+    d.ai.push(...pick.map((i) => ({ idx: i, photo: k, st: 'new' })));
+    q.st = 'done'; q.n = n = pick.length;
+  });
+  if (!n && !DB.s.aiDown) toast(`사진 ${k}에서 더 볼 것을 찾지 못했어요`);
+}
+// 체크리스트 아래 줄 — 왼쪽은 AI 소식 띠(새 제안 > 보는 중 > 실패), 오른쪽은 늘 있는 카메라
+function aiBand(s) {
+  const d = s.draft, q = aiqOf(d), wait = q.filter((x) => x.st === 'wait').length, fail = q.filter((x) => x.st === 'fail').length;
+  const fresh = d.ai.filter((x) => x.st === 'new'), ph = [...new Set(fresh.map((x) => x.photo))];
+  const band = fresh.length ? `<button class="gaibd new" data-act="aiOpen">${I('sparkle', 18)}<span>${ph.length === 1 ? `사진 ${ph[0]}에서` : `사진 ${ph.length}장에서`} 더 볼 것 ${fresh.length}개</span><b>보기</b></button>`
+    : wait && s.net.guard ? aiBusy(wait)
+    : wait ? `<div class="gaibd" role="status"><i class="gspin"></i><span>전파가 없어 사진 ${wait}장을 들고 있어요</span></div>`
+    : fail ? `<button class="gaibd fail" data-act="aiRetry">${I('alert', 18)}<span>AI가 지금 답하지 않아요</span><b>다시</b></button>` : '<span class="gaibd none"></span>';
+  return `<div class="gcamrow">${band}<button class="gcam" data-act="camShot" aria-label="사진 찍어 AI에 보내기">${I('camera', 24)}<span>사진</span></button></div>`;
+}
+// 찍은 사진 (2026-10-14 사용자: AI 제안 옆에 무슨 사진에서 나온 것인지 보이게) — 시제품은 진짜 사진이 없어 번호마다 다른 현장 그림으로 대신한다
+const SHOT_ART = [
+  '<rect x="30" y="10" width="22" height="30" rx="2" fill="#9aa6b6"/><rect x="33" y="13" width="16" height="12" rx="1" fill="#b7c0cc"/><circle cx="41" cy="31" r="2" fill="#e05a4a"/><path d="M41 40v8" stroke="#3b4656" stroke-width="1.6"/>',
+  '<path d="M8 22h40M8 34h40" stroke="#8d97a6" stroke-width="2"/><path d="M8 12v34M48 12v34" stroke="#8d97a6" stroke-width="2"/><rect x="12" y="14" width="12" height="8" fill="#c7a77a"/><rect x="26" y="15" width="10" height="7" fill="#d4b68b"/><rect x="14" y="26" width="16" height="8" fill="#b8956a"/><rect x="56" y="34" width="14" height="12" fill="#c7a77a"/><rect x="58" y="24" width="12" height="10" fill="#d4b68b"/>',
+  '<rect x="14" y="18" width="40" height="26" rx="3" fill="#7d8a9c"/><rect x="18" y="22" width="14" height="10" rx="1.5" fill="#a9b4c3"/><circle cx="62" cy="30" r="9" fill="none" stroke="#5c6878" stroke-width="3"/><path d="M54 24l8-3M54 36l8 3" stroke="#5c6878" stroke-width="2"/><circle cx="44" cy="28" r="2.4" fill="#e05a4a"/>',
+  '<rect x="12" y="20" width="14" height="26" rx="3" fill="#3f7fd0"/><rect x="28" y="22" width="14" height="24" rx="3" fill="#e08a2c"/><rect x="44" y="18" width="14" height="28" rx="3" fill="#3f7fd0"/><path d="M12 26h14M28 28h14M44 24h14" stroke="#ffffff55" stroke-width="2"/><rect x="62" y="30" width="8" height="16" rx="4" fill="#5f8f5a"/>',
+  '<path d="M0 50L30 30h20l30 20" fill="#c3cad4"/><path d="M22 46l14-12M58 46L44 34" stroke="#e8c33a" stroke-width="2" stroke-dasharray="4 3"/><rect x="34" y="38" width="14" height="6" fill="#a87b4c"/><rect x="36" y="32" width="10" height="6" fill="#c7a77a"/>',
+];
+const shotArt = (k) => `<svg class="gshart" viewBox="0 0 80 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="80" height="60" fill="#dfe4ea"/><rect y="46" width="80" height="14" fill="#c9cfd8"/>${SHOT_ART[(k - 1) % SHOT_ART.length]}</svg>`;
+// 작은 사진 칸 — 누르면 크게 본다 (at: 이 칸이 가리키는 제안 번호, 크게 볼 때 그 자리를 진하게)
+const shotThumb = (k, at = '') => `<button class="gsth" data-act="shotView" data-k="${k}" data-i="${at}" aria-label="사진 ${k} 크게 보기">${shotArt(k)}<em>사진 ${k}</em></button>`;
+// 사진 크게 보기 — AI가 그 사진에서 본 자리를 상자로. 시제품의 상자 자리는 예시라 그림과 꼭 맞지는 않는다
+function shotViewer(s) {
+  const v = UI.shot, d = s.draft, list = ((d && d.ai) || []).filter((x) => x.photo === v.k && x.st !== 'skip');
+  const q = d && aiqOf(d).find((y) => y.k === v.k);
+  return `<div class="rphv" role="dialog" aria-label="사진 ${v.k} 크게 보기">
+    <div class="rphvh"><b class="gshvt">사진 ${v.k}${q && q.from === 'bad' ? ' (불량 사진)' : ''}</b><button class="rphvx" data-act="shotClose" aria-label="닫기">${I('close', 22)}</button></div>
+    <div class="rphvb"><div class="gshvb">${shotArt(v.k)}${list.map((x) => { const g = AI_SUGGEST[x.idx], sp = g.spot;
+      return `<span class="gshbox${String(x.idx) === String(v.i) ? ' on' : ''}" style="left:${sp.l}%;top:${sp.t}%;width:${sp.w}%;height:${sp.h}%"><em>${esc(g.seen)}</em></span>`; }).join('')}</div></div>
+    <div class="rphvf">${list.length ? `<span>AI가 이 사진에서 본 것</span>${list.map((x) => `<b class="${String(x.idx) === String(v.i) ? '' : 'dim'}">${esc(AI_SUGGEST[x.idx].text)}</b>`).join('')}`
+      : `<span>${q && q.st === 'wait' ? 'AI가 아직 보고 있어요' : 'AI 제안이 없는 사진이에요'}</span>`}</div></div>`;
+}
+// AI가 보는 중 띠 (2026-10-14 사용자: 더 AI답게) — AI 기다리기 화면(전에 있던)의 도는 빛 고리 · 훑는 빛줄기 · 바뀌는 한 줄을 띠 크기로.
+// 답을 누를 때마다 다시 그려지므로, 움직임이 처음으로 튀지 않게 지금 시각만큼 앞당겨 시작한다
 const AI_STEPS = ['사진을 살펴보고 있어요', '위험해 보이는 곳을 찾고 있어요', '비슷한 사고 사례와 맞춰 보고 있어요'];
-function aiWait(s) {
-  const d = s.draft, f = FACTORIES[d.fid], sh = shotsOf(d);
-  if (d.aiState === 'fail') {
-    return `${sbar(f.name)}<div class="scr"><div class="bd">${head(f.name + ' 점검', 'photo')}
-      <div class="gaiw"><div class="donemark" style="border-style:dashed">${I('alert', 38)}</div>
-      <div class="center big">AI가 지금<br>답하지 않아요</div>
-      <div class="center small">기본 체크리스트는 그대로 점검할 수 있어요. 찍은 사진은 점검 기록에 붙어요.</div></div>
-    </div><div class="ft"><button class="btn" data-act="toList">기본 체크리스트로 점검하기</button><button class="btn ghost" data-act="askAI">다시 해 보기</button></div></div>`;
-  }
-  const show = sh.slice(0, 5), more = sh.length - show.length;
-  return `${sbar(f.name)}<div class="scr"><div class="bd">${head(f.name + ' 점검', 'photo')}
-    <div class="gaiw" role="status" aria-live="polite">
-      <div class="gorb"><i class="gring"></i><span class="gcore">${I('sparkle', 34)}</span></div>
-      <div class="center big">AI가 사진 ${sh.length}장을<br>보고 있어요</div>
-      <div class="gsteps" aria-hidden="true">${AI_STEPS.map((w, i) => `<span style="animation-delay:${i * 2}s">${w}</span>`).join('')}</div>
-      <div class="gscan">${show.map((k, i) => `<span style="animation-delay:${i * 0.18}s">${I('camera', 16)}<em>${k}</em></span>`).join('')}${more > 0 ? `<span class="more">+${more}</span>` : ''}<i class="gbeam"></i></div>
-      <div class="gdots" aria-hidden="true"><i></i><i></i><i></i></div>
-      <div class="center small">보통 20초쯤 걸려요</div>
-    </div>
-  </div><div class="ft"><button class="btn ghost" data-act="toList">기다리지 않고 기본 체크리스트로</button></div></div>`;
+function aiBusy(n) {
+  const t = (ms) => `animation-delay:-${(Date.now() % ms) / 1000}s`;
+  return `<div class="gaibd busy" role="status"><span class="gaiorb"><i style="${t(2400)}"></i>${I('sparkle', 15)}</span>
+    <span class="gaitx"><b style="${t(2400)}">AI가 사진 ${n}장을 보고 있어요</b>
+      <em class="gaistep" aria-hidden="true">${AI_STEPS.map((w, i) => `<span style="animation-delay:${i * 2 - (Date.now() % 6000) / 1000}s">${w}</span>`).join('')}</em></span>
+    <i class="gaibeam" style="${t(2200)}"></i></div>`;
 }
+// 새 제안 창 — 사진마다 묶어 보이고, 제안마다 바로 답한다(답하면 체크리스트 AI 제안 쪽에 들어간다). 넘기면 버린다
+// 답을 눌러도 바로 넣지 않고 고른 표시만 해 두었다가, 아래 단추로 한꺼번에 넣는다 (같은 날 사용자 지시 — 누르자마자 카드가 사라지면 다 고르고 한 번에 낼 수 없었다).
+// 고른 것(UI.aiPick: 제안 번호 → 답)은 창을 닫아도 남는다. 다시 누르면 풀린다.
+// "이 제안 넘기기"는 같은 날 사용자 지시로 뺐다 — 볼 필요 없는 제안은 해당 없음으로 답한다
+const aiApplyWord = () => { const n = Object.values(UI.aiPick).filter((x) => x !== 'skip').length; return n ? `${n}개 체크리스트에 넣기` : '체크리스트에 넣기'; };
+function aiSheet(s) {
+  const d = s.draft, fresh = d.ai.map((x, i) => [x, i]).filter(([x]) => x.st === 'new');
+  const ph = [...new Set(fresh.map(([x]) => x.photo))];
+  const card = ([x, i]) => { const g = AI_SUGGEST[x.idx], pv = UI.aiPick[i];
+    return `<div class="gais"><div class="t">${esc(g.text)}</div>
+      <div class="why">AI가 본 것: ${esc(g.seen)}<br>비슷한 사고: ${esc(g.cases[0].t)}</div>
+      <div class="cans c4">${ANS_ORDER.map((v) => `<button class="${pv === v ? 'on ' + ansCls(v) : ''}" data-act="aiPick" data-i="${i}" data-v="${v}" aria-pressed="${pv === v}">${ANS[v]}</button>`).join('')}</div></div>`; };
+  return `<div class="ov${UI.sheet.keep ? ' keep' : ''}" data-act="closeSheet"></div><div class="sheet gaish${UI.sheet.keep ? ' keep' : ''}"><div class="grip"></div>
+    <div class="gaip"><span class="gaic">${I('sparkle', 20)}</span><div><b>더 볼 것 ${fresh.length}개</b><small>사진 속 것만 봐요. 틀릴 수 있어요.</small></div></div>
+    ${ph.map((k) => { const q = aiqOf(d).find((y) => y.k === k);
+      const l = fresh.filter(([x]) => x.photo === k);
+      return `<div class="gaiph">${shotThumb(k)}<div><b>사진 ${k}${q && q.from === 'bad' ? ' (불량 사진)' : ''}</b><span>더 볼 것 ${l.length}개</span></div></div>${l.map(card).join('')}`; }).join('')}
+    ${aiqOf(d).some((q) => q.st === 'fail') ? `<button class="gaibd fail" data-act="aiRetry">${I('alert', 18)}<span>AI가 못 본 사진이 있어요</span><b>다시</b></button>` : ''}
+    <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">나중에 보기</button><button class="btn" data-act="aiApply" id="aiApplyB">${aiApplyWord()}</button></div>
+  </div>`;
+}
+// 제안을 체크리스트에 넣는다 — 묶음 차례(지난번 미흡 · 기본 · AI 제안 · 장비 · 직접)를 지키도록 AI 제안 묶음 끝에 끼운다.
+// 끼우면 쪽 번호가 밀릴 수 있어 보던 쪽을 이름으로 다시 찾는다
+const pageKeys = (d) => [...new Set(d.items.map(gkey))];
+function addAiItem(d, x) {
+  const keys = pageKeys(d), curK = UI.cpage >= keys.length ? null : keys[UI.cpage || 0];
+  let at = -1;
+  d.items.forEach((y, j) => { if (y.src === 'prev' || y.src === 'base' || (y.src === 'ai' && !y.eq)) at = j; });
+  d.items.splice(at + 1, 0, { id: 'a' + x.idx, text: AI_SUGGEST[x.idx].text, src: 'ai', photo: x.photo, answer: null });
+  const nk = pageKeys(d); UI.cpage = curK == null ? nk.length : nk.indexOf(curK);
+  x.st = 'added';
+  return at + 1;
+}
+
 /* ---------- G4-나 장비 고르기 · AI (2026-10-07 사용자 지시 — 사진 AI는 그대로 두고 길을 하나 더) ----------
    대표 장비를 고르거나 목록에 없는 장비는 이름을 적는다 → AI가 장비마다 체크리스트를 만든다.
    적은 장비는 AI가 무엇인지 알아보고 그에 맞는 항목을 짓는다(시제품은 seed.js guessEquip 흉내). 장비마다 점검의 한 쪽이 된다.
-   사진 AI와 상태를 따로 둔다 — aiState·ai(사진) / eqState·eqGen(장비). 둘 다 받아도 된다 */
+   사진 AI와 상태를 따로 둔다 — aiq·ai(사진, 점검하면서) / eqState·eqGen(장비). 둘 다 받아도 된다 */
 const eqSelOf = (d) => d.eqSel || [];
 const eqSelfOf = (d) => d.eqSelf || [];
 const eqCount = (d) => eqSelOf(d).length + eqSelfOf(d).length;
@@ -869,10 +937,10 @@ function eqWait(s) {
 function pickScreen(s) {
   const d = s.draft, f = FACTORIES[d.fid];
   const nBase = CHECKLIST.areas.reduce((n, a) => n + a.items.length, 0);
-  const nSel = d.ai.filter((x) => x.sel).length;
+  const nSel = d.ai.filter((x) => x.sel || x.st === 'added').length;  // 사진 AI 제안은 점검하면서 더한다 (2026-10-14)
   const gen = d.eqGen || [], nEq = gen.reduce((n, g) => n + g.items.length, 0);
   const nPrev = openIssues(s, d.fid).length, total = nPrev + nBase + nSel + nEq + d.self.length;
-  const asked = d.aiState === 'done', eqDone = d.eqState === 'done' && gen.length;
+  const eqDone = d.eqState === 'done' && gen.length;
   const answered = d.items.some((x) => x.answer);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
     ${head(f.name + ' 점검', 'pre/' + d.fid)}
@@ -880,8 +948,6 @@ function pickScreen(s) {
     ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
     <div class="grp">기본 체크리스트<span class="must">${CHECKLIST.ver}</span><span class="must">${nBase}문항</span></div>
     ${CHECKLIST.areas.map(ckArea).join('')}
-    ${asked ? aiPicks(d, nSel) : `<div class="grp">AI 제안</div>`}
-    <button class="gai" data-act="goPhoto">${I('camera', 18)} ${asked ? '사진 더 찍어 다시 받기' : '사진 찍어 AI 제안 받기'}</button>
     ${eqDone ? `<div class="gaip"><span class="gaic">${I('sparkle', 20)}</span><div><b>AI 장비 체크리스트</b><small>장비 ${gen.length}개 ${nEq}문항</small></div></div>
     ${gen.map(eqArea).join('')}` : ''}
     <button class="gai" data-act="goEquip">${I('tool', 18)} ${eqDone ? '장비 바꾸거나 더하기' : '장비 골라 AI 체크리스트 받기'}</button>
@@ -889,7 +955,7 @@ function pickScreen(s) {
     ${d.self.map((t) => `<div class="item sel"><div class="bul">${I('plus', 14)}</div><div><div class="t">${esc(t)}</div><div class="why">직접 추가</div></div></div>`).join('')}
     <button class="add" data-act="addSelf">＋ 항목 직접 추가</button>
   </div><div class="ft"><button class="btn" data-act="startAnswer">${answered ? `${total}개 이어서 점검하기` : `${total}개로 점검 시작`}</button></div></div>
-  ${UI.sheet && UI.sheet.type === 'why' ? whySheet(s) : ''}${UI.sheet && UI.sheet.type === 'self' ? selfSheet() : ''}`;
+  ${UI.sheet && UI.sheet.type === 'self' ? selfSheet() : ''}`;
 }
 // 기본 체크리스트 영역 — 누르면 아래로 펼쳐져 문항을 미리 본다 (2026-09-23 사용자 지시). 보기만 하고 답은 점검하면서 단다
 function ckArea(a) {
@@ -908,32 +974,6 @@ function eqArea(g) {
       <span class="gckt"><span class="t">${esc(g.name)}</span><span class="why">${tg(g.items.length + '문항')}${g.from ? tg('직접 적음') : ''}${g.from ? `<br>AI가 알아본 것: ${esc(g.seen)}${g.unsure ? ' (확실하지 않음)' : ''}` : ''}</span></span>
       <span class="gtdar${open ? ' on' : ''}">${I('chevron', 18)}</span></button>
     <div class="gckl"${open ? '' : ' inert'}><div><ol>${g.items.map((q) => `<li>${esc(q)}</li>`).join('')}</ol></div></div></div>`;
-}
-// AI 제안 고르기 (2026-09-23 사용자 지시: AI답게) — 보라→파랑 머리 칸(개수, 모두 고르기), 카드마다 어느 사진에서 무엇을 봤는지 꼬리표,
-// 고르면 물빛 테두리. 처음 받았을 때만 카드가 차례로 떠오른다 (고를 때마다 다시 뜨면 거슬려서)
-function aiPicks(d, nSel) {
-  const all = d.ai.length && nSel === d.ai.length, fresh = UI.aiFresh;
-  if (fresh) setTimeout(() => { UI.aiFresh = false; }, 50);
-  return `<div class="gaip"><span class="gaic">${I('sparkle', 20)}</span><div><b>AI 제안 ${d.ai.length}개</b><small>사진 속 것만 봐요. 틀릴 수 있어요.</small></div>
-      ${d.ai.length ? `<button class="gaiall" data-act="allAI" data-v="${all ? 0 : 1}">${all ? '모두 풀기' : '모두 고르기'}</button>` : ''}</div>
-    ${d.ai.length ? `<div class="gaicnt"><b>${nSel}</b>개 골랐어요</div>` : `<div class="small">사진에서 찾은 것 없음 — 위험이 없다는 뜻은 아니에요.</div>`}
-    ${d.ai.map((x, i) => { const g = AI_SUGGEST[x.idx]; return `<div class="gaicard${x.sel ? ' sel' : ''}${fresh ? ' fresh' : ''}" style="${fresh ? `animation-delay:${i * 0.06}s` : ''}">
-      <button class="gaick" data-act="toggleAI" data-i="${i}" aria-pressed="${x.sel}" aria-label="${esc(g.text)} 고르기">${x.sel ? I('check', 18) : ''}</button>
-      <div class="gaib"><div class="gaitg"><span>${I('camera', 13)} 사진 ${x.photo}</span><span>${esc(g.seen)}</span></div>
-        <div class="t">${esc(g.text)}</div>
-        <button class="gaiwhy" data-act="why" data-i="${i}">비슷한 사고: ${esc(g.cases[0].t)} ${I('chevron', 14)}</button></div></div>`; }).join('')}`;
-}
-function whySheet(s) {
-  const x = s.draft.ai[UI.sheet.i], g = AI_SUGGEST[x.idx], sp = g.spot;
-  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
-    <div class="mid">${esc(g.text)}</div>
-    <div class="lbl">AI가 본 자리 (사진 ${x.photo})</div>
-    <div class="photo">사진 ${x.photo}<span class="box" style="left:${sp.l}%;top:${sp.t}%;width:${sp.w}%;height:${sp.h}%">${g.seen}</span></div>
-    <div class="lbl">비슷한 사고 사례 (설명용 예시)</div>
-    ${g.cases.map((c) => `<div class="case"><b>${esc(c.t)}</b><div class="small">같은 점: ${esc(c.same)}</div></div>`).join('')}
-    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">닫기</button>
-      <button class="btn" data-act="toggleAI" data-i="${UI.sheet.i}" data-close="1">${x.sel ? '고르지 않기' : '이 항목 고르기'}</button></div>
-  </div>`;
 }
 function selfSheet() {
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
@@ -980,9 +1020,9 @@ function checkList(s) {
   const row = ([x, i]) => {
     const st = x.answer || '';
     const rk = st === 'bad' && (x.risks || []).length ? `<div class="crisk">${x.risks.map((r) => tg(r, 'warn')).join('')}</div>` : '';
-    const mark = st === 'bad' ? [x.memo ? '위험요인 내용: ' + esc(x.memo) : '', x.shot ? '사진 1장' : ''].filter(Boolean).join('<br>') : '';
+    const mark = st === 'bad' ? [x.memo ? '위험요인 내용: ' + esc(x.memo) : '', x.shot && !x.photo ? '사진 1장' : ''].filter(Boolean).join('<br>') : '';
     return `<div class="crow ${ansCls(st)}">
-      <div class="ctop"><span class="cnum">${i + 1}</span><div class="t">${esc(x.text)}</div></div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
+      <div class="ctop"><span class="cnum">${i + 1}</span><div class="t">${esc(x.text)}</div>${x.photo ? shotThumb(x.photo, x.src === 'ai' ? x.id.slice(1) : '') : ''}</div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
       <div class="cans c4">${ANS_ORDER.map((v) => `<button class="${st === v ? 'on ' + ansCls(v) : ''}" data-act="${v === 'bad' ? 'ansBad' : 'ans'}" data-n="${i}" data-v="${v}" aria-pressed="${st === v}">${ANS[v]}</button>`).join('')}</div>
       ${rk}${mark ? `<div class="cmemo">${mark}</div>` : ''}
       ${x.eval ? `<button class="ceval has" data-act="evalOpen" data-n="${i}"><b>평가 내용</b><span>${esc(x.eval)}</span></button>`
@@ -1003,23 +1043,22 @@ function checkList(s) {
     foot = `<div class="gft2">${cur ? `<button class="btn ghost" data-act="cpage" data-v="${cur - 1}">${I('back', 18)} 이전</button>` : ''}
       <button class="btn cnext" data-act="cpage" data-v="${cur + 1}"><span class="cnl">다음: ${nx}</span>${I('chevron', 18)}</button></div>`;
   } else {
-    // 마무리 — 안 본 것이 남았으면 그 쪽으로 바로 가는 줄, 다 봤으면 점검 결과를 고르고 낸다
+    // 마무리 — 안 본 것이 남았으면 그 쪽으로 바로 가는 줄. 다 안 봐도 낼 수 있다 (2026-10-14 사용자 지시 — 전에는 안 본 것이 남으면 내기 단추를 잠갔다).
+    // 안 본 항목은 "답 없음"으로 남고, 지난번 미흡 항목을 안 봤으면 그 항목은 다음 점검에 다시 붙는다
     const todo = pages.map((p, i) => [p, i]).filter(([p]) => p.rest);
     body = `<div class="cph"><span class="cpn">마무리</span><b>점검 결과 내기</b></div>
-      ${todo.length ? `<div class="lbl">아직 안 본 항목</div><div class="clist">${todo.map(([p, i]) => `<button class="cgo" data-act="cpage" data-v="${i}"><span>${gname(p.k)}</span>${tg(`안 본 것 ${p.rest}`, 'now')}${I('chevron', 16)}</button>`).join('')}</div>` : ''}
+      ${todo.length ? `<div class="lbl">아직 안 본 항목 ${left}개 (답 없음으로 남아요)</div><div class="clist">${todo.map(([p, i]) => `<button class="cgo" data-act="cpage" data-v="${i}"><span>${gname(p.k)}</span>${tg(`안 본 것 ${p.rest}`, 'now')}${I('chevron', 16)}</button>`).join('')}</div>` : ''}
       ${bad.length ? `<div class="lbl">불량으로 찍은 항목 ${bad.length}개</div><ul class="q gul">${bad.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ul>` : `<div class="small">불량으로 찍은 항목이 없어요</div>`}
-      ${left ? '' : `${kv([['점검 결과', `<b>${res}</b>`], res === '재점검' && ['시정 기한', `${recheckDue({ date: '9/17' })}까지 (2주)`]])}
+      ${kv([['점검 결과', `<b>${res}</b>`], res === '재점검' && ['시정 기한', `${recheckDue({ date: '9/17' })}까지 (2주)`]])}
       <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">${res === '재점검'
-        ? '내면 불량 항목이 공장주에게 개선 요청으로 가요.<br>공장주가 고친 사진을 보내면 재점검에서 판정해요.' : '불량이 없어 바로 점검완료예요.'}</div></div>`}`;
-    // 안 본 것이 남으면 내기 단추는 잠그고, 누르면 까닭을 알린다 (못 누르는 단추 규칙, 2026-09-22)
-    const go = '점검 결과 내기';
+        ? '내면 불량 항목이 공장주에게 개선 요청으로 가요.<br>공장주가 고친 사진을 보내면 재점검에서 판정해요.' : '불량이 없어 바로 점검완료예요.'}</div></div>`;
     foot = `<div class="gft2"><button class="btn ghost" data-act="cpage" data-v="${endI - 1}">${I('back', 18)} 이전</button>
-      ${left ? `<button class="btn glocked" data-act="lockedSubmit" data-v="${left}">${I('lock', 17)} ${go}</button>` : `<button class="btn" data-act="submitFirst">${go}</button>`}</div>`;
+      <button class="btn" data-act="submitFirst">점검 결과 내기</button></div>`;
   }
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
     ${chips}
     ${body}
-  </div><div class="ft">${foot}</div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'eval' ? evalSheet(s) : ''}`;
+  </div><div class="ft">${aiBand(s)}${foot}</div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'eval' ? evalSheet(s) : ''}${UI.sheet && UI.sheet.type === 'ai' ? aiSheet(s) : ''}${UI.shot ? shotViewer(s) : ''}`;
 }
 // 불량 창을 다시 그리기 전에 적던 글을 담아 둔다 (사진 찍기·사정 고르기가 창을 다시 그린다)
 // 점검 기간 창의 날짜 칸 값을 담아 둔다 (다시 그리면 칸이 새로 만들어진다)
@@ -1363,7 +1402,7 @@ const fmtDates = (h) => h.replace(/(?<![\w/.])(\d{1,2})\/(\d{1,2})(?![\w/])/g, (
 function render() {
   if (!ACC) { paintLogin(); return; }
   const s = DB.s, p = R.path();
-  if (location.hash !== lastHash) { UI.mapFull = false; UI.sheet = null; }  // 다른 화면으로 가면(폰의 뒤로 가기 등) 지도 전체화면과 열린 창을 닫는다
+  if (location.hash !== lastHash) { UI.mapFull = false; UI.sheet = null; UI.shot = null; }  // 다른 화면으로 가면(폰의 뒤로 가기 등) 지도 전체화면과 열린 창을 닫는다
   const d = s.draft;
   let html;
   const needFirst = ['equip', 'eqai', 'photo', 'ai', 'pick', 'list', 'ans', 'sum'].includes(p[0]);
@@ -1380,10 +1419,9 @@ function render() {
     html = pre(s, p[1]) + mapFullView(p[1]);
   }
   else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
+  else if (p[0] === 'photo' || p[0] === 'ai') { R.go(d.items.length ? 'list' : 'pick'); return; }  // 옛 주소 — 사진 몰아 찍기 화면은 2026-10-14에 걷었다
   else if (p[0] === 'equip') html = equipScreen(s);
-  else if (p[0] === 'photo') html = photo(s);
   else if (p[0] === 'eqai') html = eqWait(s);
-  else if (p[0] === 'ai') html = aiWait(s);
   else if (p[0] === 'pick') html = pickScreen(s);
   else if (p[0] === 'list') html = checkList(s);
   else if (p[0] === 'ans' || p[0] === 'sum') { R.go('list'); return; }
@@ -1408,9 +1446,16 @@ function render() {
     const nr = tmp.querySelector('#fres'); if (nr) { $('#fres').replaceWith(nr); return; }
   }
   // 점검 쪽 칩 줄은 다시 그려도 가로 위치를 그대로 둔다 — 답을 누를 때마다 맨 왼쪽으로 튀었다 (2026-09-28 사용자 제보)
-  const cpx = $('.cpg') ? $('.cpg').scrollLeft : null;
+  // 열린 창이 그대로인 채 다시 그리면(날짜 고르기 · 달 넘기기 · 권역 고르기 등) 창이 아래에서 다시 올라오며 깜빡이고 맨 위로 튀었다 (2026-10-14 사용자 제보 — 방문일 창).
+  // 같은 창이면 올라오는 움직임을 빼고 스크롤 자리를 지킨다
+  const cpx = $('.cpg') ? $('.cpg').scrollLeft : null, shOld = UI.sheet && $('.sheet') ? { type: UI.sheet.type, y: $('.sheet').scrollTop } : null;
   $('#app').innerHTML = html;
   if (cpx != null && $('.cpg')) $('.cpg').scrollLeft = cpx;
+  if (shOld && UI.sheet && UI.sheet.type === shOld.type && $('.sheet')) {
+    document.querySelectorAll('#app .sheet, #app .ov').forEach((el) => el.classList.add('keep'));
+    $('.sheet').scrollTop = shOld.y;
+  }
+  aiPump();
   syncWheels();
   if (NV.st === 'ready') { nvMount(); nvFacMount(); }
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
@@ -1423,8 +1468,8 @@ function sheet(v) { UI.sheet = v; render(); }
 function startDraft(fid) {
   DB.act((s) => {
     if (s.draft && s.draft.kind === 'first' && s.draft.fid === fid) return;
-    UI.cpage = 0;  // 새 점검은 첫 쪽부터 (하던 점검을 이어 할 때는 보던 쪽 그대로)
-    s.draft = { kind: 'first', fid, photos: 0, ai: [], self: [], items: [], aiState: null };
+    UI.cpage = 0; UI.aiPick = {};  // 새 점검은 첫 쪽부터 (하던 점검을 이어 할 때는 보던 쪽 그대로)
+    s.draft = { kind: 'first', fid, photos: 0, ai: [], self: [], items: [], aiq: [] };
   });
 }
 
@@ -1538,50 +1583,45 @@ const ACTS = {
       if (R.path()[0] === 'eqai') R.go('pick');  // 기다리다 다른 화면으로 갔으면 끌고 오지 않는다
     }, 2500);
   },
-  goPhoto() { R.go('photo'); },
-  addPhoto() {
-    DB.act((s) => {
-      const d = s.draft, sh = shotsOf(d);
-      if (sh.length >= SHOT_MAX) return;
-      d.shotN = Math.max(d.shotN || 0, ...sh, 0) + 1;  // 지운 번호는 다시 쓰지 않는다
-      d.shots = [...sh, d.shotN]; d.photos = d.shots.length;
-    });
+  // 사진 AI (2026-10-14) — 찍으면 바로 점검을 이어 간다. 시제품은 카메라 대신 바로 "찍은" 것으로 한다
+  camShot() {
+    if (shotsOf(DB.s.draft).length >= SHOT_MAX) { toast(`사진은 ${SHOT_MAX}장까지 찍을 수 있어요`); return; }
+    DB.act((s) => shootAI(s.draft, 'cam'));
   },
-  delPhoto({ k }) {
-    DB.act((s) => { const d = s.draft; d.shotN = Math.max(d.shotN || 0, ...shotsOf(d), 0); d.shots = shotsOf(d).filter((x) => x !== +k); d.photos = d.shots.length; });
-    toast(`사진 ${k}${'13678'.includes(String(k).slice(-1)) || String(k).endsWith('0') ? '을' : '를'} 지웠어요`);  // 일·삼·육·칠·팔·십은 '을'
+  shotView({ k, i }) { UI.shot = { k: +k, i }; render(); },
+  shotClose() { UI.shot = null; render(); },
+  aiOpen() { sheet({ type: 'ai' }); UI.sheet.keep = true; },  // 처음에만 올라오는 움직임, 답할 때 다시 그려도 깜빡이지 않게
+  aiRetry() { DB.act((s) => { aiqOf(s.draft).forEach((q) => { if (q.st === 'fail') q.st = 'wait'; }); }); },
+  // 제안에 답하면 체크리스트에 들어간다. 불량이면 불량 창으로 — 사진은 그 제안을 낸 사진을 그대로 쓴다(다시 AI에 보내지 않는다)
+  // 제안 창에서 고르기 — 다시 그리지 않고 누른 카드의 표시만 바꾼다(창이 깜빡이거나 위로 튀지 않게)
+  aiPick({ i, v }, el) {
+    if (UI.aiPick[i] === v) delete UI.aiPick[i]; else UI.aiPick[i] = v;
+    const pv = UI.aiPick[i], c = el.closest('.gais');
+    c.querySelectorAll('.cans button').forEach((b) => { const on = b.dataset.v === pv; b.className = on ? 'on ' + ansCls(pv) : ''; b.setAttribute('aria-pressed', on); });
+    if ($('#aiApplyB')) $('#aiApplyB').textContent = aiApplyWord();
   },
-  noPhoto() { toast('사진을 한 장 이상 찍어 주세요'); },
-  askAI() {
-    DB.act((s) => { s.draft.aiState = 'wait'; });
-    R.go('ai');
-    clearTimeout(UI.aiTimer);
-    UI.aiTimer = setTimeout(() => {
-      if (!DB.s.draft || DB.s.draft.aiState !== 'wait') return;
-      if (DB.s.aiDown) { DB.act((s) => { s.draft.aiState = 'fail'; }); return; }
-      DB.act((s) => {
-        const n = Math.min(AI_SUGGEST.length, 4 + shotsOf(s.draft).length * 2);  // 사진 1장 6개, 3장부터 10개 (2026-09-23 더 많이)
-        const sh = shotsOf(s.draft);
-        s.draft.ai = AI_SUGGEST.slice(0, n).map((g, i) => ({ idx: i, sel: false, photo: sh[i % sh.length] }));
-        s.draft.aiState = 'done';
-      });
-      UI.aiFresh = true;
-      if (R.path()[0] === 'ai') R.go('pick');  // 기다리다 다른 화면으로 갔으면 끌고 오지 않는다
-    }, 2500);
+  // 한꺼번에 넣기 — 답한 것은 AI 제안 쪽에 답이 달린 채로 들어간다(해당 없음도). 안 고른 것은 그대로 남아 띠에 계속 보인다.
+  // 불량으로 넣은 것은 그 제안을 낸 사진이 붙고, 위험요인은 체크리스트에서 불량을 다시 눌러 적는다
+  aiApply() {
+    const picks = Object.entries(UI.aiPick).filter(([, v]) => v !== 'skip');
+    if (!picks.length) { toast('답을 고른 제안이 없어요'); return; }
+    let n = 0;
+    DB.act((s) => { const d = s.draft;
+      picks.forEach(([i, v]) => { const x = d.ai[+i]; if (!x || x.st !== 'new') return;
+        const at = addAiItem(d, x); d.items[at].answer = v; if (v === 'bad') d.items[at].shot = true; n++; }); });
+    UI.aiPick = {};
+    if (!DB.s.draft.ai.some((x) => x.st === 'new')) sheet(null);
+    toast(`체크리스트 AI 제안 쪽에 ${n}개 넣었어요`);
   },
   // AI를 안 받거나 기다리지 않고 기본 체크리스트로 돌아간다 (이미 받아 둔 제안·장비 체크리스트와 고른 것은 그대로)
   toList() {
-    clearTimeout(UI.aiTimer); clearTimeout(UI.eqTimer);
+    clearTimeout(UI.eqTimer);
     DB.act((s) => {
       const d = s.draft;
-      if (d.aiState !== 'done') d.aiState = d.ai.length ? 'done' : null;
       if (d.eqState !== 'done') d.eqState = (d.eqGen || []).length ? 'done' : null;
     });
     R.go('pick');
   },
-  allAI({ v }) { DB.act((s) => { s.draft.ai.forEach((x) => { x.sel = v === '1'; }); }); },
-  toggleAI({ i, close }) { DB.act((s) => { s.draft.ai[i].sel = !s.draft.ai[i].sel; }); if (close) sheet(null); },
-  why({ i }) { sheet({ type: 'why', i: +i }); },
   addSelf() { sheet({ type: 'self' }); setTimeout(() => $('#selfIn') && $('#selfIn').focus(), 50); },
   saveSelf() {
     const v = ($('#selfIn').value || '').trim();
@@ -1593,18 +1633,18 @@ const ACTS = {
       const d = s.draft;
       const base = CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => ({ id: `c${a.key}-${i}`, text: t, src: 'base', area: a.key })));
       // 사진 AI 제안은 고른 것만 "AI 제안" 한 쪽에, AI 장비 체크리스트는 장비마다 한 쪽 (eq = 장비 이름). 출처는 둘 다 'ai'라 운영자 통계 "AI 제안 쓰임"에 같이 셈한다
-      const ai = d.ai.filter((x) => x.sel).map((x) => ({ id: 'a' + x.idx, text: AI_SUGGEST[x.idx].text, src: 'ai', photo: x.photo }));
+      const ai = d.ai.filter((x) => x.sel || x.st === 'added').map((x) => ({ id: 'a' + x.idx, text: AI_SUGGEST[x.idx].text, src: 'ai', photo: x.photo }));
       const eq = (d.eqGen || []).flatMap((g) => g.items.map((t, i) => ({ id: `e-${g.key}-${i}`, text: t, src: 'ai', eq: g.name })));
       const self = d.self.map((t, i) => ({ id: 's' + i, text: t, src: 'self' }));
       // 지난번 미흡 항목 — 맨 앞 묶음. 원래 항목을 ref로 가리키고, 승인되면 답이 원래 항목에 적힌다 (common.js settlePrev)
       const prev = openIssues(s, d.fid).map((e) => ({ id: `p-${e.ins.id}-${e.it.id}`, text: e.it.text, src: 'prev', ref: { ins: e.ins.id, id: e.it.id }, note: prevNote(e) }));
       const old = Object.fromEntries(d.items.map((x) => [x.id, x]));
-      d.items = [...prev, ...base, ...ai, ...eq, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot, eval: old[x.id].eval, risks: old[x.id].risks } : { answer: null }));
+      d.items = [...prev, ...base, ...ai, ...eq, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot, eval: old[x.id].eval, risks: old[x.id].risks, ...(old[x.id].photo ? { photo: old[x.id].photo } : {}) } : { answer: null }));
     });
     R.go('list');
   },
   // 불량이 아닌 답으로 바꾸면 위험요인·사진은 지운다 (불량에만 붙는 것). 평가 내용은 어느 답이든 남는다
-  ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; it.risks = []; }); },
+  ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; it.risks = []; if (it.src !== 'ai') delete it.photo; }); },
   ansBad({ n }) { const it = DB.s.draft.items[+n]; sheet({ type: 'bad', n: +n, photo: !!it.shot, reason: it.reason || null, risks: [...(it.risks || [])] }); },
   // 위험요인 고르기 (2026-10-07) — 창을 다시 그리면 위로 튀고 올라오는 움직임이 다시 나와서, 누른 칸의 표시만 바꾼다
   riskTg({ v }, el) {
@@ -1625,7 +1665,6 @@ const ACTS = {
     const c = $('.cpg .on'), bar = c && c.parentElement;
     if (bar) bar.scrollLeft = c.offsetLeft - (bar.clientWidth - c.offsetWidth) / 2;  // 고른 칩을 가운데로
   },
-  lockedSubmit({ v }) { toast(`안 본 항목 ${v}개에 먼저 답해 주세요`); },
   gu({ v }) { UI.gu = v || null; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
   calDay({ v }) { UI.calD = +v; render(); },
@@ -1683,8 +1722,10 @@ const ACTS = {
   saveBad() {
     const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ev = $('#evalIn').value.trim(), ph = UI.sheet.photo, reason = UI.sheet.reason || '';
     const risks = RISKS.filter((r) => UI.sheet.risks.includes(r));  // 목록 차례대로
+    const fromAI = !!UI.sheet.fromAI;
     UI.sheet = null;
-    DB.act((s) => { const it = s.draft.items[n]; it.answer = 'bad'; it.memo = memo; it.eval = ev; it.shot = ph; it.reason = reason; it.risks = risks; });
+    DB.act((s) => { const it = s.draft.items[n], fresh = ph && !it.shot && !fromAI; it.answer = 'bad'; it.memo = memo; it.eval = ev; it.shot = ph; it.reason = reason; it.risks = risks;
+      if (fresh) it.photo = shootAI(s.draft, 'bad'); if (!ph && !fromAI) delete it.photo; });  // 불량 사진도 AI가 본다 (2026-10-14) — 사진 한 번으로 증거와 제안
   },
   submitFirst() {
     const d = DB.s.draft;
