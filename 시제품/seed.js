@@ -48,6 +48,14 @@ const FACTORIES = {
 
 // 기업 정보 — 기존 화성 웹 "기업정보" 칸과 같은 항목 (2026-09-23). 전부 가상 값이다 (저장소가 Public이라 실제 회사 정보를 넣지 않는다)
 // 기업 종류는 기존 웹의 소공인·소기업·중소기업, 소유 형태는 소유·임차·기타. 업종코드는 한국표준산업분류(KSIC) 세세분류 꼴
+// 명함 예시 (2026-10-14) — 지킴이가 사전미팅에서 받은 명함을 찍으면 이 값이 읽힌 것처럼 채워진다. 이름 · 번호 · 메일은 모두 가상
+const CARD = {
+  daesung: { name: '서안전', title: '생산관리팀 과장', tel: '031-000-0301', mobile: '010-0000-0301', mail: 'safety.daesung@example.com' },
+  hanbit: { name: '문지원', title: '안전환경 담당', tel: '031-000-0302', mobile: '010-0000-0302', mail: 'safety.hanbit@example.com' },
+  dongbang: { name: '변정우', title: '공장장', tel: '031-000-0303', mobile: '010-0000-0303', mail: 'safety.dongbang@example.com' },
+  taegwang: { name: '길하늘', title: '총무과 대리', tel: '031-000-0304', mobile: '010-0000-0304', mail: 'safety.taegwang@example.com' },
+};
+const CARD_ANY = { name: '홍담당', title: '안전관리 담당', tel: '031-000-0399', mobile: '010-0000-0399', mail: 'safety@example.com' };
 const FIRM = {
   daesung:  { ceo: '박대표', biz: '000-00-00001', ksic: ['25999', '그 외 기타 금속가공제품 제조업'], product: '자동차 부품 가공품', foreign: 2, own: '임차', kind: '소공인', addr: '동탄산업로 12' },
   hanbit:   { ceo: '최대표', biz: '000-00-00002', ksic: ['20499', '그 외 기타 화학제품 제조업'], product: '산업용 세정제', foreign: 6, own: '소유', kind: '소기업', addr: '향남안전로 45' },
@@ -295,7 +303,7 @@ function daesungInspection() {
 }
 
 const SEED = {
-  v: 7,                               // 2026-10-13 재점검 데이터로 바뀌어 올림
+  v: 8,                               // 2026-10-13 재점검 데이터로 바뀌어 7, 2026-10-14 고치기 전 사진·운영자 검사 뺌으로 8 (7은 common.js upgrade로 옮겨 온다)
   clock: 9 * 60 + 10,                 // 가상 시각 09:10 (분)
   net: { worker: true, guard: true },
   offlineSince: { worker: null },
@@ -323,14 +331,14 @@ const SEED = {
       id: 'i' + fid, fid, date, by, locked: true, st: 'ok', result: '점검완료',
       items: BASE_ITEMS['금속가공'].map((t, i) => ({ id: fid + i, text: t, src: 'base', answer: 'ok' })) })),
     // 이번 주(9/15~) 다른 조원들이 한 점검 (2026-09-28) — 주간 보고를 채워 보이려고. 할 일이 없는 공장이라 홈 목록은 그대로.
-    // bad: 문제로 찍은 문항 [영역 키-번호]. 동화정공은 아직 운영자 검사 대기
+    // bad: 문제로 찍은 문항 [영역 키-번호]. 동화정공은 재점검 중(2026-10-14 운영자 검사를 빼며 대기 → 확정)
     // 2026-10-01 사용자 요청으로 3건 더함 — 결과 네 종류가 다 나오고 요일별 막대(월1·화2·수3)가 보이게. 반려는 홈 맨 위 할 일이 되므로 넣지 않는다
     // 2026-10-13 재점검: 불량이 있으면 처음 결과는 재점검이다. 점검완료·패트롤·기타로 끝난 곳은 재점검 판정(final)까지 마친 것으로 둔다.
     // claim: 공장주가 고쳤어요(사진)를 보낸 문항 · fixed: 지킴이가 고쳐짐으로 판정한 문항 · fin: 판정한 날
     ...[['saehan', '9/14', '최지킴', 'ok', '점검완료', ['a1-2', 'a4-1'], ['a1-2', 'a4-1'], ['a1-2', 'a4-1'], '9/16'],
       ['ujin', '9/15', '박지킴', 'ok', '점검완료', ['a3-0', 'a3-3'], ['a3-0', 'a3-3'], ['a3-0'], '9/16'],
       ['seongwon', '9/15', '박지킴', 'ok', '재점검', ['a1-0', 'a3-2'], ['a1-0']],
-      ['donghwa', '9/16', '최지킴', 'wait', '재점검', ['a2-0', 'a3-1', 'a5-2']],
+      ['donghwa', '9/16', '최지킴', 'ok', '재점검', ['a2-0', 'a3-1', 'a5-2']],
       ['mirae', '9/16', '이조장', 'ok', '패트롤', ['a1-0', 'a2-1'], [], [], '9/17'],
       ['hangyeol', '9/16', '이조장', 'ok', '기타', ['a4-0', 'a1-1', 'a3-2'], ['a1-1', 'a3-2'], ['a1-1', 'a3-2'], '9/17'],
     ].map(([fid, date, by, st, result, bad, claim = [], fixed = [], fin]) => ({
@@ -338,11 +346,11 @@ const SEED = {
       ...(fin ? { final: { from: '재점검', at: fin, by, fixed: fixed.length, total: bad.length } } : {}),
       items: CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => { const k = `${a.key}-${i}`;
         return { id: `${fid}-${k}`, text: t, src: 'base', area: a.key, answer: bad.includes(k) ? 'bad' : 'ok',
-          ...(bad.includes(k) ? { log: [...(claim.includes(k) ? [{ t: 'fix', at: date, tm: '17:30', note: '', photo: true }] : []),
+          ...(bad.includes(k) ? { shot: true, log: [...(claim.includes(k) ? [{ t: 'fix', at: date, tm: '17:30', note: '', photo: true }] : []),
             ...(fin ? [{ t: 'recheck', at: fin, by, result: fixed.includes(k) ? 'fixed' : 'not', photo: claim.includes(k) }] : [])] } : {}) }; })) })),
     // 동방산업 — 재점검 기한(9/03)이 지났는데 공장주 사진은 와 있다 (2026-10-13)
     { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '재점검', items: [
-      { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블',
+      { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블', shot: true,
         log: [ { t: 'fix', at: '8/30', tm: '14:20', note: '케이블 걸이 설치', photo: true } ] },
       ...BASE_ITEMS['금속가공'].map((t, i) => ({ id: 'b' + (i + 2), text: t, src: 'base', answer: 'ok' })),
     ] },

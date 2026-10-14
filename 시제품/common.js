@@ -18,6 +18,7 @@ const DB = {
   loadLocal() {
     let s = null;
     try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { s = null; }
+    s = upgrade(s);
     this.s = s && s.v === SEED.v ? s : clone(SEED);
   },
   saveLocal() {
@@ -38,7 +39,8 @@ const DB = {
         body: JSON.stringify({ base: this.ver, state: this.s, force: !!force }) });
       if (r.status === 409 && tries < 4) {
         const j = await r.json();
-        this.s = j.state && j.state.v === SEED.v ? j.state : clone(SEED);
+        const st = upgrade(j.state);
+        this.s = st && st.v === SEED.v ? st : clone(SEED);
         this.ver = j.ver;
         if (fn) fn(this.s);
         this.emit();
@@ -55,11 +57,23 @@ const DB = {
       const r = await fetch('api/state?since=' + this.ver);
       if (r.status !== 200 || this.busy) return;
       const j = await r.json();
-      if (this.busy || j.ver <= this.ver || !j.state || j.state.v !== SEED.v) return;
-      this.s = j.state; this.ver = j.ver; this.emit();
+      const st = upgrade(j.state);
+      if (this.busy || j.ver <= this.ver || !st || st.v !== SEED.v) return;
+      this.s = st; this.ver = j.ver; this.emit();
     } catch (e) {}
   },
 };
+// 옛 판 데이터 옮기기 — 판을 올리면 켜 둔 서버의 시험 데이터가 통째로 지워져서, 바뀐 것만 고쳐 넣는다 (2026-10-14)
+// 7 → 8: 재점검 공장의 불량 항목에 고치기 전 사진(예시)을 붙이고, 운영자 검사 대기였던 점검을 확정으로
+function upgrade(s) {
+  if (!s || s.v !== 7) return s;
+  s.inspections.forEach((i) => {
+    if (/^w/.test(i.id) || i.id === 'i0820') i.items.forEach((it) => { if (it.answer === 'bad' && it.shot === undefined) it.shot = true; });
+    if (i.st === 'wait') { i.st = 'ok'; i.locked = true; }
+  });
+  s.v = 8;
+  return s;
+}
 let chan = null;
 try { chan = new BroadcastChannel(KEY); chan.onmessage = () => { if (!DB.remote) { DB.loadLocal(); DB.emit(); } }; } catch (e) {}
 addEventListener('storage', (e) => { if (e.key === KEY && !DB.remote) { DB.loadLocal(); DB.emit(); } });
@@ -69,7 +83,8 @@ DB.ready = (async () => {
     if (r.ok) {
       const j = await r.json();
       DB.remote = true;
-      if (j.state && j.state.v === SEED.v) { DB.s = j.state; DB.ver = j.ver; }
+      const was = j.state && j.state.v, st = upgrade(j.state);
+      if (st && st.v === SEED.v) { DB.s = st; DB.ver = j.ver; if (was !== SEED.v) await DB.push(null, 0, true); }  // 옮겨 온 판은 서버에도 올린다
       else { DB.s = clone(SEED); DB.ver = j.ver; await DB.push(null, 0, true); }
       setInterval(() => DB.poll(), 1000);
       return;
@@ -250,7 +265,7 @@ function settlePrev(s, ins) {
   });
 }
 
-// 운영자 제출 검사 (2026-10-01 운영자 웹으로 옮김 — 조작판도 같은 것을 부른다). 반려 사유 칸이 기존 웹에 있는지는 모른다 (가설)
+// 운영자 제출 검사 (2026-10-01 운영자 웹으로 옮김). 2026-10-14 사용자 지시로 지킴이 점검은 낼 때 바로 확정되어 이제 검사 기다리는 점검이 생기지 않는다 — 운영자 웹 정리 전까지 남겨 둔다
 function approveInsp(s, ins, by) { ins.st = 'ok'; ins.locked = true; ins.okAt = '9/17'; ins.okBy = by; settlePrev(s, ins); DB.log(`${by} 점검 승인 · ${FACTORIES[ins.fid].name}`); }
 function rejectInsp(s, ins, by, note) { ins.st = 'back'; ins.back = { at: '9/17', by, note }; DB.log(`${by} 점검 반려 · ${FACTORIES[ins.fid].name}`); }
 
@@ -337,10 +352,6 @@ function drawCtl() {
   ${live.map((a) => `<div class="al"><b>${esc(FACTORIES[alarmFid(a)].name + ' ' + SIM.title(a))}</b> · ${a.status === 'open' ? '조치 안 됨' : a.status === 'watch' ? '지켜보는 중 → ' + hm(a.remindAt) : '다시 알림 중'} · 미룸 ${a.snoozes}<br>
      <button class="cb" data-c="normal" data-id="${a.id}">센서 정상으로</button>
      <button class="cb" data-c="other" data-id="${a.id}">${OWNER_NAME[alarmFid(a)]}가 조치 완료</button></div>`).join('') || '<div class="small">없음</div>'}
-  <h3>운영자 제출 검사 (운영자 웹 대신 빠르게)</h3>
-  ${s.inspections.filter((i) => i.st === 'wait').map((i) => `<div class="al"><b>${esc(FACTORIES[i.fid].name)}</b> · ${esc(i.by)} · ${i.sentAt || i.date} 냄<br>
-     <button class="cb" data-c="approve" data-id="${i.id}">승인</button>
-     <button class="cb" data-c="reject" data-id="${i.id}">반려</button></div>`).join('') || '<div class="small">검사 기다리는 점검 없음</div>'}
   <h3>근로자 의견 (공장주 화면이 생기기 전 흉내)</h3>
   <button class="cb" data-c="vread">최근 의견 · 대표님 읽음</button>
   <button class="cb" data-c="vreply">최근 의견 · 대표님 답</button>
@@ -403,21 +414,17 @@ function flushOutbox(s, who) {
 // 지킴이 점검·재점검 결과를 서버에 반영 (guard.js가 만든 묶음)
 function applyInspection(s, d) {
   if (d.kind === 'first') {
-    const again = d.redo && s.inspections.find((i) => i.id === d.redo);
-    if (again) {  // 반려된 점검을 고쳐 다시 냈다 — 같은 기록에 덮고, 반려 이력은 남긴다
-      Object.assign(again, { items: d.items, result: d.result, st: 'wait', sentAt: '9/17' });
-      again.backs = [...(again.backs || []), again.back]; again.back = null;
-    } else {
-      s.inspections.unshift({ id: 'i' + Date.now().toString(36), fid: d.fid, date: '9/17', by: d.by || '김지킴', team: d.team, ver: d.ver,
-        result: d.result, st: 'wait', sentAt: '9/17', locked: false, items: d.items });
-    }
+    // 낸 점검은 바로 확정된다 (2026-10-14 사용자 지시 — 운영자 제출 검사는 아직 정해진 게 아니라 뺐다. 전에는 st 'wait'로 들어가 운영자가 승인·반려했다)
+    const ins = { id: 'i' + Date.now().toString(36), fid: d.fid, date: '9/17', by: d.by || '김지킴', team: d.team, ver: d.ver,
+      result: d.result, st: 'ok', sentAt: '9/17', locked: true, items: d.items };
+    s.inspections.unshift(ins); settlePrev(s, ins);
   } else if (d.kind === 'recheck') {
     // 재점검 판정 (2026-10-13) — 항목마다 고쳐짐·안 고쳐짐을 원래 항목에 적고, 점검 결과를 지킴이가 고른 것으로 바꾼다
     const ins = s.inspections.find((i) => i.id === d.insId);
     if (!ins || !inRecheck(ins)) return;
     d.results.forEach((r) => {
       const it = ins.items.find((x) => x.id === r.itemId);
-      if (it) (it.log = it.log || []).push({ t: 'recheck', at: '9/17', result: r.result, by: d.by, photo: !!r.photo });
+      if (it) (it.log = it.log || []).push({ t: 'recheck', at: '9/17', result: r.result, by: d.by, photo: !!r.photo, ...(r.why ? { why: r.why } : {}) });
     });
     ins.final = { from: '재점검', at: '9/17', by: d.by, fixed: d.results.filter((r) => r.result === 'fixed').length, total: d.results.length };
     ins.result = d.result;
