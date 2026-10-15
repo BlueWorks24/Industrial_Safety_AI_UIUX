@@ -327,7 +327,8 @@ function pageIntro(h, p) {
 }
 let taps = [];
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('#sbar, .appbar .mark, .alarm .icon')) return;
+  // 지킴이 앱은 머리글 방패를 걷어서(2026-10-15) 띠의 화면 이름을 세 번 누른다
+  if (!e.target.closest('#sbar, .appbar .mark, .apptop .head .crumb, .alarm .icon')) return;
   const now = Date.now();
   taps = taps.filter((t) => now - t < 700); taps.push(now);
   if (taps.length >= 3) { taps = []; toggleCtl(); }

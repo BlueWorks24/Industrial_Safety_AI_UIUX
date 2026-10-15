@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 주간 보고. 운영자 제출 검사(승인·반려)는 2026-10-14 사용자 지시로 뺐다 — 아직 정해진 게 아니다.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { sheet: null, aiT: {}, aiPick: {}, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {}, preBack: {}, wk: { area: null, note: {}, focus: {} } };
+const UI = { sheet: null, aiT: {}, aiPick: {}, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {}, preBack: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -19,10 +19,17 @@ function tasks(s) {
   });
   return t;
 }
-// 앱 머리글 + 위치 띠 — 웹과 같은 결
+// 앱 머리 — 남색 위치 띠 한 줄 (2026-10-15 사용자 지시 — 띠 아래 흰 머리글 줄(방패 + 앱 이름 + 내 정보)을 걷음.
+// 두 줄이 110px을 늘 차지해 체크리스트 문항이 덜 보였다). 내 정보 단추는 띠 오른쪽으로 옮기고, 조 이름은 홈 인사말 옆으로 옮겼다.
 // 이름만으로는 내 정보로 가는 단추인지 알기 어려워 사람 아이콘을 붙였다 (2026-10-13 사용자 지시 — 하단바에서 내 정보를 뺌)
-const bar = () => appBar('안전지킴이', '산업안전지킴이', `<button class="me" data-go="me" aria-label="내 정보">${I('user', 18)}${ME} ›</button>`);
-const head = (title, go = '', end = '') => `<div class="apptop">${band(title, go, end)}${bar()}</div>`;
+// 2026-10-15 오후 사용자 지시 — 띠 왼쪽 ⌂ 대신 화성산업진흥원(HIPA) 표시(누르면 홈), 오른쪽은 찾기·알림 아이콘. 내 정보는 하단바 맨 오른쪽으로
+// (HIPA 표시는 진흥원 누리집 favicon.svg에서 영문 글자 부분만 잘라 씀 — hipa-logo.svg)
+const topIcons = () => { const n = notiUnseen(DB.s);
+  return `<span class="gtopi"><button class="gti" data-act="search" aria-label="공장 찾기">${I('search', 23)}</button>`
+    + `<button class="gti" data-act="noti" aria-label="알림${n ? ` 새 소식 ${n}개` : ''}">${I('bell', 23)}${n ? `<em>${n}</em>` : ''}</button></span>`; };
+const gband = (title, back, end) => `<div class="head">${back != null ? `<button class="back" data-go="${back}" aria-label="뒤로">${I('back', 22)}</button>` : ''}`
+  + `<button class="hm hipa" data-go="" aria-label="홈"><img src="hipa-logo.svg" alt="HIPA"></button><span class="crumb">${title}</span><span class="end">${end}</span></div>`;
+const head = (title, go = '', end = topIcons()) => `<div class="apptop">${gband(title, go, end)}</div>`;
 const unsentN = (s) => s.outbox.guard.length;
 // 여러 정보를 "·"로 한 줄에 잇지 않는다 (2026-09-22 사용자 지시) — 이름표·값 두 칸 표와 작은 꼬리표로 나눠 보인다
 const kv = (rows) => `<dl class="gkv">${rows.filter(Boolean).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl>`;
@@ -135,9 +142,9 @@ function home(s) {
   const all = tasks(s);
   const t = sortTasks(s, all.filter((x) => inAreas(x.fid) && matchQ(x.fid)), UI.sort);
   return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
-    <div class="apptop"><div class="head"><span class="hm" style="display:inline-flex;align-items:center;justify-content:center">⌂</span><span class="crumb">홈</span><span class="end small">${TEAM.name}</span></div>${bar()}</div>
+    ${head('홈', null)}
     <div class="ghello"><span class="gav">${I('user', 30)}</span><div>
-      <span class="ghdate">9월 17일 목요일</span><b>안녕하세요, ${ME}님</b></div>
+      <span class="ghdate">9월 17일 목요일</span><b>안녕하세요, ${ME}님</b></div>${tg(TEAM.name)}
       ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
     ${todayCard(s, all)}
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
@@ -195,27 +202,72 @@ function todayCard(s, all) {
       <span class="gtdn"><b>${f.name}</b><small>화성시 ${f.dong}</small></span>${I('chevron', 18)}</button>
       <button class="gtdai" data-act="brief" data-fid="${x.fid}" aria-label="${f.name} AI 요약 자세히">${I('sparkle', 14)}<span><em>AI 요약</em>${esc(aiBrief(s, x.fid))}</span>${I('chevron', 14)}</button></div>`; }).join('')}</div></div>` : ''}</div>`;
 }
+// 최근 점검한 곳 — 하나가 아니라 좌우 화살표로 차례로 넘겨 본다 (2026-10-15 사용자 지시). 최근 것부터, 공장마다 마지막 점검 하나씩.
+// 우리 조가 점검한 곳을 다 넣는다 — 조가 같이 다니고 점검은 조원 한 사람 이름으로 올라가서, 나만 세면 한두 곳뿐이다 (가설)
+function recentList(s) {
+  const seen = new Set();
+  return s.inspections.filter((i) => TEAM.members.includes(i.by)).sort((a, b) => mdNum(b.date) - mdNum(a.date))
+    .filter((i) => !seen.has(i.fid) && seen.add(i.fid));
+}
 function recentVisit(s) {
-  const ins = s.inspections.find((i) => i.by === ME);
-  if (!ins) return `<div class="gvisit"><div class="gvt">최근 점검한 곳</div><div class="gvsub">아직 점검한 곳이 없어요</div>${homeActs(s)}</div>`;
+  const list = recentList(s);
+  if (!list.length) return `<div class="gvisit"><div class="gvt">최근 점검한 곳</div><div class="gvsub">아직 점검한 곳이 없어요</div></div>`;
+  UI.rv = Math.min(UI.rv || 0, list.length - 1);
+  const k = UI.rv, ins = list[k], n = list.length;
   const f = FACTORIES[ins.fid], [m, d] = ins.date.split('/').map(Number);
+  const nav = (dir, on) => `<button class="gvnav ${dir < 0 ? 'l' : 'r'}" data-act="rv" data-v="${dir}"${on ? '' : ' hidden'} aria-label="${dir < 0 ? '더 최근 점검한 곳' : '그 전에 점검한 곳'}">${I('chevron', 22)}</button>`;
   // 점검한 날은 제목 줄 오른쪽에 — "언제 갔던 곳"이 먼저 읽히게 (2026-09-22 사용자: 승인 표시·문제 수 빼고 날짜 자리 옮김)
   return `<div class="gvisit"><div class="gvt">최근 점검한 곳<span class="gvdate">${I('calendar', 15)} ${m}월 ${d}일 (${WD[new Date(TODAY.y, m - 1, d).getDay()]})</span></div>
-    <div class="gvrow"><div class="gvtx">
+    <div class="gvrow">${nav(-1, k > 0)}<div class="gvtx">
       <div class="gvkm">${I('pin', 15)} ${kmTo(f.ll).toFixed(1)}km</div>
       <b>${f.name}</b><div class="gvsub">화성시 ${f.dong}</div>
       <button class="fbtn gvbtn" data-go="pre/${ins.fid}">공장 보기 ${I('chevron', 16)}</button></div>
-      <button class="gvph" data-go="pre/${ins.fid}" aria-label="${f.name}">${facMini(ins.fid)}</button></div>${homeActs(s)}</div>`;
+      <button class="gvph" data-go="pre/${ins.fid}" aria-label="${f.name}">${facMini(ins.fid)}</button>${nav(1, k < n - 1)}</div>
+    ${n > 1 ? `<div class="gvdots" aria-label="${n}곳 중 ${k + 1}번째">${list.map((_, j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>` : ''}${homeActs(s, ins.fid)}</div>`;
 }
+// 손가락으로 밀어도 넘어간다 — 왼쪽으로 밀면 그 전 곳, 오른쪽으로 밀면 더 최근 곳
+let gvX = null;
+document.addEventListener('touchstart', (e) => { gvX = e.target.closest('.gvrow') ? e.touches[0].clientX : null; }, { passive: true });
+document.addEventListener('touchend', (e) => {
+  if (gvX == null) return;
+  const dx = e.changedTouches[0].clientX - gvX; gvX = null;
+  const b = Math.abs(dx) >= 50 && document.querySelector(`.gvnav.${dx < 0 ? 'r' : 'l'}`);
+  if (b && !b.hidden) b.click();
+});
 // 파란 칸 아래쪽의 작은 단추 둘 — 그 공장에 전화 걸기 · 그 공장 점검 결과 보기 (가로로 나란히)
 // 2026-10-01 사용자: 이 칸의 단추는 그 공장에 관한 것만 — 주간 보고 쓰기를 빼고(하단바에 있다) '전화 걸기'로 (처음엔 '공장에 전화'였다가 같은 날 사용자가 바꿈). 최근 점검한 곳이 없으면 단추도 없다
-function homeActs(s) {
-  // 점검 결과 보기는 최근 방문한 그 공장의 기록만 연다 (2026-09-22 사용자 지시)
-  const last = s.inspections.find((i) => i.by === ME);
-  if (!last) return '';
+function homeActs(s, fid) {
+  // 점검 결과 보기는 지금 보이는 그 공장의 기록만 연다 (2026-09-22 사용자 지시)
   return `<div class="gacts">
-    <a class="gact" href="tel:${firmOf(s, last.fid).tel}" aria-label="${FACTORIES[last.fid].name}에 전화 ${firmOf(s, last.fid).tel}">${I('phone', 17)}전화 걸기</a>
-    <button class="gact" data-go="records/${last.fid}">${I('folder', 17)}점검 결과 보기</button></div>`;
+    <a class="gact" href="tel:${firmOf(s, fid).tel}" aria-label="${FACTORIES[fid].name}에 전화 ${firmOf(s, fid).tel}">${I('phone', 17)}전화 걸기</a>
+    <button class="gact" data-go="records/${fid}">${I('folder', 17)}점검 결과 보기</button></div>`;
+}
+
+/* ---------- 알림 (2026-10-15 사용자 지시 — 머리 오른쪽 종 아이콘) ----------
+   따로 쌓아 두는 알림함은 없고, 지금 상태에서 지킴이가 알아야 할 것을 뽑아 보인다(시제품). 누르면 그 일을 하는 화면으로 간다.
+   ① 공장주가 고친 사진을 보냄 ② 시정 기한이 지났거나 사흘 안 ③ 오늘 방문. 빨강은 경보에만 쓰므로 기한 지남은 주황 */
+function notis(s) {
+  const l = [];
+  s.inspections.filter((i) => inRecheck(i) && TEAM.members.includes(i.by) && !s.outbox.guard.some((m) => m.data.insId === i.id)).forEach((ins) => {
+    const f = FACTORIES[ins.fid], fx = ins.items.filter(TRACKED).map(rckFix).filter(Boolean);
+    if (fx.length) { const last = fx.sort((a, b) => mdNum(b.at) - mdNum(a.at))[0];
+      l.push({ id: `fix-${ins.id}-${fx.length}`, ic: 'camera', t: `${f.name}에서 고친 사진을 보냈어요`, sub: `불량 ${ins.items.filter(TRACKED).length}개 중 ${fx.length}개`, at: last.at, tm: last.tm, go: `rck/${ins.id}` }); }
+    const due = recheckDue(ins), n = daysLeft(due);
+    if (n <= 3) l.push({ id: `due-${ins.id}`, ic: 'clock', tone: n < 0 ? 'warn' : '', t: n < 0 ? `${f.name} 시정 기한이 ${-n}일 지났어요` : `${f.name} 시정 기한이 ${dWord(n)}예요`, sub: `${due}까지`, at: n < 0 ? due : '9/17', go: `rck/${ins.id}` });
+  });
+  Object.entries(s.visits).filter(([, v]) => String(v).startsWith('오늘')).forEach(([fid, v]) =>
+    l.push({ id: `visit-${fid}-${v}`, ic: 'calendar', t: `오늘 ${FACTORIES[fid].name} 방문이 있어요`, sub: v.replace('오늘', '').trim() || '시간 안 정함', at: '9/17', go: `pre/${fid}` }));
+  return l.sort((a, b) => mdNum(b.at) - mdNum(a.at));
+}
+const notiUnseen = (s) => (s ? notis(s).filter((x) => !UI.notiSeen.has(x.id)).length : 0);
+function notiScreen(s) {
+  const l = notis(s);
+  return `${sbar('지킴이')}<div class="scr"><div class="bd">
+    ${head('알림', '')}
+    ${l.length ? `<div class="gnoti">${l.map((x) => `<button class="gnr${UI.notiNew.has(x.id) ? ' new' : ''}${x.tone ? ' ' + x.tone : ''}" data-go="${x.go}">
+      <span class="gnic">${I(x.ic, 20)}</span><span class="gnt"><b>${x.t}</b><small>${x.sub}</small></span><span class="gnat">${x.at}${x.tm ? `<br>${x.tm}` : ''}</span></button>`).join('')}</div>`
+      : `<div class="cnone">새 알림이 없어요</div>`}
+  </div></div>`;
 }
 
 /* ---------- G10 캘린더 (2026-09-22 사용자 요청) ----------
@@ -245,7 +297,7 @@ function calScreen(s) {
   }).join('');
   const day = byDay[sel] || [], dow = new Date(y, m - 1, sel).getDay();
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('캘린더', '', `<span class="small">${TEAM.name}</span>`)}
+    ${head('캘린더', '')}
     <div class="calh"><button class="cmv" data-act="calM" data-v="-1" aria-label="이전 달">${I('back', 20)}</button><b>${y}년 ${m}월</b>
       <button class="cmv nx" data-act="calM" data-v="1" aria-label="다음 달">${I('back', 20)}</button></div>
     <div class="cgrid">${WD.map((w, i) => `<span class="cwd${i === 0 ? ' sun' : i === 6 ? ' sat' : ''}">${w}</span>`).join('')}${cells}</div>
@@ -329,7 +381,7 @@ function factoriesScreen(s) {
     .sort((a, b) => (UI.fst === 'rck' ? rckKey(s, a) - rckKey(s, b) : 0) || near(a, b));
   const n = (k) => (k === 'all' ? inTeam.length : inTeam.filter((f) => facSt(s, f) === k).length);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('공장', '', `<span class="small">${TEAM.name}</span>`)}
+    ${head('공장', '')}
     ${findRow('fac')}
     <button class="hper${UI.per ? ' on' : ''}" data-act="perOpen">${I('calendar', 16)}<span>점검 기간</span><b>${perWord()}</b>${I('chevron', 14)}</button>
     <div class="hlh"><b>우리 조 공장</b><em>${inTeam.length}곳</em></div>
@@ -377,7 +429,7 @@ function mapScreen(s) {
   const t = tasks(s);
   // 위쪽 고르기는 우리 조 권역 대신 화성시 구 4곳 (2026-09-28 사용자 지시) — 칸마다 지도와 같은 색 점
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('지도', '', `<span class="small">공장 ${list.length}곳</span>`)}
+    ${head('지도', '')}
     <div class="gusel">${[null, ...GU_ORDER].map((g) => `<button class="${UI.gu === g ? 'on' : ''}" data-act="gu" data-v="${g || ''}" aria-pressed="${UI.gu === g}"${g ? ` style="--gc:${GU_COLOR[g]}"` : ''}><i${g ? '' : ' class="all"'}></i>${g || '전체'}</button>`).join('')}</div>
     ${taskMap(s, list, (fid) => facRow(s, fid, t.filter((x) => x.fid === fid)))}
   </div></div>${UI.mapFull ? UI.mapFullHtml : ''}${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
@@ -385,7 +437,8 @@ function mapScreen(s) {
 // 하단바 — 첫 단계 화면에만 붙는다 (점검 도중에는 없음)
 // 2026-10-13 사용자 결정 — 공장 탭을 다시 두고(상태별로 나눠 보기) 내 정보는 뺀다. 내 정보는 머리글의 사람 아이콘 + 이름으로 들어간다.
 // (2026-09-22에는 공장 탭을 빼고 홈의 "공장 전체보기"로 합쳤었다)
-const NAV = [['', '홈', 'home'], ['factories', '공장', 'factory'], ['map', '지도', 'pin'], ['cal', '캘린더', 'calendar'], ['weekly', '주간 보고', 'list']];
+// 2026-10-15 사용자 지시 — 주간 보고 탭을 빼고 내 정보를 맨 오른쪽에 (주간 보고 화면 #/weekly는 남겨 둠, 들어가는 길만 없다)
+const NAV = [['', '홈', 'home'], ['factories', '공장', 'factory'], ['map', '지도', 'pin'], ['cal', '캘린더', 'calendar'], ['me', '내 정보', 'user']];
 const gnav = (on) => `<nav class="gnav" aria-label="메뉴">${NAV.map(([go, w, ic]) => `<button class="${on === go ? 'on' : ''}" data-go="${go}"${on === go ? ' aria-current="page"' : ''}>${I(ic, 22)}<span>${w}</span></button>`).join('')}</nav>`;
 /* ---------- G2-가 내 할 일 · 지도 (2026-09-22) ----------
    권역 테두리는 geo.js(화성시 읍·면·동 경계)로 직접 그린다. 네이버 지도 키가 오면 그 위에 지도를 깐다 — 키가 없거나
@@ -736,7 +789,7 @@ function pre(s, fid) {
   // 아래 단추 둘 — 방문일 | 점검 시작. 점검 시작은 늘 열려 있다 (2026-10-07 사용자 지시로 예약·공장주 승인을 걷음 — 불시에 가기도 한다)
   const tab = UI.ftab[fid] || 'info';  // 공장마다 마지막에 본 탭을 기억한다 (점검 결과를 보고 돌아와도 기록 탭 그대로)
   return `${sbar(f.name)}<div class="scr"><div class="bd">
-    ${head(f.name, UI.preBack[fid] || '', `<span class="small">${q.length ? `지난번 미흡 ${q.length}개` : '점검'}</span>`)}
+    ${head(f.name, UI.preBack[fid] || '')}
     ${miniMap(fid)}
     <div class="gtabs gftabs" role="tablist">${FTABS.map(([k, w]) => { const n = k === 'prep' ? q.length : k === 'log' ? hist.length + facInsp(s, fid).length : 0;
       return `<button class="gtab${tab === k ? ' on' : ''}" role="tab" aria-selected="${tab === k}" data-act="ftab" data-fid="${fid}" data-v="${k}">${w}${n ? `<em class="${k === 'prep' ? 'warn' : ''}">${n}</em>` : ''}</button>`; }).join('')}</div>
@@ -1001,10 +1054,12 @@ function checkList(s) {
   const done = ANS_ORDER.reduce((a, v) => a + n(v), 0), left = d.items.length - done;
   const bad = d.items.filter((x) => x.answer === 'bad');
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다. 해당 없음은 있을 때만 센다
-  const top = `<div class="apptop">${band(f.name + ' 점검', 'pick')}${bar()}
-    <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${d.items.length}개 중 ${done}개 답함</span></div>
-    <div class="prog">${ANS_ORDER.map((v) => `<i class="${ansCls(v)}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div>
-    <div class="tally">${ANS_ORDER.filter((v) => v !== 'na' || n(v)).map((v) => `<span class="${ansCls(v)}">${ANS_ICO[v]} ${ANS[v]} ${n(v)}</span>`).join('')}${left ? `<span>안 본 것 ${left}</span>` : ''}</div></div></div>`;
+  const top = `<div class="apptop">${gband(f.name + ' 점검', 'pick', topIcons())}
+    <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${n('bad') ? `<b class="pbad">불량 ${n('bad')}</b>` : ''}<b>${done}</b> / ${d.items.length} 답함</span></div>
+    <div class="prog">${ANS_ORDER.map((v) => `<i class="${ansCls(v)}" style="width:${(n(v) / d.items.length) * 100}%"></i>`).join('')}</div></div></div>`;
+  // 숫자 줄이기 (2026-10-15 사용자 지시 — 같은 "안 본 것"이 위·칩·쪽 제목 세 군데에 다른 수로 나와 헷갈렸다).
+  // 위 = 전체 몇 개 답했나 하나(불량이 있으면 그 수만 곁에), 칩 = 영역 이름과 다 본 표시(✓)만, 쪽 제목 = 이 영역에 안 본 것만.
+  // 답별 수(양호·보통 몇 개)는 마무리 쪽에서 본다
   // 테마(묶음)마다 한 쪽 — 한 테마를 다 보고 다음 쪽으로 넘긴다. 맨 끝은 마무리 쪽 (2026-09-28 사용자 지시)
   const pages = [...new Set(d.items.map(gkey))].map((k) => {
     const l = d.items.map((x, i) => [x, i]).filter(([x]) => gkey(x) === k);
@@ -1013,7 +1068,7 @@ function checkList(s) {
   const endI = pages.length, cur = Math.min(UI.cpage || 0, endI);
   const short = (k) => (k === 'prev' ? '지난번 미흡' : gname(k));
   const chips = `<div class="cpg" role="tablist">${pages.map((p, i) => `<button class="${i === cur ? 'on' : ''}${p.rest ? '' : ' done'}" data-act="cpage" data-v="${i}" aria-selected="${i === cur}">
-      ${p.rest ? `<em>${p.rest}</em>` : I('check', 13)}${short(p.k)}</button>`).join('')}
+      ${p.rest ? '' : I('check', 13)}${short(p.k)}</button>`).join('')}
     <button class="${cur === endI ? 'on' : ''}" data-act="cpage" data-v="${endI}" aria-selected="${cur === endI}">${I('flag', 13)}마무리</button></div>`;
   // 한 줄 = 문항 + 답 넷(양호 | 보통 | 불량 | 해당 없음) + 평가 내용 (2026-10-07 사용자 지시).
   // 불량은 예전처럼 사진과 위험요인을 적는 창이 뜬다. 평가 내용(잘한 점 같은 것)은 어느 답이든 적을 수 있다
@@ -1035,8 +1090,8 @@ function checkList(s) {
   if (cur < endI) {
     const p = pages[cur], k = p.k;
     const tag = AREA[k] ? tg(AREA[k].common ? '공통' : '설비별') : k === 'prev' ? tg('불량 = 아직 안 고쳐짐') : k.startsWith('eq:') ? tg('AI 장비 체크리스트') : '';
-    body = `<div class="cph"><span class="cpn">${cur + 1} / ${endI}</span><b>${gname(k)}</b></div>
-      <div class="cpt">${tag}${tg(`${p.l.length}개`)}${p.rest ? tg(`안 본 것 ${p.rest}`, 'now') : `<span class="alldone">${I('check', 13)}다 답함</span>`}</div>
+    body = `<div class="cph"><b>${gname(k)}</b></div>
+      <div class="cpt">${tag}${p.rest ? tg(`안 본 것 ${p.rest}개`, 'now') : `<span class="alldone">${I('check', 13)}다 답함</span>`}</div>
       <div class="clist">${p.l.map(row).join('')}</div>`;
     // 다음 테마 이름이 두 줄이 되면 "유해위험 / 기구/시설"처럼 낱말 사이에서 끊는다 — 빗금으로 이은 말(기구/시설)은 한 덩어리로 (2026-09-28 사용자 지시)
     const nx = (cur + 1 < endI ? esc(short(pages[cur + 1].k)) : '마무리').replace(/([가-힣]{2}\/[가-힣]+)/, '<wbr><span class="nw">$1</span>');
@@ -1072,10 +1127,17 @@ document.addEventListener('focusin', (e) => { if ((e.target.id === 'perFrom' || 
 document.addEventListener('change', (e) => { if (e.target.id === 'perFrom' || e.target.id === 'perTo') { perKeep(); if (UI.sheet.k !== 'self') { UI.sheet.k = 'self'; perMark(); } } });
 function perKeep() { if ($('#perFrom') && $('#perFrom').value) UI.sheet.from = mdOf($('#perFrom').value); if ($('#perTo') && $('#perTo').value) UI.sheet.to = mdOf($('#perTo').value); }
 function keepSheetText() { if ($('#memoIn')) UI.sheet.memo = $('#memoIn').value; if ($('#evalIn')) UI.sheet.eval = $('#evalIn').value; }
+const riskHint = (it) => { const t = it.text + (it.eq ? ' ' + it.eq : ''), o = [];
+  RISK_HINT.forEach(([re, rs]) => { if (re.test(t)) rs.forEach((r) => { if (!o.includes(r)) o.push(r); }); });
+  return o; };
 // 평가 내용 칸 — 불량 창과 평가 내용 창이 같이 쓴다
 const EVAL_PH = '예: 소화기 위치 표시와 월간 점검표를 잘 관리하고 있음';
 function badSheet(s) {
   const it = s.draft.items[UI.sheet.n];
+  // 이 문항에 맞는 위험요인(과 이미 고른 것)만 먼저, 나머지는 접어 둔다 (2026-10-15 사용자 지시)
+  const hint = riskHint(it), top = RISKS.filter((r) => hint.includes(r) || UI.sheet.risks.includes(r)), more = RISKS.filter((r) => !top.includes(r));
+  const rbtn = (r) => { const on = UI.sheet.risks.includes(r);
+    return `<button class="geq${on ? ' on' : ''}" data-act="riskTg" data-v="${r}" aria-pressed="${on}"><span class="geqc">${on ? I('check', 16) : ''}</span><span class="geqn">${r}</span></button>`; };
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="mid">${esc(it.text)}</div>
     <div class="ans">${it.ref ? '불량 (아직 안 고쳐짐)' : '불량'}</div>
@@ -1084,8 +1146,10 @@ function badSheet(s) {
     <div class="lbl">지금 모습 (안 찍어도 돼요)</div>
     <div class="row"><div class="thumb">${UI.sheet.photo ? '📷 1장' : '없음'}</div><button class="btn ghost sm" data-act="sheetPhoto">＋ 사진 찍기</button></div>
     <div class="srh"><b>위험요인</b><span>여러 개 고를 수 있어요</span></div>
-    <div class="geqs srisk">${RISKS.map((r) => { const on = UI.sheet.risks.includes(r);
-      return `<button class="geq${on ? ' on' : ''}" data-act="riskTg" data-v="${r}" aria-pressed="${on}"><span class="geqc">${on ? I('check', 16) : ''}</span><span class="geqn">${r}</span></button>`; }).join('')}</div>
+    ${top.length ? `<div class="geqs srisk">${top.map(rbtn).join('')}</div>
+    <div class="geqs srisk srmore" hidden>${more.map(rbtn).join('')}</div>
+    <button class="srmbtn" data-act="riskMore" aria-expanded="false"><span>나머지 ${more.length}개 더 보기</span>${I('chevron', 16)}</button>`
+      : `<div class="geqs srisk">${RISKS.map(rbtn).join('')}</div>`}
     <div class="lbl">위험요인 내용 (안 써도 돼요)</div>
     <textarea class="input" id="memoIn" placeholder="예: 바닥에 늘어진 전선 피복이 벗겨짐">${esc(UI.sheet.memo ?? it.memo ?? '')}</textarea>
     <div class="lbl">평가 내용 (안 써도 돼요)</div>
@@ -1288,7 +1352,7 @@ function weekly(s) {
         <label for="wkf-${n}-txt">내용</label><input class="input wkin" id="wkf-${n}-txt" data-wk="f:${n}:txt" value="${esc(r.txt)}" placeholder="예: 분전반 앞 적재물">
         <label for="wkf-${n}-note">비고</label><input class="input wkin" id="wkf-${n}-note" data-wk="f:${n}:note" value="${esc(r.note)}"></div></div>`;
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('주간 보고', '', `<span class="small">${TEAM.name}</span>`)}
+    ${head('주간 보고', '')}
     <div class="today"><div><b>${WEEK.label}</b></div></div>
     <div class="lbl">기본 정보</div>
     ${kv([['점검조', TEAM.name], ['권역', `<select class="input wksel" id="wkArea" data-wk="area" aria-label="권역">${opts}</select>`], ['기간', WEEK.label], ['기업수', `${w.firms}곳`]])}
@@ -1298,7 +1362,12 @@ function weekly(s) {
     <div class="lbl wklh">중점점검항목${done ? '' : `<button class="fbtn line wkadd" data-act="wkAdd">${I('plus', 15)}더하기</button>`}</div>
     ${focus.length ? `<div class="gstack">${focus.map(frow).join('')}</div>` : `<div class="cnone">${done ? '적은 항목이 없어요' : '더하기를 눌러 적어요'}</div>`}
     ${done ? `<div class="stat"><div class="ck">${I('check', 26)}</div><div class="mid">${done.at} ${esc(done.by)} 냄</div></div>` : ''}
-  </div><div class="ft">${done ? '<button class="btn ghost" data-go="">홈으로</button>' : `<button class="btn" data-act="sendWeekly">${area} 주간 보고 내기</button>`}</div></div>`;
+  </div><div class="ft">${done ? '<button class="btn ghost" data-go="">홈으로</button>' : `<button class="btn" data-act="sendWeekly">${area} 주간 보고 내기</button>`}</div></div>
+  ${UI.sheet && UI.sheet.type === 'wkdel' ? `<div class="ov" data-act="closeSheet"></div><div class="dlg">
+    <div class="mid" style="font-size:19px">${UI.sheet.n + 1}번 항목을 지울까요?</div>
+    <div class="small ink">적어 둔 분야 · 항목 · 내용도 같이 지워져요.</div>
+    <button class="btn" data-act="closeSheet">그대로 두기</button>
+    <button class="btn ghost gdanger" data-act="wkDelOk">지우기</button></div>` : ''}`;
 }
 // 주간 보고 칸은 적는 대로 담아 둔다 — 화면이 다시 그려져도(다른 기기 반영 등) 적던 것이 남게. 권역을 바꾸면 다시 그린다
 document.addEventListener('input', (e) => {
@@ -1429,6 +1498,7 @@ function render() {
   else if (p[0] === 'rck') html = rckScreen(s, p[1]);
   else if (p[0] === 'sent') html = sent(s, p[1], p[2]);
   else if (p[0] === 'weekly') html = weekly(s);
+  else if (p[0] === 'noti') html = notiScreen(s);
   else if (p[0] === 'records') html = records(s, p[1], p[2]);
   else if (p[0] === 'insp') html = inspView(s, p[1], p[2]);
   else if (p[0] === 'me') html = meScreen(s);
@@ -1459,6 +1529,7 @@ function render() {
   syncWheels();
   if (NV.st === 'ready') { nvMount(); nvFacMount(); }
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
+  if (UI.focusQ && $('#fq')) { UI.focusQ = false; $('#fq').focus(); }
   if (keep && $('#' + keep)) { const el = $('#' + keep); el.value = val; el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
 }
 let lastHash = null;
@@ -1653,6 +1724,12 @@ const ACTS = {
     el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
     el.querySelector('.geqc').innerHTML = on ? I('check', 16) : '';
   },
+  // 나머지 위험요인 펼치기·접기 — 다시 그리지 않고 보이기만 바꾼다(창이 위로 튀지 않게, 적던 글도 그대로)
+  riskMore(_, el) {
+    const box = $('.sheet .srmore'), open = box.hidden; box.hidden = !open;
+    el.setAttribute('aria-expanded', open); el.classList.toggle('open', open);
+    el.querySelector('span').textContent = open ? '접기' : `나머지 ${box.children.length}개 더 보기`;
+  },
   evalOpen({ n }) { sheet({ type: 'eval', n: +n }); setTimeout(() => $('#evalIn') && $('#evalIn').focus(), 50); },
   saveEval() {
     const n = UI.sheet.n, v = $('#evalIn').value.trim();
@@ -1670,6 +1747,11 @@ const ACTS = {
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
   ftab({ fid, v }) { UI.ftab[fid] = v; render(); },
+  rv({ v }) { UI.rv = (UI.rv || 0) + +v; render(); },
+  // 머리 찾기 아이콘 — 공장 탭의 이름 찾기 칸으로 가서 바로 입력하게 한다
+  search() { if (location.hash === '#/factories') { const q = $('#fq'); if (q) q.focus(); } else { UI.focusQ = true; R.go('factories'); } },
+  // 알림 아이콘 — 들어갈 때 안 본 것을 "새 소식"으로 표시해 두고 모두 본 것으로 친다
+  noti() { const l = notis(DB.s); UI.notiNew = new Set(l.filter((x) => !UI.notiSeen.has(x.id)).map((x) => x.id)); l.forEach((x) => UI.notiSeen.add(x.id)); R.go('noti'); },
   mapFull() { UI.mapFull = true; render(); },
   mapClose() { UI.mapFull = false; render(); },
   ckTg({ k }, el) {  // 다시 그리면 펼치는 움직임이 안 보여서 칸의 표시만 바꾼다 (todayTg와 같은 방식)
@@ -1709,7 +1791,9 @@ const ACTS = {
   pin({ fid }) { UI.pin = UI.pin === fid ? null : fid; render(); },
   // 주간 보고 — 중점점검항목 줄 더하기·지우기, 권역 하나씩 내기 (2026-10-01 기존 웹 양식대로)
   wkAdd() { wkFocus(wkArea(DB.s)).push({ fld: '', item: '', txt: '', note: '' }); render(); },
-  wkDel({ n }) { wkFocus(wkArea(DB.s)).splice(+n, 1); render(); },
+  // 적은 게 있으면 묻고 지운다 — 작은 지우기를 잘못 눌러 적던 것이 날아가지 않게 (2026-10-15). 빈 칸은 바로 지운다
+  wkDel({ n }) { const r = wkFocus(wkArea(DB.s))[+n]; if (r && ['fld', 'item', 'txt', 'note'].some((k) => (r[k] || '').trim())) { sheet({ type: 'wkdel', n: +n }); return; } wkFocus(wkArea(DB.s)).splice(+n, 1); render(); },
+  wkDelOk() { wkFocus(wkArea(DB.s)).splice(UI.sheet.n, 1); sheet(null); },
   sendWeekly() {
     const area = wkArea(DB.s), w = weekCounts(DB.s, area);
     const notes = Object.fromEntries(w.ins.map((i) => [i.id, (UI.wk.note[i.id] || '').trim()]).filter(([, v]) => v));

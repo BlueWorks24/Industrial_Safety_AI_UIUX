@@ -22,8 +22,12 @@ html,body{overscroll-behavior:none}
 @media (display-mode:standalone){html{overflow:hidden}body{overflow-y:auto;-webkit-overflow-scrolling:touch}}
 html[data-standalone]{overflow:hidden}
 html[data-standalone] body{overflow-y:auto;-webkit-overflow-scrolling:touch}
-/* 팝업·시트가 떠 있는 동안 뒷화면은 스크롤되지 않는다 (2026-09-18) — 문서가 스크롤될 때도, body가 스크롤될 때도 */
-html:has(.ov),body:has(.ov){overflow:hidden}
+/* 팝업·시트가 떠 있는 동안 뒷화면은 스크롤되지 않는다 (2026-09-18) — 문서가 스크롤될 때도, body가 스크롤될 때도.
+   body는 스크롤을 맡는 홈 화면 앱일 때만 잠근다 — 브라우저에서 body까지 잠그면 body가 화면 높이(100%)로 잘려
+   뒷화면이 맨 위로 튀었다 (2026-10-15 사용자 제보 — 기업 정보 "수정") */
+html:has(.ov){overflow:hidden}
+html[data-standalone] body:has(.ov){overflow:hidden}
+@media (display-mode:standalone){body:has(.ov){overflow:hidden}}
 body{touch-action:manipulation}
 body{background:var(--bg);color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;font-size:16px;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit}
@@ -201,12 +205,14 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 .app .ft{background:linear-gradient(to top,#fff 75%,rgba(255,255,255,0))}
 
 /* 머리 줄 → 남색 띠 (웹의 위치 띠) */
-.app .head{margin:0 -16px 6px;padding:0 12px 0 16px;min-height:52px;background:linear-gradient(90deg,#16284d,#1f3a73);color:#fff}
-.app .head .back{color:#fff;font-size:18px}
-.app .head .small,.app .head .end,.app .head .link{color:#dbe4f7}
+.app .head{margin:0 -16px 6px;padding:0 12px 0 16px;min-height:52px;background:#fff;color:var(--ink)}
+/* 머리 띠는 흰 바탕 (2026-10-15 사용자 — 남색 띠가 폰 시계 줄까지 남색으로 이어져 앱이 답답해 보였다).
+   단색이어야 한다 — 아이폰 사파리는 맨 위 시계 줄을 머리 띠의 바탕색으로 칠하는데, 그라데이션은 색으로 치지 않는다 */
+.app .head .back{color:var(--navy);font-size:18px}
+.app .head .small,.app .head .end,.app .head .link{color:var(--mid)}
 .app .head .link{font-weight:700}
-.app .head .big{color:#fff;font-size:22px}
-.app .head .mid{color:#fff}
+.app .head .big{color:var(--ink);font-size:22px}
+.app .head .mid{color:var(--ink)}
 .app .sheet .head,.app .dlg .head{margin:0;background:none;color:inherit}
 
 /* 카드 */
@@ -233,7 +239,12 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 .app .lbl.center{border:none}
 
 /* 보조 버튼 → 파란 글씨 테두리 (웹의 "자세히보기") */
-.app .btn.ghost{background:#fff;color:var(--brand);box-shadow:none;border:1px solid var(--line2);border-radius:12px}
+/* 단추 두 등급 (2026-10-15 사용자 승인) — 주 버튼은 파랑 채움 · 보조 버튼은 흰 바탕 + 회색 얇은 테두리 + 파란 글자.
+   크기는 둘: 큰 것(화면 아래 · 창 안, 높이 56 · 모서리 14) · 작은 것(카드 안 .fbtn, 높이 40 · 모서리 10). 남색은 틀(머리 띠 · 최근 점검한 곳 칸)에만 */
+.app .btn{border-radius:14px}
+.app .btn.sm{border-radius:10px}
+.app .btn.ghost{background:#fff;color:var(--brand);box-shadow:none;border:1px solid var(--line2)}
+.app .btn.ghost:not(.sm){min-height:56px}
 .app .btn.ghost:active{background:var(--brand-l)}
 .app .btn.ghost.danger{color:var(--red-d);border-color:#f3b6b0}
 .app .add{color:var(--brand);border-color:var(--line2);border-radius:14px}
@@ -243,7 +254,8 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 /* 앱 표지 — 웹과 같은 방패 표시 */
 .app .applogo{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z'/%3E%3Cpath d='M12 8.5v4' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='15.6' r='.6' fill='white'/%3E%3C/svg%3E") center/46px no-repeat,linear-gradient(135deg,#2458d6,#4f7cf0);color:transparent;box-shadow:0 10px 26px rgba(36,88,214,.28)}
 .app .bd > :first-child:not(.head):not(.appbar):not(.apptop){margin-top:14px}
-.app .head.alarmhead{background:var(--red)}
+.app .head.alarmhead{background:var(--red);color:#fff}
+.app .head.alarmhead .big,.app .head.alarmhead .mid,.app .head.alarmhead .small,.app .head.alarmhead .end{color:#fff}
 
 /* ===== 상단 — 휴대폰 상단바 흉내 · 앱 머리글 · 위치 띠 · 제목 (2026-09-17) ===== */
 .app .sbar{height:40px;padding:0 24px 0 28px;font-size:15px;font-weight:700;color:#111;border:none;background:#fff;position:relative}
@@ -261,11 +273,31 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 .app .appbar .me{display:inline-flex;align-items:center;gap:5px}
 .app .head{min-height:46px;padding:0 12px 0 4px;gap:2px;font-size:15px;font-weight:700;margin-bottom:2px}
 .app .head .back{min-width:44px;justify-content:center;padding:0;font-size:20px}
-.app .head .hm{background:none;border:none;color:#fff;min-width:40px;min-height:44px;font-size:19px;cursor:pointer;padding:0}
+.app .head .hm{background:none;border:none;color:var(--navy);min-width:40px;min-height:44px;font-size:19px;cursor:pointer;padding:0}
 .app .head .back + .hm{min-width:32px}
-.app .head .crumb{color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app .head .crumb{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .app .head .crumb::before{content:"›";margin:0 10px 0 2px;opacity:.6}
 .app .head .end{padding-left:8px;white-space:nowrap}
+/* 지킴이 앱 머리 (2026-10-15 오후) — 왼쪽 HIPA 표시(누르면 홈), 오른쪽 찾기·알림 아이콘 */
+.app .head .hm.hipa{min-width:0;padding:0 8px 0 10px}
+.app .head .back + .hm.hipa{min-width:0;padding-left:2px}
+.app .head .hipa img{display:block;height:20px;width:auto}
+.app .head:has(.gtopi){padding-right:4px}
+.gtopi{display:flex;align-items:center}
+.gti{position:relative;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;border:none;border-radius:12px;background:none;color:var(--navy);cursor:pointer}
+.gti:active{background:#eef1f6}
+.gti em{position:absolute;top:5px;right:4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--navy);color:#fff;font-style:normal;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px #fff}
+/* 알림 목록 — 새 소식은 옅은 바탕, 기한 지남은 주황 아이콘(빨강은 경보에만) */
+.gnoti{display:flex;flex-direction:column;margin:0 -16px}
+.gnr{display:flex;align-items:flex-start;gap:12px;width:100%;padding:14px 16px;border:none;border-bottom:1px solid var(--line);background:#fff;font:inherit;text-align:left;cursor:pointer;color:var(--ink)}
+.gnr.new{background:var(--brand-l)}
+.gnr:active{background:#eef1f6}
+.gnic{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#eef1f6;color:var(--navy)}
+.gnr.warn .gnic{background:var(--amber-l);color:var(--amber)}
+.gnt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.gnt b{font-size:16px;font-weight:700;line-height:1.35}
+.gnt small{font-size:14px;color:var(--mid)}
+.gnat{flex:none;font-size:13px;color:var(--soft);text-align:right;line-height:1.4}
 .pintro h1{margin:12px 0 0;font-size:26px;font-weight:800;letter-spacing:-.04em;line-height:1.25;padding-bottom:12px;border-bottom:1px solid var(--line)}
 .pintro p{margin:10px 0 2px;font-size:15px;color:#444;line-height:1.55}
 
@@ -288,6 +320,10 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 /* ===== 앱 표정 (2026-09-17) — 선 아이콘 · 오늘 정보 · 센서 감시 줄 · 최근 소식 · 안전 표지 무늬 · 움직임 ===== */
 svg.i{flex:none;vertical-align:-.18em}
 .app{--navy:#16284d;--safety:#f2b707}
+/* 두 앱의 파랑을 남색 하나로 (2026-10-15 사용자 — 머리 띠·최근 점검한 곳 바탕·주 버튼을 같은 남색으로 통일, 전에는 쨍한 파랑 #2458d6).
+   링크·고른 칸·꼬리표도 같은 결로 따라온다. 경보 빨강·불량 주황·양호 초록과 AI 보라는 그대로 */
+.app{--brand:#1f3a73;--brand-d:#16284d;--brand-l:#e9edf5}
+.app .btn:not(.red):not(.ghost):not(.danger):not([disabled]){box-shadow:0 2px 6px rgba(22,40,77,.22)}
 .app .tile .ic{color:var(--navy);background:#eef2fb;width:46px;height:46px;border-radius:14px}
 .app .stat .ck{background:var(--green-l);color:var(--green)}
 .app .donemark{font-size:0}
@@ -297,9 +333,8 @@ svg.i{flex:none;vertical-align:-.18em}
 .app .head .back,.app .head .hm{display:inline-flex;align-items:center;justify-content:center}
 .app .lang{gap:6px}
 
-/* 머리 띠 아래 안전 표지 줄무늬 — 서비스의 얼굴 */
-.app .apptop .head{position:relative}
-.app .apptop .head::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;background:repeating-linear-gradient(-45deg,var(--safety) 0 7px,var(--navy) 7px 14px);z-index:1}
+/* 머리 띠 아래 안전 표지 줄무늬는 2026-10-15 사용자 지시로 걷음 — 흰 머리 띠 아래 옅은 선 하나로 내용과 나눈다 */
+.app .apptop .head{position:relative;border-bottom:1px solid var(--ring)}
 .app .appbar{padding-top:11px}
 
 /* 오늘 정보 */
@@ -388,9 +423,13 @@ svg.i{flex:none;vertical-align:-.18em}
 .crow .t{font-size:16px;font-weight:700;line-height:1.45}
 .cnum{flex:none;min-width:20px;font-size:14px;font-weight:700;color:var(--soft);line-height:23px}
 /* 답은 셋 — 회색 틀 안에 셋을 나란히, 고른 것만 색으로 채운다. 답한 뒤에도 남아 한 번에 고친다 (2026-09-18) */
-.cans{display:flex;gap:4px;padding:4px;background:#f1f3f6;border-radius:var(--r-s)}
-.cans button{flex:1;min-width:0;min-height:46px;border:none;border-radius:9px;padding:0 4px;background:transparent;color:var(--mid);font-size:15px;font-weight:700;white-space:nowrap;cursor:pointer}
-.cans button.on{color:#fff;box-shadow:0 1px 3px rgba(23,32,51,.18)}
+/* 2026-10-15 사용자: 회색 띠 위 글자는 누르는 칸으로 안 보였다 → 공장 탭 상태 칸(.gfstr)과 같은 결 — 테두리 한 상자를 세로줄로 나눈 묶음.
+   "한 상자 안의 나뉜 칸 = 하나 고르기". 34줄이 반복되니 그림자는 없고, 고른 칸은 답의 색으로 칸 전체를 채운다 */
+.cans{display:flex;background:#fff;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.cans button{flex:1;min-width:0;min-height:48px;border:none;border-left:1px solid var(--line2);border-radius:0;padding:0 4px;background:none;color:var(--ink);font-size:15px;font-weight:700;white-space:nowrap;cursor:pointer}
+.cans button:first-child{border-left:none}
+.cans button:not(.on):active{background:#f5f7fa}
+.cans button.on{color:#fff}
 .cans button.on::before{margin-right:4px}
 .cans button.on.ok{background:var(--green)}
 .cans button.on.ok::before{content:"✓"}
@@ -401,14 +440,15 @@ svg.i{flex:none;vertical-align:-.18em}
 /* 답이 넷 (2026-10-07) — 양호 | 보통 | 불량 | 해당 없음. 좁은 폰에서도 한 줄에 들게 글자를 줄이고, 고른 것의 표시는 그대로 */
 .cans.c4 button{font-size:14px;padding:0 2px;letter-spacing:-.02em}
 .cans.c4 button.on::before{margin-right:2px}
-.cans button.on.amid{background:#8f6a00}
+/* 보통은 채우지 않고 옅은 노랑 — 불량(주황 채움)이 넷 중 가장 눈에 띄게 (2026-10-15) */
+.cans button.on.amid{background:#fbefc4;color:#7a5a00}
 /* 네 칸이면 좁은 폰에서 "— 해당 없음"이 잘려서, 보통과 해당 없음은 표시 없이 색과 글로만 (양호 ✓ · 불량 ⚠은 남김) */
 .cans.c4 button.on.amid::before,.cans.c4 button.on.na::before{content:none}
 /* 보통 표시 — 글꼴의 ○는 다른 글자보다 크게 그려져서 CSS로 작은 동그라미를 그린다 */
 .cmid{display:inline-block;width:.62em;height:.62em;border:2px solid currentColor;border-radius:50%;vertical-align:-.02em}
 /* 평가 내용 (2026-10-07) — 어느 답이든 한 줄로 적어 둔다. 안 적었으면 작은 더하기, 적었으면 그 글을 보이고 눌러 고친다 */
-.ceval{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;min-height:36px;margin-left:30px;border:none;background:none;padding:0;font:inherit;font-size:13px;font-weight:700;color:var(--brand);cursor:pointer;text-align:left}
-.ceval.has{align-self:stretch;display:block;padding:8px 10px;border-radius:10px;background:#f6f8fb;color:var(--ink);font-weight:500;line-height:1.5}
+.ceval{align-self:stretch;display:flex;align-items:center;gap:4px;min-height:44px;margin:-6px 0 -6px 30px;border:none;background:none;padding:0;font:inherit;font-size:15px;font-weight:700;color:var(--brand);cursor:pointer;text-align:left}
+.ceval.has{align-self:stretch;display:block;margin:0 0 0 30px;padding:8px 10px;border-radius:10px;background:#f6f8fb;color:var(--ink);font-weight:500;line-height:1.5}
 .ceval.has b{display:block;font-size:12px;font-weight:800;color:var(--mid)}
 .cmemo{margin-left:30px;font-size:13px;color:var(--mid);line-height:1.5}
 /* 테마마다 한 쪽 (2026-09-28) — 위 칩 줄로 쪽을 옮기고, 아래 이전 | 다음 단추로 넘긴다 */
@@ -440,6 +480,8 @@ svg.i{flex:none;vertical-align:-.18em}
 .progtop .prog i.na{background:#9aa6b8}
 .progtop .prog i.amid{background:#c9a227}
 .progtop .tally .amid{color:#8f6a00}
+.progtop .small b{color:var(--ink);font-weight:800}
+.progtop .small b.pbad{color:var(--amber);margin-right:10px}
 .progtop .tally{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:13px;font-weight:700;color:var(--mid)}
 .progtop .tally .ok{color:var(--green)}
 .progtop .tally .bad{color:var(--amber)}
@@ -467,11 +509,13 @@ svg.i{flex:none;vertical-align:-.18em}
 .gmap path.city{fill:none;stroke:#8190a8;stroke-width:1.5;stroke-opacity:.6;stroke-linejoin:round}
 .glab.gulab{font-size:14px;color:var(--ink);background:rgba(255,255,255,.9);padding:2px 9px;border-radius:999px;box-shadow:0 1px 3px rgba(23,32,51,.15)}
 /* 구 고르기 — 회색 틀 안에 다섯 칸, 칸마다 구 색 점. 고른 칸은 흰 바탕에 구 색 테두리 */
-.gusel{display:flex;gap:3px;padding:4px;background:#eef1f5;border-radius:14px}
-.gusel button{flex:1;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:5px;border:none;border-radius:10px;padding:0 2px;background:transparent;color:var(--mid);font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer}
+/* 구 고르기 — 답 칸 · 공장 탭 상태 칸과 같은 결(테두리 한 상자를 세로줄로 나눔, 2026-10-15) */
+.gusel{display:flex;background:#fff;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+.gusel button{flex:1;min-width:0;min-height:44px;display:flex;align-items:center;justify-content:center;gap:5px;border:none;border-left:1px solid var(--line2);border-radius:0;padding:0 2px;background:none;color:var(--ink);font:inherit;font-size:15px;font-weight:700;white-space:nowrap;cursor:pointer}
+.gusel button:first-child{border-left:none}
 .gusel i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--gc)}
 .gusel i.all{background:conic-gradient(#2e9d6b 0 25%,#3d82c4 0 50%,#e0853a 0 75%,#c2b236 0)}
-.gusel button.on{background:#fff;color:var(--ink);font-weight:800;box-shadow:0 1px 3px rgba(23,32,51,.14),inset 0 0 0 1.5px var(--gc,var(--brand))}
+.gusel button.on{background:var(--brand-l);color:var(--brand);font-weight:800}
 .nvlab{position:absolute;left:0;top:0;transform:translate(-50%,-50%);pointer-events:none}
 .nvlab .glab{position:static;transform:none;display:inline-block}
 .glab{position:absolute;transform:translate(-50%,-50%);font-size:13px;font-weight:800;color:var(--navy);background:rgba(255,255,255,.75);border-radius:6px;padding:1px 6px;pointer-events:none;white-space:nowrap}
@@ -522,7 +566,7 @@ span.gtdtg{cursor:default}
 .gtdh em.none{background:#f1f2f4;color:var(--mid)}
 .gtdh b{font-size:18px;font-weight:800;letter-spacing:-.03em}
 .gtdh em{font-style:normal;font-size:13px;font-weight:800;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px}
-.gtdcal{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:32px;padding:0 4px;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer}
+.gtdcal{margin-left:auto;display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 8px;margin-right:-8px;border:none;background:none;font:inherit;font-size:15px;font-weight:700;color:var(--brand);cursor:pointer}  /* 2026-10-15 높이 32 → 44, 글자 15 */
 .gtdr{display:flex;flex-direction:column;gap:10px;padding:12px 0;border-top:1px solid var(--line)}
 .gtdrow{display:flex;align-items:flex-start;gap:12px;width:100%;padding:0;border:none;background:none;font:inherit;text-align:left;color:var(--ink);cursor:pointer}
 /* 방문 시각 — 색 칸 없이 굵은 숫자와 작은 "방문", 오른쪽 가는 선으로 가른다 (2026-09-28 사용자 지시: AI스럽지 않게) */
@@ -575,24 +619,35 @@ span.gtdtg{cursor:default}
 .fbtns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .fbtns .fbtn{margin-top:0}
 .fbtn.fsub{gap:4px;padding:0 12px;font-size:14px}  /* 일정 변경 — 테두리 단추, 점검 시작 옆 */
-.fbtn{align-self:flex-start;margin-top:6px;display:inline-flex;align-items:center;gap:2px;min-height:40px;padding:0 12px 0 14px;border:none;border-radius:8px;background:#16284d;color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
-.fbtn.line{background:#fff;color:#16284d;box-shadow:inset 0 0 0 1.5px #16284d}
+.fbtn{align-self:flex-start;margin-top:6px;display:inline-flex;align-items:center;gap:2px;min-height:40px;padding:0 12px 0 14px;border:none;border-radius:10px;background:var(--brand);color:#fff;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.fbtn:active{background:var(--brand-d)}
+.fbtn.line{background:#fff;color:var(--brand);box-shadow:inset 0 0 0 1px var(--line2)}
+.fbtn.line:active{background:var(--brand-l)}
 /* 하단바 — 떠 있는 둥근 막대, 지금 화면은 옅은 회색 바탕 */
 .gnav{position:sticky;bottom:10px;z-index:6;display:flex;gap:2px;margin:0 12px 10px;padding:6px;background:#fff;border-radius:26px;box-shadow:0 4px 22px rgba(17,24,39,.14)}
 .gnav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;border:none;border-radius:20px;background:none;font:inherit;font-size:12px;font-weight:600;color:#6b7280;cursor:pointer}
 .gnav button.on{background:#f1f2f4;color:var(--ink)}
 .scr:has(+ .gnav) .ft{bottom:84px}
 /* 최근 방문한 곳 — 폭 전체를 쓰는 칸, 오른쪽에 사진 (2026-09-22, 참고 앱의 "최근방문매장") */
-.gvisit{margin:4px -16px 0;padding:16px 16px 18px;background:#2b4c7e;color:#fff}
+.gvisit{margin:4px -16px 0;padding:16px 16px 18px;background:#1f3a73;color:#fff}  /* 머리 띠와 같은 남색 단색 (2026-10-15) */
 .gvt{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:18px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px}
 .gvdate{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border-radius:999px;padding:4px 10px;letter-spacing:0}
-.gvrow{display:flex;gap:14px;align-items:center}
+.gvrow{display:flex;gap:12px;align-items:center;margin:0 -12px}
+/* 좌우 화살표 (2026-10-15) — 칸 양쪽 끝. 끝에 닿으면 자리는 두고 숨긴다(내용이 좌우로 흔들리지 않게) */
+.gvnav{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;min-height:44px;margin:0 -4px;padding:0;border:none;border-radius:8px;background:none;color:#fff;cursor:pointer}
+.gvnav[hidden]{display:inline-flex;visibility:hidden}
+.gvnav:active{background:rgba(255,255,255,.14)}
+.gvnav.l svg{transform:scaleX(-1)}
+.gvdots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.gvdots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35)}
+.gvdots i.on{width:18px;border-radius:3px;background:#fff}
 .gvtx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .gvkm{display:flex;align-items:center;gap:4px;font-size:13px;color:#d5def0}
 .gvtx b{font-size:20px;font-weight:800;letter-spacing:-.03em}
 .gvsub{font-size:13px;color:#d5def0}
-.gvbtn{background:#16284d}
-.gvph{flex:none;width:132px;height:96px;padding:0;border:none;border-radius:12px;overflow:hidden;background:none;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.gvbtn{background:#fff;color:var(--navy)}  /* 남색 칸 위의 주 버튼은 뒤집어서 흰 바탕 — 칸과 주 버튼이 같은 남색이 돼서(2026-10-15) 잠깐 짙은 남색이던 것을 되돌림 */
+.gvbtn:active{background:#e8edf6}
+.gvph{flex:none;width:120px;height:92px;padding:0;border:none;border-radius:12px;overflow:hidden;background:none;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .gvph .fph{width:100%;height:100%}
 /* 파란 칸 아래쪽의 작은 단추 둘 — 가로로 나란히 (2026-09-22 사용자 지시) */
 .gacts{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18)}
@@ -600,7 +655,7 @@ span.gtdtg{cursor:default}
 .gact:active{background:rgba(255,255,255,.24)}
 .gact{flex:1 1 0;min-width:0}
 @media (max-width:359px){.gact{font-size:13px;padding:0 6px;gap:4px}.gact svg{display:none}}  /* 작은 폰에서 두 단추가 칸을 넘지 않게 */
-.gact em{font-style:normal;font-size:12px;font-weight:800;background:#fff;color:#2b4c7e;border-radius:999px;padding:1px 7px}
+.gact em{font-style:normal;font-size:12px;font-weight:800;background:#fff;color:#1f3a73;border-radius:999px;padding:1px 7px}
 .gact em.warn{background:var(--amber);color:#fff}
 /* ===== 지킴이 캘린더 (2026-09-22) — 방문일을 잡으면 그 날짜 칸에 저절로 올라간다 ===== */
 .calh{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:10px}
@@ -719,7 +774,7 @@ span.gtdtg{cursor:default}
 .ghn b{font-size:15px;font-weight:800}
 .ghn small{font-size:12px;color:var(--mid)}
 .ghr .gtg{flex:none}
-.ghall{display:flex;align-items:center;justify-content:center;gap:2px;width:100%;min-height:46px;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--brand);cursor:pointer}
+.ghall{display:flex;align-items:center;justify-content:center;gap:2px;width:100%;min-height:46px;border:none;background:none;font:inherit;font-size:15px;font-weight:700;color:var(--brand);cursor:pointer}
 /* ===== 공장 창 — 지난번 미흡 항목 (2026-09-22) — 개수를 머리에 크게, 항목마다 지나온 일을 세로 줄로 ===== */
 .gpv{display:flex;flex-direction:column;gap:8px}
 .gpvh{display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:12px;background:var(--amber-l);color:var(--amber)}
@@ -827,7 +882,9 @@ span.gtdtg{cursor:default}
 .gfname{position:absolute;left:12px;right:12px;bottom:calc(40px + env(safe-area-inset-bottom));z-index:5;display:flex;align-items:center;gap:6px;padding:12px 14px;border-radius:14px;background:#fff;box-shadow:0 4px 16px rgba(23,32,51,.18);font-size:17px;font-weight:800;color:var(--ink)}
 .gfname svg{color:var(--brand);flex:none}
 .gfname small{margin-left:auto;font-size:14px;font-weight:600;color:var(--mid)}
-html:has(.gffull),body:has(.gffull){overflow:hidden}
+html:has(.gffull){overflow:hidden}
+html[data-standalone] body:has(.gffull){overflow:hidden}
+@media (display-mode:standalone){body:has(.gffull){overflow:hidden}}
 /* 지도 탭 전체화면 (2026-09-23) — 공장 창과 같은 단추·닫기 */
 .gffull .gfslot.gmap{aspect-ratio:auto;border:none;border-radius:0}
 .gfdrawn{display:grid;place-items:center;padding:64px 0 0}
@@ -848,8 +905,7 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
 .gfia b{font-weight:700;color:var(--ink);overflow-wrap:anywhere}
 .app .gfia .hic{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 1px var(--line2);color:var(--brand)}  /* 공용 .hic의 초록 바탕·초록 아이콘을 덮는다 */
 .gfia.off{grid-template-columns:88px minmax(0,1fr)}
-.gfi .maplink{margin-top:2px;min-height:44px;background:#fff;box-shadow:inset 0 0 0 1px var(--line2);color:var(--ink);font-size:14px}
-.gfi .maplink svg{color:var(--mid)}
+.gfi .maplink{margin-top:2px;min-height:44px;background:#fff;box-shadow:inset 0 0 0 1px var(--line2);color:var(--brand);font-size:14px}
 /* 네이버 지도 로고가 위에 붙은 머리글 위로 올라오지 않게 — 지도 칸 안에서만 겹치게 한다 */
 .gfmap,.gmap{isolation:isolate}
 /* 공장 창 탭 (2026-09-23) — 홈 정렬 탭과 같은 모양, 개수 알약 */
@@ -909,6 +965,12 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
 .srh span{font-size:14px;color:var(--mid)}
 .srisk .geq{min-height:52px;font-size:16px;padding:6px 10px;gap:8px}
 .srisk .geqc{width:24px;height:24px}
+/* 위험요인 — 문항에 맞는 것만 먼저, 나머지는 더 보기 (2026-10-15) */
+.srisk.srmore{margin-top:8px}
+.srisk.srmore[hidden]{display:none}
+.srmbtn{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-height:44px;margin-top:8px;border:none;border-radius:12px;background:#f3f5f9;color:var(--brand);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.srmbtn svg{transform:rotate(90deg);transition:transform .15s}
+.srmbtn.open svg{transform:rotate(-90deg)}
 .sheet .row.sstick{position:sticky;bottom:-20px;margin:0 -16px -20px;padding:12px 16px 20px;background:#fff;box-shadow:0 -6px 14px rgba(23,32,51,.06)}
 .crisk{display:flex;flex-wrap:wrap;gap:4px;margin-left:30px}
 .geqnote{display:flex;align-items:flex-start;gap:8px;margin-top:6px;font-size:15px;line-height:1.5;color:var(--mid)}
@@ -1011,7 +1073,7 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
 .wkf label{font-size:13px;font-weight:700;color:var(--mid)}
 .lbl.wklh{display:flex;justify-content:space-between;align-items:center}
 .wkadd{margin-top:0;gap:4px;padding:0 12px;font-size:14px}
-.wkdel{display:inline-flex;align-items:center;gap:3px;min-height:40px;padding:0 4px;border:none;background:none;color:var(--mid);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.wkdel{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 10px;margin-right:-10px;border:none;background:none;color:var(--red-d);font:inherit;font-size:15px;font-weight:700;cursor:pointer}  /* 2026-10-15 글자 13 → 15, 지우는 것이라 빨간 글자 + 적은 게 있으면 확인 창 */
 /* 지킴이 앱 박스 그림자 (2026-10-14 사용자: 앱의 모든 박스에) — 공장 탭 카드(.fall)·상태 숫자 칸과 같은 옅은 그림자.
    테두리는 그림자와 겹쳐 진해 보이지 않게 한 단계 연하게. 안쪽 칸(카드 속 줄·알약)과 입력 칸·단추는 그대로 둔다(찾기 줄은 옆 권역 단추와 맞춤).
    빈 칸(.cnone, 점선)은 "비어 있음"이라 그림자를 주지 않는다 */
@@ -1031,10 +1093,11 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
 .hlh{display:flex;align-items:center;gap:8px;min-height:40px;margin-top:4px}
 .hlh b{font-size:18px;font-weight:800;letter-spacing:-.03em}
 .hlh em{font-style:normal;font-size:13px;font-weight:800;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px}
-.hsort{margin-left:auto;display:flex;align-items:center}
-.hsort button{position:relative;min-height:40px;padding:0 8px;border:none;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--soft);cursor:pointer}
-.hsort button + button::before{content:'';position:absolute;left:0;top:50%;height:14px;margin-top:-7px;border-left:1px solid var(--line2)}
-.hsort button.on{color:var(--ink);font-weight:800}
+/* 거리순 · 일정순 — 굵기로만 구분돼 작았다 → 테두리 한 상자를 나눈 고르기(공장 탭 상태 칸과 같은 결, 2026-10-15) */
+.hsort{margin-left:auto;display:flex;background:#fff;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+.hsort button{min-height:40px;padding:0 14px;border:none;background:none;font:inherit;font-size:15px;font-weight:700;color:var(--mid);cursor:pointer}
+.hsort button + button{border-left:1px solid var(--line2)}
+.hsort button.on{background:var(--brand-l);color:var(--brand);font-weight:800}
 /* 홈 할 일 묶음 소제목 — 재점검 n곳 · 점검 n곳 */
 .hgrp{margin-top:6px;font-size:14px;font-weight:800;color:var(--mid)}
 /* 장비 고르기 다듬기 (2026-10-14 사용자: 촌스럽다) — 장비 고르기 화면(.geqbd)에만. 위험요인 고르기 창(.srisk)은 그대로.
@@ -1083,7 +1146,8 @@ html:has(.gffull),body:has(.gffull){overflow:hidden}
 .rphvf{display:flex;flex-direction:column;gap:4px;padding:14px 16px 28px;color:#fff;font-size:15px}
 .rphvf span{font-size:13px;color:#aab3c2}
 /* 기업 정보 고치기 · 담당자 명함 (2026-10-14 사용자 지시) — 칸 머리 오른쪽 "고치기", 고친 칸 아래에 누가 언제 고쳤나 */
-.gfied{min-height:36px;margin:-6px -4px -6px 0;padding:0 8px;border:none;border-radius:8px;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--brand);cursor:pointer}
+.gfied{min-height:38px;margin:-6px 0;padding:0 14px;border:none;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px var(--line2);font:inherit;font-size:15px;font-weight:700;color:var(--brand);cursor:pointer}  /* 2026-10-15 글자만 있던 것 → 작은 보조 단추 */
+.gfied:active{background:var(--brand-l)}
 .gfiwho{font-size:12.5px;color:var(--soft)}
 .gfempty{display:flex;flex-direction:column;gap:10px;padding:2px 0}
 .gfempty > span{font-size:15px;color:var(--mid)}
