@@ -94,7 +94,7 @@ function facMini(fid, AR = 4 / 3) {  // AR: 칸 가로:세로
   return (MINI[key] = `<svg class="fph fmini" viewBox="${vx.toFixed(0)} ${vy.toFixed(0)} ${w.toFixed(0)} ${h.toFixed(0)}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="${f.name} 위치 지도">
     <rect x="${vx}" y="${vy}" width="${w}" height="${h}" class="fmbg"/>${near.map((h2) => `<path d="${path(h2.polys)}"/>`).join('')}
     ${d ? `<path class="own" d="${path(d.polys)}"/>` : ''}
-    <circle cx="${px}" cy="${py}" r="${r * 2}" class="halo"/><circle cx="${px}" cy="${py}" r="${r}" class="dot"/></svg>`);
+    <circle cx="${px}" cy="${py}" r="${r}" class="ring"/><circle cx="${px}" cy="${py}" r="${r}" class="ring r2"/><circle cx="${px}" cy="${py}" r="${r}" class="dot"/></svg>`);
 }
 // 공장 카드 — 위치 지도 · 이름 + 상태 · 위치 · 거리 · 방문일 · 그 상태에 맞는 단추 하나
 function fcard(s, x) {
@@ -217,7 +217,8 @@ function recentVisit(s) {
   const f = FACTORIES[ins.fid], [m, d] = ins.date.split('/').map(Number);
   const nav = (dir, on) => `<button class="gvnav ${dir < 0 ? 'l' : 'r'}" data-act="rv" data-v="${dir}"${on ? '' : ' hidden'} aria-label="${dir < 0 ? '더 최근 점검한 곳' : '그 전에 점검한 곳'}">${I('chevron', 22)}</button>`;
   // 점검한 날은 제목 줄 오른쪽에 — "언제 갔던 곳"이 먼저 읽히게 (2026-09-22 사용자: 승인 표시·문제 수 빼고 날짜 자리 옮김)
-  return `<div class="gvisit"><div class="gvt">최근 점검한 곳<span class="gvdate">${I('calendar', 15)} ${m}월 ${d}일 (${WD[new Date(TODAY.y, m - 1, d).getDay()]})</span></div>
+  const sl = UI.rvDir > 0 ? ' gvin-r' : UI.rvDir < 0 ? ' gvin-l' : '';
+  return `<div class="gvisit${sl}"><div class="gvt">최근 점검한 곳<span class="gvdate">${I('calendar', 15)} ${m}월 ${d}일 (${WD[new Date(TODAY.y, m - 1, d).getDay()]})</span></div>
     <div class="gvrow">${nav(-1, k > 0)}<div class="gvtx">
       <div class="gvkm">${I('pin', 15)} ${kmTo(f.ll).toFixed(1)}km</div>
       <b>${f.name}</b><div class="gvsub">화성시 ${f.dong}</div>
@@ -1747,7 +1748,8 @@ const ACTS = {
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
   ftab({ fid, v }) { UI.ftab[fid] = v; render(); },
-  rv({ v }) { UI.rv = (UI.rv || 0) + +v; render(); },
+  // 넘길 때 새 공장이 넘긴 쪽에서 밀려 들어온다 (2026-10-15 사용자 지시) — 방향은 이번 한 번 그릴 때만 쓴다
+  rv({ v }) { UI.rv = (UI.rv || 0) + +v; UI.rvDir = +v; render(); UI.rvDir = 0; },
   // 머리 찾기 아이콘 — 공장 탭의 이름 찾기 칸으로 가서 바로 입력하게 한다
   search() { if (location.hash === '#/factories') { const q = $('#fq'); if (q) q.focus(); } else { UI.focusQ = true; R.go('factories'); } },
   // 알림 아이콘 — 들어갈 때 안 본 것을 "새 소식"으로 표시해 두고 모두 본 것으로 친다
