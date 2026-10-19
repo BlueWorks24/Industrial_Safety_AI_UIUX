@@ -36,7 +36,7 @@ const B = 'http://127.0.0.1:8765/';
   await O.goto(B + 'web.html'); await shot(O, 'o_login');
   await login(O, 'daesung'); await G.goto(B + 'guard.html'); await ready(G);
   await G.waitForSelector('#lid'); await shot(G, 'g_login');  // 지킴이 로그인 (2026-09-23)
-  await G.click('[data-v="guard1"]'); await G.click('button[type=submit]'); await G.waitForSelector('.ghello');
+  await G.click('[data-v="guard1"]'); await G.click('button[type=submit]'); await G.waitForSelector('.hhi');
   await W.reload(); await ready(W); await shot(W, 'w_home');
   // 근로자 경보 흐름
   await ctl(W, 'raise', '[data-k="press2"]'); await shot(W, 'w_alarm');
@@ -64,7 +64,7 @@ const B = 'http://127.0.0.1:8765/';
   // 지킴이 — 지난번 미흡이 있는 공장 점검 (재점검을 따로 두지 않고 미흡 항목이 체크리스트에 붙는다, 2026-09-22)
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_home');
   await G.goto(B + 'guard.html#/'); await shot(G, 'g_todo');  // 내 할 일은 홈 목록이 되었다 (2026-09-22)
-  await G.locator('[data-act="date"][data-fid="taegwang"]').click(); await G.locator('.sheet [data-act="pickD"][data-v="23"]').click(); await G.locator('.wcol[data-k="h"] [data-i="14"]').click(); await G.locator('.wcol[data-k="m"] [data-i="6"]').click(); await G.waitForTimeout(800);
+  await G.click('.hkc[data-v="date"]'); await G.locator('[data-act="date"][data-fid="taegwang"]').click(); await G.locator('.sheet [data-act="pickD"][data-v="23"]').click(); await G.locator('.wcol[data-k="h"] [data-i="14"]').click(); await G.locator('.wcol[data-k="m"] [data-i="6"]').click(); await G.waitForTimeout(800);
   if (!/14:30/.test(await G.locator('.dpick').innerText())) errs.push('시·분 바퀴가 14:30을 못 골랐다'); await shot(G, 'g_date');
   await G.locator('[data-act="saveDate"]').click(); await G.waitForTimeout(300);
   // 방문 예약 (2026-09-22) — 요청만 가고, 공장주가 승인해야 방문일이 생긴다

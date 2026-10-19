@@ -365,7 +365,7 @@ function daesungInspection() {
 }
 
 const SEED = {
-  v: 8,                               // 2026-10-13 재점검 데이터로 바뀌어 7, 2026-10-14 고치기 전 사진·운영자 검사 뺌으로 8 (7은 common.js upgrade로 옮겨 온다)
+  v: 9,                               // 2026-10-13 재점검 데이터로 바뀌어 7, 2026-10-14 고치기 전 사진·운영자 검사 뺌으로 8, 2026-10-19 오늘 방문 세 곳으로 9 (7·8은 common.js upgrade로 옮겨 온다)
   clock: 9 * 60 + 10,                 // 가상 시각 09:10 (분)
   net: { worker: true, guard: true },
   offlineSince: { worker: null },
@@ -385,7 +385,8 @@ const SEED = {
       acks: [], snoozes: 0, endedAt: 7 * 60 + 58, endKind: 'noack' },
   ],
   outbox: { worker: [], guard: [] },
-  visits: { daesung: '오늘 10:00', hanbit: '9/18(금) 14:00', dongbang: null, taegwang: null },
+  // 오늘 방문 세 곳 (2026-10-19 사용자 지시 — 홈 오늘 방문 넘기기를 보이려고. 전에는 한빛화학 9/18(금) 14:00, 태광기계 방문일 없음)
+  visits: { daesung: '오늘 10:00', hanbit: '오늘 14:00', dongbang: null, taegwang: '오늘 16:00' },
   inspections: [
     daesungInspection(),
     // 할 일이 없는 공장의 지난 점검 (2026-09-22) — 다른 조원이 한 것이라 "최근 방문한 곳"에는 안 나온다

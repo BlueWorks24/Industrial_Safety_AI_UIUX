@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 주간 보고. 운영자 제출 검사(승인·반려)는 2026-10-14 사용자 지시로 뺐다 — 아직 정해진 게 아니다.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { sheet: null, aiT: {}, aiPick: {}, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', today: false, ckOpen: {}, ftab: {}, preBack: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
+const UI = { sheet: null, aiT: {}, aiPick: {}, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, preBack: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -128,31 +128,83 @@ function fcard(s, x) {
       ${rows}${btn}
     </div></div>`;
 }
-// 홈 할 일 목록 (2026-10-14 사용자: 홈 목록과 공장 탭 목록이 무엇인지 헷갈린다) — 제목 "할 일 n곳"을 달고
-// 재점검 · 점검으로 묶어 소제목을 붙인다. 거리순 · 일정순은 제목 오른쪽 작은 고르기로(전에는 밑줄 탭). 찾기 중엔 이 칸째 갈아 끼운다
-function homeList(s, t) {
-  const sort = `<div class="hsort" role="group" aria-label="정렬">${SORTS.map(([k, w]) => `<button class="${UI.sort === k ? 'on' : ''}" aria-pressed="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>`;
-  const grp = (w, l) => (l.length ? `<div class="hgrp">${w} ${l.length}곳</div>${l.map((x) => fcard(s, x)).join('')}` : '');
-  return `<div class="hlh"><b>할 일</b><em>${t.length}곳</em>${sort}</div>
-    ${t.length ? grp('재점검', t.filter((x) => x.kind === 'recheck')) + grp('점검', t.filter((x) => x.kind !== 'recheck'))
-      : `<div class="stat"><div class="mid">${UI.areas.length || UI.fq.trim() ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}`;
+// 홈 (2026-10-19 사용자 지시 — 홈 한 화면에서 모든 업무로 이어지되 세로로 길지 않게. 레퍼런스 앱 배치를 보고 고른 "카드가 입구" 안).
+// 홈에는 찾기 · 오늘 방문(AI 요약) · 큰 카드 넷(점검하기 · 판정하기 · 방문일 잡기 · 시정 현황)만 둔다.
+// 카드를 누르면 할 일 화면(#/todo)이 그 탭으로 열린다. 할 일 카드 목록 · 권역 · 거리순 · 일정순은 그 화면으로, 최근 점검한 곳은 공장 탭 맨 위로 옮겼다.
+// 맨 위는 머리 띠 대신 HIPA 표시(왼쪽) + 둥근 알림 단추(오른쪽)
+const TD = [['all', '전체'], ['visit', '점검'], ['judge', '판정'], ['date', '방문일'], ['fix', '시정']];
+const rckGot = (ins) => ins.items.filter(TRACKED).filter((it) => rckFix(it)).length;
+// 할 일을 넷으로 — 판정: 재점검 중 고친 사진이 한 장이라도 온 곳. 시정: 재점검 중인 곳 전부(기한이 도는 곳). 방문일: 방문일을 안 적은 점검할 곳
+function todoJobs(s, t = tasks(s)) {
+  const rck = t.filter((x) => x.kind === 'recheck'), vis = t.filter((x) => x.kind !== 'recheck');
+  return { all: t, visit: vis, judge: rck.filter((x) => rckGot(x.ins) > 0), date: vis.filter((x) => !s.visits[x.fid]), fix: rck };
 }
 function home(s) {
   locate();
-  const all = tasks(s);
-  const t = sortTasks(s, all.filter((x) => inAreas(x.fid) && matchQ(x.fid)), UI.sort);
-  return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">
-    ${head('홈', null)}
-    <div class="ghello"><span class="gav">${I('user', 30)}</span><div>
-      <span class="ghdate">9월 17일 목요일</span><b>안녕하세요, ${ME}님</b></div>${tg(TEAM.name)}
-      ${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</div>
-    ${todayCard(s, all)}
+  const J = todoJobs(s), n = notiUnseen(s);
+  const today = J.visit.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).sort((a, b) => whenKey(s.visits[a.fid]) - whenKey(s.visits[b.fid]));
+  const late = J.fix.filter((x) => daysLeft(recheckDue(x.ins)) < 0).length;
+  const sub = { visit: today.length ? `오늘 ${visitDay(s.visits[today[0].fid]).tm} ${FACTORIES[today[0].fid].name}` : J.visit.length ? '갈 곳이 있어요' : '없어요',
+    judge: J.judge.length ? '고친 사진이 왔어요' : '받은 사진 없음', date: J.date.length ? '아직 안 정함' : '다 정했어요',
+    fix: late ? `<em>기한 지남 ${late}곳</em>` : J.fix.length ? '고치는 중' : '없어요' };
+  const card = ([k, w]) => `<button class="hkc" data-act="todo" data-v="${k}"><b>${w}</b><span class="hks">${sub[k]}</span>
+    <span class="hkb"><span class="hpill">${J[k].length}곳</span><span class="hkgo">${I('chevron', 20)}</span></span></button>`;
+  const going = (fid) => s.draft && s.draft.kind === 'first' && s.draft.fid === fid;
+  // 오늘 방문 한 곳 — 시간 · 공장 · 점검 시작, 길찾기 · 전화(2026-10-19 사용자 지시), AI 요약 두 줄.
+  // 길찾기는 네이버 지도 모바일 길찾기 주소(가설 — 실제 서비스에서는 앱 연결), 좌표는 시제품의 가짜 좌표
+  const trow = (x) => { const f = FACTORIES[x.fid], tel = firmOf(s, x.fid).tel;
+    const route = `https://m.map.naver.com/route.nhn?menu=route&pathType=0&showMap=true&ename=${encodeURIComponent(f.name)}&ex=${f.ll[0]}&ey=${f.ll[1]}`;
+    return `<div class="hts"><div class="htr"><button class="htrb" data-go="pre/${x.fid}"><span class="htm">${visitDay(s.visits[x.fid]).tm}</span>
+      <span class="htn"><b>${f.name}</b><small>화성시 ${f.dong}</small></span></button>
+      <button class="hgo dk" data-act="newDraft" data-fid="${x.fid}" aria-label="${f.name} ${going(x.fid) ? '이어서 점검' : '점검 시작'}">${PLAY}</button></div>
+      <div class="htac"><a href="${route}" target="_blank" rel="noopener">${I('pin', 17)}길찾기</a><a href="tel:${tel}" aria-label="${f.name}에 전화 ${tel}">${I('phone', 17)}전화</a></div>
+      <button class="hai" data-act="brief" data-fid="${x.fid}" aria-label="${f.name} AI 요약 자세히">${I('sparkle', 15)}<span><em>AI 요약</em>${esc(aiBrief(s, x.fid))}</span>${I('chevron', 14)}</button></div>`; };
+  // 두 곳 이상이면 옆으로 넘겨 본다 (2026-10-19 사용자 지시) — 손가락으로 밀면 한 곳씩 멈춘다(scroll-snap), 아래 점이 따라간다
+  const slides = today.length > 1 ? `<div class="htsl" data-n="${today.length}">${today.map(trow).join('')}</div>
+      <div class="htdots" aria-hidden="true">${today.map((_, j) => `<i class="${j === (UI.tdi || 0) ? 'on' : ''}"></i>`).join('')}</div>` : today.map(trow).join('');
+  return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr ghome"><div class="bd">
+    <div class="htop"><button class="hlogo" data-go="" aria-label="홈"><img src="hipa-logo.svg" alt="HIPA"></button>
+      <button class="hbell" data-act="noti" aria-label="알림${n ? ` 새 소식 ${n}개` : ''}">${I('bell', 22)}${n ? `<em>${n}</em>` : ''}</button></div>
+    <div class="hhi"><small>9월 17일 목요일 ${tg(TEAM.name)}${s.net.guard ? '' : `<span class="live off"><i></i>전파 없음</span>`}</small><b>안녕하세요, ${ME}님</b></div>
+    <button class="hsrch" data-act="search">${I('search', 20)}<span>공장 이름으로 찾기</span></button>
     ${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
-    ${recentVisit(s)}
-    ${findRow('home')}
-    <div id="fres" class="hlist">${homeList(s, t)}</div>
+    <div class="htd"><div class="htdh"><b>오늘 방문</b>${today.length ? `<span class="htdn">${today.length}곳</span>` : ''}<button class="hcal" data-act="calToday">${I('calendar', 15)}캘린더 ${I('chevron', 14)}</button></div>
+      ${slides || '<div class="hnone">오늘 잡힌 방문이 없어요</div>'}</div>
+    <div class="hkg">${TD.slice(1).map(([k]) => [k, { visit: '점검하기', judge: '판정하기', date: '방문일 잡기', fix: '시정 현황' }[k]]).map(card).join('')}</div>
     <div class="proto">가상 데이터로 만든 시제품이에요</div>
-  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}${UI.sheet && UI.sheet.type === 'brief' ? briefSheet(s) : ''}`;
+  </div></div>${UI.sheet && UI.sheet.type === 'brief' ? briefSheet(s) : ''}`;
+}
+const PLAY = '<svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>';
+const hpill = (t, c = '') => `<span class="hpill${c ? ' ' + c : ''}">${t}</span>`;
+// 할 일 한 줄 — 이름을 누르면 공장 창, 오른쪽 동그란 단추는 그 일(재점검 화면 · 점검 시작 · 방문일 정하기)
+function todoRow(s, x, tab) {
+  const f = FACTORIES[x.fid], km = `<small>${kmTo(f.ll).toFixed(1)}km</small>`;
+  const row = (pills, act, ico, on) => `<div class="hit${on ? ' on' : ''}"><button class="hitb" data-go="pre/${x.fid}"><b>${f.name}${km}</b><span class="hpl">${pills.join('')}</span></button>
+    <button class="hgo${on ? ' dk' : ''}" ${act}>${ico}</button></div>`;
+  if (x.kind === 'recheck') {
+    const bad = x.ins.items.filter(TRACKED), got = rckGot(x.ins), d = daysLeft(recheckDue(x.ins));
+    return row([hpill(got ? `사진 ${bad.length}개 중 ${got}개 받음` : '고치는 중'), d < 0 ? hpill(dWord(d), 'o') : hpill(`${recheckDue(x.ins)}까지`)],
+      `data-go="rck/${x.ins.id}" aria-label="${f.name} 재점검 하기"`, I('chevron', 20));
+  }
+  const v = s.visits[x.fid], going = s.draft && s.draft.kind === 'first' && s.draft.fid === x.fid;
+  const pills = [hpill(v || '방문일 안 정함'), x.prev ? hpill(`지난번 미흡 ${x.prev}건`, 'o') : ''];
+  if (tab === 'date') return row(pills, `data-act="date" data-fid="${x.fid}" aria-label="${f.name} 방문일 정하기"`, I('calendar', 19));
+  return row(pills, `data-act="newDraft" data-fid="${x.fid}" aria-label="${f.name} ${going ? '이어서 점검' : '점검 시작'}"`, PLAY, (v || '').startsWith('오늘'));
+}
+// 할 일 화면 (2026-10-19) — 홈 카드로 들어온다. 위 탭으로 전체 · 점검 · 판정 · 방문일 · 시정을 바꿔 보고, 권역 · 거리순 · 일정순은 여기서
+function todoScreen(s) {
+  locate();
+  const J = todoJobs(s, tasks(s).filter((x) => inAreas(x.fid))), tab = TD.some(([k]) => k === UI.td) ? UI.td : 'all';
+  const l = sortTasks(s, J[tab], UI.sort);
+  const sort = `<div class="hsort" role="group" aria-label="정렬">${SORTS.map(([k, w]) => `<button class="${UI.sort === k ? 'on' : ''}" aria-pressed="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>`;
+  const grp = (w, g) => (g.length ? `<div class="hgrp">${w} ${g.length}곳</div>${g.map((x) => todoRow(s, x, tab)).join('')}` : '');
+  return `${sbar('지킴이')}<div class="scr"><div class="bd">
+    ${head('할 일', '')}
+    <div class="tdtabs" role="tablist">${TD.map(([k, w]) => `<button class="${k === tab ? 'on' : ''}" role="tab" aria-selected="${k === tab}" data-act="tdTab" data-v="${k}">${w} <em>${J[k].length}</em></button>`).join('')}</div>
+    <div class="tdtool"><button class="harea${UI.areas.length ? ' on' : ''}" data-act="areaOpen" data-v="home">${areaWord()} ${I('chevron', 14)}</button>${sort}</div>
+    <div class="hlist">${tab === 'all' ? grp('재점검', l.filter((x) => x.kind === 'recheck')) + grp('점검', l.filter((x) => x.kind !== 'recheck')) : l.map((x) => todoRow(s, x, tab)).join('')}
+      ${l.length ? '' : `<div class="stat"><div class="mid">${UI.areas.length ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}</div>
+  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }
 
 // 오늘 방문할 공장 한 줄 요약 (2026-09-28 사용자 지시) — 실제 서비스에서는 AI가 지난 점검·미흡·센서 기록을 읽고 쓴다.
@@ -184,24 +236,7 @@ function briefSheet(s) {
     <div class="row"><button class="btn ghost cxl" data-act="closeSheet">닫기</button><button class="btn" data-go="pre/${fid}">공장 보기</button></div>
   </div>`;
 }
-// 최근 점검한 곳 — 참고 앱의 "최근방문매장" 자리. 내가 마지막으로 점검한 곳과 그 점검의 상태 (2026-09-22)
-// 오늘 할 일 — 인삿말 아래 카드. 공장주가 승인해 오늘로 잡힌 방문을 시간 순으로 (2026-09-22 사용자 지시: "오늘 방문 n곳" 알약 → 우리 카드 모양으로)
-// 제목 줄만 늘 보이고 목록은 눌러서 펼친다 (같은 날 사용자 지시). 오늘 방문이 없으면 펼칠 것이 없어 "없음"만
-// 오늘 방문 칸 — 2026-10-14 "오늘 할 일"에서 이름을 바꿈(아래 "할 일" 목록과 헷갈려서). 오늘 방문일을 적어 둔 곳만 든다
-function todayCard(s, all) {
-  const l = all.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).sort((a, b) => whenKey(s.visits[a.fid]) - whenKey(s.visits[b.fid]));
-  const open = UI.today && l.length;
-  const head = l.length
-    ? `<button class="gtdtg" data-act="todayTg" aria-expanded="${!!open}"><b>오늘 방문</b><em>${l.length}곳</em><span class="gtdar${open ? ' on' : ''}">${I('chevron', 16)}</span></button>`
-    : `<span class="gtdtg"><b>오늘 방문</b><em class="none">없음</em></span>`;
-  // 목록은 늘 그려 두고 접힌 칸에 숨긴다 — 여닫을 때 높이가 미끄러지게 (todayTg가 다시 그리지 않고 칸만 바꾼다)
-  return `<div class="gtd${open ? ' open' : ''}"><div class="gtdh">${head}
-      <button class="gtdcal" data-act="calToday">${I('calendar', 15)} 캘린더 ${I('chevron', 14)}</button></div>
-    ${l.length ? `<div class="gtdl"${open ? '' : ' inert'}><div>${l.map((x) => { const f = FACTORIES[x.fid]; return `<div class="gtdr"><button class="gtdrow" data-go="pre/${x.fid}">
-      <span class="gtdt"><b>${visitDay(s.visits[x.fid]).tm}</b><small>방문</small></span>
-      <span class="gtdn"><b>${f.name}</b><small>화성시 ${f.dong}</small></span>${I('chevron', 18)}</button>
-      <button class="gtdai" data-act="brief" data-fid="${x.fid}" aria-label="${f.name} AI 요약 자세히">${I('sparkle', 14)}<span><em>AI 요약</em>${esc(aiBrief(s, x.fid))}</span>${I('chevron', 14)}</button></div>`; }).join('')}</div></div>` : ''}</div>`;
-}
+// 2026-10-19부터 공장 탭 맨 위에 있다(홈을 짧게 하려고 옮김).
 // 최근 점검한 곳 — 하나가 아니라 좌우 화살표로 차례로 넘겨 본다 (2026-10-15 사용자 지시). 최근 것부터, 공장마다 마지막 점검 하나씩.
 // 우리 조가 점검한 곳을 다 넣는다 — 조가 같이 다니고 점검은 조원 한 사람 이름으로 올라가서, 나만 세면 한두 곳뿐이다 (가설)
 function recentList(s) {
@@ -226,6 +261,15 @@ function recentVisit(s) {
       <button class="gvph" data-go="pre/${ins.fid}" aria-label="${f.name}">${facMini(ins.fid)}</button>${nav(1, k < n - 1)}</div>
     ${n > 1 ? `<div class="gvdots" aria-label="${n}곳 중 ${k + 1}번째">${list.map((_, j) => `<i class="${j === k ? 'on' : ''}"></i>`).join('')}</div>` : ''}${homeActs(s, ins.fid)}</div>`;
 }
+// 오늘 방문 넘기기 — 넘긴 자리를 기억하고 아래 점을 바꾼다 (다시 그리지 않는다)
+document.addEventListener('scroll', (e) => {
+  const sl = e.target;
+  if (!sl.classList || !sl.classList.contains('htsl')) return;
+  const k = Math.round(sl.scrollLeft / sl.clientWidth);
+  if (k === (UI.tdi || 0)) return;
+  UI.tdi = k;
+  sl.parentNode.querySelectorAll('.htdots i').forEach((d, j) => d.classList.toggle('on', j === k));
+}, true);
 // 손가락으로 밀어도 넘어간다 — 왼쪽으로 밀면 그 전 곳, 오른쪽으로 밀면 더 최근 곳
 let gvX = null;
 document.addEventListener('touchstart', (e) => { gvX = e.target.closest('.gvrow') ? e.touches[0].clientX : null; }, { passive: true });
@@ -383,6 +427,7 @@ function factoriesScreen(s) {
   const n = (k) => (k === 'all' ? inTeam.length : inTeam.filter((f) => facSt(s, f) === k).length);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head('공장', '')}
+    ${recentVisit(s)}
     ${findRow('fac')}
     <button class="hper${UI.per ? ' on' : ''}" data-act="perOpen">${I('calendar', 16)}<span>점검 기간</span><b>${perWord()}</b>${I('chevron', 14)}</button>
     <div class="hlh"><b>우리 조 공장</b><em>${inTeam.length}곳</em></div>
@@ -1469,6 +1514,14 @@ function pwSheet(sh) {
 // 날짜 표기 — 앱 전체에서 "8/20" → "08.20" (2026-09-22 사용자 지시). 저장된 값은 그대로 두고 그릴 때만 바꾼다.
 // 앞뒤가 숫자·글자·/·. 이면 날짜가 아니라고 본다 (주소 "records/..."나 "0 / 10장" 같은 것은 안 건드린다)
 const fmtDates = (h) => h.replace(/(?<![\w/.])(\d{1,2})\/(\d{1,2})(?![\w/])/g, (_, m, d) => `${m.padStart(2, '0')}.${d.padStart(2, '0')}`);
+// 홈 위쪽 남색 띠는 오늘 방문 카드 가운데까지 (2026-10-19). 카드 높이 · 자리를 재서 띠 길이를 넣는다.
+// 띠를 카드 안에 그렸더니 화면이 올라오는 움직임 동안 카드를 덮었다 (2026-10-19 사용자 제보 — 열 때 한번에 안 그려짐)
+function homeBand() {
+  const bd = $('.ghome .bd'), td = $('.ghome .htd'); if (!bd || !td) return;
+  bd.style.setProperty('--hband', `${td.offsetTop + td.offsetHeight / 2}px`);
+}
+const bandObs = new ResizeObserver(homeBand);
+
 function render() {
   if (!ACC) { paintLogin(); return; }
   const s = DB.s, p = R.path();
@@ -1477,7 +1530,7 @@ function render() {
   let html;
   const needFirst = ['equip', 'eqai', 'photo', 'ai', 'pick', 'list', 'ans', 'sum'].includes(p[0]);
   if (needFirst && !(d && d.kind === 'first')) { R.go(''); return; }
-  if (p[0] === 'todo') { R.go(''); return; }  // 옛 주소 — 내 할 일은 홈 목록이 되었다 (2026-09-22)
+  if (p[0] === 'todo') html = todoScreen(s);  // 할 일 화면 (2026-10-19 — 홈 카드로 들어온다. 전에는 옛 주소라 홈으로 돌렸다)
   else if (p[0] === 'map') html = mapScreen(s);
   else if (p[0] === 'cal') html = calScreen(s);
   else if (p[0] === 'factories') html = factoriesScreen(s);
@@ -1510,7 +1563,7 @@ function render() {
   const caret = keep && typeof ae.selectionStart === 'number' ? [ae.selectionStart, ae.selectionEnd] : null;
   const top = p.join('/');
   html = fmtDates(html);
-  if (['', 'factories', 'cal', 'map', 'weekly', 'me'].includes(top)) html += gnav(top);  // 공장은 2026-10-13부터 하단바 탭. 내 정보는 하단바에서 빠졌지만 하단바는 그대로 보인다  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
+  if (['', 'factories', 'cal', 'map', 'weekly', 'me', 'todo'].includes(top)) html += gnav(top === 'todo' ? '' : top);  // 할 일 화면은 홈 안쪽이라 홈 칸을 켠다  // 공장은 2026-10-13부터 하단바 탭. 내 정보는 하단바에서 빠졌지만 하단바는 그대로 보인다  // 점검 기록은 홈의 "점검 결과 보기"로 들어가는 안쪽 화면
   // 찾기 칸에 입력 중이면 결과 목록만 갈아 끼운다 — 칸을 건드리지 않아야 한글 조합이 이어진다
   if (keep === 'fq' && location.hash === lastHash && !UI.sheet && $('#fres')) {
     const tmp = document.createElement('div'); tmp.innerHTML = html;
@@ -1522,6 +1575,8 @@ function render() {
   const cpx = $('.cpg') ? $('.cpg').scrollLeft : null, shOld = UI.sheet && $('.sheet') ? { type: UI.sheet.type, y: $('.sheet').scrollTop } : null;
   $('#app').innerHTML = html;
   if (cpx != null && $('.cpg')) $('.cpg').scrollLeft = cpx;
+  if ($('.htsl') && UI.tdi) { const sl = $('.htsl'); sl.scrollLeft = Math.min(UI.tdi, +sl.dataset.n - 1) * sl.clientWidth; }  // 오늘 방문 넘김 자리
+  bandObs.disconnect(); if ($('.ghome .htd')) { homeBand(); bandObs.observe($('.ghome .bd')); bandObs.observe($('.ghome .htd')); }
   if (shOld && UI.sheet && UI.sheet.type === shOld.type && $('.sheet')) {
     document.querySelectorAll('#app .sheet, #app .ov').forEach((el) => el.classList.add('keep'));
     $('.sheet').scrollTop = shOld.y;
@@ -1745,6 +1800,8 @@ const ACTS = {
   },
   gu({ v }) { UI.gu = v || null; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
+  todo({ v }) { UI.td = v; R.go('todo'); },
+  tdTab({ v }) { UI.td = v; render(); },
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
   ftab({ fid, v }) { UI.ftab[fid] = v; render(); },
@@ -1756,19 +1813,12 @@ const ACTS = {
   noti() { const l = notis(DB.s); UI.notiNew = new Set(l.filter((x) => !UI.notiSeen.has(x.id)).map((x) => x.id)); l.forEach((x) => UI.notiSeen.add(x.id)); R.go('noti'); },
   mapFull() { UI.mapFull = true; render(); },
   mapClose() { UI.mapFull = false; render(); },
-  ckTg({ k }, el) {  // 다시 그리면 펼치는 움직임이 안 보여서 칸의 표시만 바꾼다 (todayTg와 같은 방식)
+  ckTg({ k }, el) {  // 다시 그리면 펼치는 움직임이 안 보여서 칸의 표시만 바꾼다
     UI.ckOpen[k] = !UI.ckOpen[k];
     const c = el.closest('.gck'), on = UI.ckOpen[k];
     c.classList.toggle('open', on); el.setAttribute('aria-expanded', on);
     c.querySelector('.gtdar').classList.toggle('on', on);
     c.querySelector('.gckl').inert = !on;
-  },
-  todayTg(d, el) {  // 다시 그리면 애니메이션이 안 보여서 칸의 표시만 바꾼다
-    UI.today = !UI.today;
-    const c = el.closest('.gtd'), l = c.querySelector('.gtdl');
-    c.classList.toggle('open', UI.today); el.setAttribute('aria-expanded', UI.today);
-    c.querySelector('.gtdar').classList.toggle('on', UI.today);
-    if (l) l.inert = !UI.today;
   },
   // 점검 기간 (2026-10-13) — 고르기만 하고 적용해야 목록이 바뀐다 (권역 창과 같게)
   perOpen() { const p = UI.per || { k: 'all', from: '9/1', to: '9/17' }; sheet({ type: 'per', k: p.k, from: p.from, to: p.to }); },

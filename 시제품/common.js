@@ -65,13 +65,20 @@ const DB = {
 };
 // 옛 판 데이터 옮기기 — 판을 올리면 켜 둔 서버의 시험 데이터가 통째로 지워져서, 바뀐 것만 고쳐 넣는다 (2026-10-14)
 // 7 → 8: 재점검 공장의 불량 항목에 고치기 전 사진(예시)을 붙이고, 운영자 검사 대기였던 점검을 확정으로
+// 8 → 9: 오늘 방문을 세 곳으로 (2026-10-19) — 한빛화학 · 태광기계 방문일을 오늘로
 function upgrade(s) {
-  if (!s || s.v !== 7) return s;
-  s.inspections.forEach((i) => {
-    if (/^w/.test(i.id) || i.id === 'i0820') i.items.forEach((it) => { if (it.answer === 'bad' && it.shot === undefined) it.shot = true; });
-    if (i.st === 'wait') { i.st = 'ok'; i.locked = true; }
-  });
-  s.v = 8;
+  if (!s) return s;
+  if (s.v === 7) {
+    s.inspections.forEach((i) => {
+      if (/^w/.test(i.id) || i.id === 'i0820') i.items.forEach((it) => { if (it.answer === 'bad' && it.shot === undefined) it.shot = true; });
+      if (i.st === 'wait') { i.st = 'ok'; i.locked = true; }
+    });
+    s.v = 8;
+  }
+  if (s.v === 8) {
+    s.visits = { ...s.visits, hanbit: '오늘 14:00', taegwang: '오늘 16:00' };
+    s.v = 9;
+  }
   return s;
 }
 let chan = null;
@@ -327,8 +334,8 @@ function pageIntro(h, p) {
 }
 let taps = [];
 document.addEventListener('click', (e) => {
-  // 지킴이 앱은 머리글 방패를 걷어서(2026-10-15) 띠의 화면 이름을 세 번 누른다
-  if (!e.target.closest('#sbar, .appbar .mark, .apptop .head .crumb, .alarm .icon')) return;
+  // 지킴이 앱은 머리글 방패를 걷어서(2026-10-15) 띠의 화면 이름을 세 번 누른다. 홈은 머리 띠가 없어 맨 위 HIPA 표시를 (2026-10-19)
+  if (!e.target.closest('#sbar, .appbar .mark, .apptop .head .crumb, .htop .hlogo, .alarm .icon')) return;
   const now = Date.now();
   taps = taps.filter((t) => now - t < 700); taps.push(now);
   if (taps.length >= 3) { taps = []; toggleCtl(); }

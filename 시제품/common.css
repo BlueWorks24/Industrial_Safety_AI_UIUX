@@ -34,8 +34,10 @@ button{font:inherit;color:inherit}
 a{color:inherit;text-decoration:none}
 
 /* 앱 틀 — 휴대폰에서는 화면 전체, PC에서는 가운데 폭 420 */
-.app{max-width:420px;margin:0 auto;min-height:100dvh;background:#f7f9fc;display:flex;flex-direction:column;position:relative}
-@media (min-width:500px){body{padding:24px 0}.app{min-height:calc(100dvh - 48px);border-radius:28px;box-shadow:var(--sh-l);overflow:hidden}}
+/* 폭 420 제한은 PC 틀에만 — 폭이 420보다 넓은 폰(안드로이드 일부)에서 양옆에 흰 틈이 났다 (2026-10-19 사용자 제보) */
+.app{margin:0 auto;min-height:100dvh;background:#f7f9fc;display:flex;flex-direction:column;position:relative}
+@media (min-width:500px){body{padding:24px 0}.app{max-width:420px;min-height:calc(100dvh - 48px);border-radius:28px;box-shadow:var(--sh-l);overflow:hidden}}
+@media (min-width:500px){.sheet,.rphv{width:420px}}
 .sbar{height:30px;flex:none;font-size:12px;font-weight:700;color:var(--mid);display:flex;justify-content:space-between;align-items:center;padding:0 18px;user-select:none}
 .scr{flex:1;display:flex;flex-direction:column;min-height:0}
 .bd{flex:1;padding:8px 16px 18px;display:flex;flex-direction:column;gap:12px}
@@ -163,7 +165,7 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 
 /* 덮는 창 */
 .ov{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:20;animation:fade .15s}
-.sheet{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:min(420px,100%);max-height:88dvh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;z-index:21;padding:8px 16px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh-l);animation:up .2s ease-out}
+.sheet{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-height:88dvh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;z-index:21;padding:8px 16px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh-l);animation:up .2s ease-out}
 .grip{width:44px;height:5px;background:var(--line2);border-radius:3px;margin:4px auto}
 .dlg{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(380px,calc(100% - 32px));background:#fff;border-radius:24px;padding:20px;z-index:21;display:flex;flex-direction:column;gap:12px;box-shadow:var(--sh-l)}
 .toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);width:max-content;max-width:calc(100% - 40px);text-align:center;background:var(--ink);color:#fff;border-radius:999px;padding:12px 18px;font-size:14px;font-weight:600;z-index:40;max-width:90%;box-shadow:var(--sh-l);animation:fade .2s}
@@ -253,7 +255,7 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 
 /* 앱 표지 — 웹과 같은 방패 표시 */
 .app .applogo{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z'/%3E%3Cpath d='M12 8.5v4' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='15.6' r='.6' fill='white'/%3E%3C/svg%3E") center/46px no-repeat,linear-gradient(135deg,#2458d6,#4f7cf0);color:transparent;box-shadow:0 10px 26px rgba(36,88,214,.28)}
-.app .bd > :first-child:not(.head):not(.appbar):not(.apptop){margin-top:14px}
+.app .bd > :first-child:not(.head):not(.appbar):not(.apptop):not(.htop){margin-top:14px}
 .app .head.alarmhead{background:var(--red);color:#fff}
 .app .head.alarmhead .big,.app .head.alarmhead .mid,.app .head.alarmhead .small,.app .head.alarmhead .end{color:#fff}
 
@@ -1148,7 +1150,7 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .rnote b{margin-right:6px;font-weight:700;color:var(--mid)}
 .rwhy{min-height:48px;font-size:15px}
 /* 사진 크게 보기 — 화면 가득, 위에서 고치기 전 · 고친 뒤를 바꾼다(옆으로 밀어도) */
-.rphv{position:fixed;top:0;bottom:0;left:50%;z-index:30;display:flex;flex-direction:column;width:min(420px,100%);transform:translateX(-50%);background:#0f1522}
+.rphv{position:fixed;top:0;bottom:0;left:50%;z-index:30;display:flex;flex-direction:column;width:100%;transform:translateX(-50%);background:#0f1522}
 .rphvh{display:flex;align-items:center;gap:8px;padding:14px 12px 10px}
 .rphvt{flex:1;display:flex;padding:3px;border-radius:11px;background:rgba(255,255,255,.12)}
 .rphvt button{flex:1;min-height:42px;border:none;border-radius:9px;background:none;color:#d3d9e4;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
@@ -1244,3 +1246,116 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .rphvf b.dim{color:#aab3c2;font-weight:600}
 .gaish .row.sstick{display:grid;grid-template-columns:auto minmax(0,1fr)}
 .gaish .row.sstick .btn{width:auto;white-space:nowrap;padding-left:16px;padding-right:16px}
+
+/* 지킴이 홈 — 카드가 입구 (2026-10-19 사용자 지시). 한 화면 안: HIPA 표시 + 알림, 인사, 찾기, 오늘 방문(AI 요약), 큰 카드 넷.
+   옅은 회색 바탕 위 흰 카드 (레퍼런스 앱 배치). 카드를 누르면 할 일 화면(#/todo) */
+.ghome{background:#f2f4f7}
+.ghome .bd{gap:12px}
+/* 맨 위 줄은 바탕색 띠로 붙여 둔다 (2026-10-19 — 아이폰에서 맨 위 가장자리 흐림 효과에 로고 · 알림이 흐리게 보였다.
+   흰 머리 띠가 있을 때는 안 보였다. 고정된 띠가 있으면 iOS가 흐리게 하지 않고 띠 색으로 채운다 — 가설, 폰에서 확인) */
+.htop{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;min-height:52px;margin:0 -16px;padding:4px 16px 0;background:#f2f4f7}
+.hlogo{display:flex;align-items:center;min-height:44px;padding:0 6px 0 2px;border:none;background:none;cursor:pointer}
+.hlogo img{display:block;height:22px;width:auto}
+.hbell{position:relative;flex:none;width:46px;height:46px;padding:0;border:none;border-radius:50%;background:#fff;color:var(--brand);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(20,24,31,.07);cursor:pointer}
+.hbell em{position:absolute;top:-3px;right:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--brand);color:#fff;font-style:normal;font-size:11.5px;font-weight:800;line-height:20px;text-align:center;box-shadow:0 0 0 2px #f2f4f7}
+.hhi small{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:17px;font-weight:600;color:var(--mid)}
+.hhi small .gtg{margin:0;background:#e3e7ee;font-size:13px}
+.hhi b{display:block;font-size:30px;font-weight:800;letter-spacing:-.04em}
+.hsrch{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 18px;border:none;border-radius:999px;background:#fff;color:#9aa3af;font:inherit;font-size:16px;font-weight:600;text-align:left;box-shadow:0 2px 12px rgba(20,24,31,.05);cursor:pointer}
+.hsrch svg{color:var(--ink)}
+.htd{padding:14px 14px 14px 16px;border-radius:24px;background:#fff;box-shadow:0 2px 12px rgba(20,24,31,.05)}
+.htdh{display:flex;align-items:center;gap:8px}
+.htdh b{font-size:18px;font-weight:800}
+.hcal{margin-left:auto;display:inline-flex;align-items:center;gap:3px;min-height:40px;padding:0 2px;border:none;background:none;font:inherit;font-size:15px;font-weight:700;color:var(--brand);cursor:pointer}
+.htr{display:flex;align-items:center;gap:8px;margin-top:8px}
+.htrb{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0;border:none;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+/* 시간은 글자 그대로 (2026-10-19 사용자: 색 네모 + "방문" 꼬리표가 AI스럽다) */
+.htm{flex:none;min-width:58px;padding-right:12px;border-right:1px solid #e6eaf0;font-size:20px;font-weight:800;letter-spacing:-.03em;color:var(--ink)}
+.htdn{font-size:15px;font-weight:700;color:var(--mid)}
+.htn{min-width:0}
+.htn b{display:block;font-size:17px;font-weight:800}
+.htn small{font-size:13px;font-weight:600;color:var(--mid)}
+.hai{display:flex;align-items:flex-start;gap:8px;width:100%;margin-top:12px;padding:12px 0 0;border:none;border-top:1px solid #eef0f3;border-radius:0;background:none;font:inherit;font-size:14px;font-weight:600;color:var(--mid);text-align:left;cursor:pointer}
+.hai > svg:first-child{flex:none;margin-top:2px;color:#7c6bc4}
+.hai > svg:last-child{flex:none;align-self:center;color:var(--soft)}
+.hai span{flex:1;min-width:0;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;line-height:1.45}  /* 두 줄까지 (2026-10-19 사용자 지시) */
+.hai em{font-style:normal;font-weight:800;color:var(--ink);margin-right:6px}
+.hnone{padding:14px 2px 2px;font-size:15px;color:var(--mid)}
+.hkg{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.hkc{display:flex;flex-direction:column;align-items:stretch;min-height:116px;padding:15px 14px 14px 16px;border:none;border-radius:24px;background:#fff;color:var(--ink);font:inherit;text-align:left;box-shadow:0 2px 12px rgba(20,24,31,.05);cursor:pointer;transition:transform .1s}
+.hkc:active{transform:scale(.98)}
+.hkc b{font-size:20px;font-weight:800;letter-spacing:-.04em}
+.hks{margin-top:4px;font-size:13px;font-weight:600;color:var(--mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hks em{font-style:normal;font-weight:700;color:#c2620a}
+.hkb{margin-top:auto;padding-top:10px;display:flex;align-items:center;justify-content:space-between}
+.hkgo{width:40px;height:40px;border-radius:50%;background:#e6ecf7;color:var(--brand);display:flex;align-items:center;justify-content:center}
+.ghome .proto{margin-top:auto}
+.hpill{display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:999px;background:#f1f3f6;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+.hpill.o{background:#fff3e6;color:#c2620a}
+.hpill.n{height:24px;padding:0 9px;background:var(--brand);color:#fff;font-size:12.5px;font-weight:800}
+/* 할 일 화면 — 위 탭(전체 · 점검 · 판정 · 방문일 · 시정), 권역 · 거리순 · 일정순, 줄마다 동그란 단추 */
+.tdtabs{display:flex;gap:5px;margin:0 -16px;padding:2px 16px;overflow-x:auto;scrollbar-width:none}
+.tdtabs::-webkit-scrollbar{display:none}
+.tdtabs button{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:0 11px;border:none;border-radius:999px;background:#f1f3f6;font:inherit;font-size:14.5px;font-weight:800;color:var(--mid);cursor:pointer}
+.tdtabs button em{font-style:normal;opacity:.75}
+.tdtabs button.on{background:var(--brand);color:#fff}
+.tdtool{display:flex;align-items:center;gap:8px}
+.tdtool .harea{min-height:42px}
+.hit{display:flex;align-items:center;gap:6px;padding:4px 12px 4px 4px;border:1px solid #e9edf2;border-radius:22px;background:#fff}
+.hit.on{background:#e6ecf7;border-color:#e6ecf7}
+.hit.on .hpill:not(.o){background:#fff}
+.hitb{flex:1;min-width:0;display:block;padding:10px 8px 10px 12px;border:none;border-radius:18px;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.hitb b{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;font-size:17px;font-weight:800}
+.hitb b small{font-size:12.5px;font-weight:700;color:var(--soft)}
+.hpl{display:flex;flex-wrap:wrap;gap:6px}
+.hgo{flex:none;width:46px;height:46px;padding:0;border:none;border-radius:50%;background:#e6ecf7;color:var(--brand);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.hgo.dk{background:var(--brand);color:#fff}
+.hit.on .hgo:not(.dk){background:#fff}
+/* 오늘 방문 — 길찾기 · 전화 (2026-10-19), 두 곳 이상이면 옆으로 넘김 */
+.htac{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.htac a{display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border-radius:12px;background:#f1f3f6;font-size:14.5px;font-weight:700;color:var(--ink);text-decoration:none}
+.htac a svg{color:var(--brand)}
+.htac a:active{background:#e6eaf0}
+.htsl{display:flex;margin:0 -14px 0 -16px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.htsl::-webkit-scrollbar{display:none}
+.htsl > .hts{flex:0 0 100%;padding:0 14px 0 16px;scroll-snap-align:start}
+.htdots{display:flex;justify-content:center;gap:5px;margin-top:10px}
+.htdots i{width:6px;height:6px;border-radius:3px;background:#d3d9e2;transition:width .2s,background .2s}
+.htdots i.on{width:18px;background:var(--brand)}
+@media (prefers-reduced-motion:reduce){.htdots i{transition:none}}
+/* 키가 작은 폰(360×740 안팎) — 홈이 한 화면에 들도록 조금씩 줄인다 */
+@media (max-height:780px){
+  .ghome .bd{gap:9px}
+  .htop{min-height:48px}
+  .hhi small{font-size:15.5px}
+  .hhi b{font-size:26px}
+  .hsrch{min-height:46px}
+  .htd{padding:12px 12px 12px 14px}
+  .htm{font-size:19px}
+  .hai{margin-top:10px;padding-top:10px}
+  .hkc{min-height:90px;padding:12px 12px 11px 14px}
+  .hks{margin-top:2px}
+  .htac{margin-top:8px}
+  .htac a{min-height:38px}
+  .htdots{margin-top:6px}
+  .htr{margin-top:6px}
+  .hkc b{font-size:19px}
+  .hkb{padding-top:6px}
+  .hkgo{width:36px;height:36px}
+  .ghome .proto{display:none}
+}
+
+/* 지킴이 홈 — 위쪽 남색 바탕 (2026-10-19 사용자 지시: 흰 카드만이라 심심하다 → 색 입히기 시안 C, 남색으로).
+   HIPA 표시 · 인사 · 찾기 뒤를 남색으로 깔고, 띠는 오늘 방문 카드 가운데서 끝난다.
+   띠 길이는 guard.js homeBand()가 카드 자리를 재서 넣는다 — 글자 크기나 알림 줄이 늘어도 카드 가운데서 끊긴다 */
+.ghome .bd{position:relative;z-index:0}
+.ghome .bd::before{content:'';position:absolute;z-index:-1;left:0;right:0;top:0;height:var(--hband,300px);background:var(--brand);pointer-events:none}
+.ghome .htd{box-shadow:0 8px 24px rgba(20,24,31,.10)}
+.ghome .htop{background:var(--brand)}
+.ghome .hlogo img{filter:brightness(0) invert(1)}
+.ghome .hbell{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
+.ghome .hbell em{background:#fff;color:var(--brand);box-shadow:0 0 0 2px var(--brand)}
+.ghome .hhi small{color:rgba(255,255,255,.75)}
+.ghome .hhi small .gtg{background:rgba(255,255,255,.15);color:#fff}
+.ghome .hhi b{color:#fff}
+.ghome .hsrch{box-shadow:none}
