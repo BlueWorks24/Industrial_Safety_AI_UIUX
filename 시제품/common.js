@@ -79,6 +79,18 @@ function upgrade(s) {
     s.visits = { ...s.visits, hanbit: '오늘 14:00', taegwang: '오늘 16:00' };
     s.v = 9;
   }
+  // 기본 체크리스트 글을 종이 체크리스트대로 (2026-10-19). 이미 쌓인 점검 · 하던 점검의 기본 문항 글도 새 글로 바꾸고,
+  // 전기안전이 4 → 3문항이 되어 없어진 4번째 문항(a3-3)은 뺀다
+  if (s.v === 9) {
+    const T = typeof CHECKLIST === 'undefined' ? null : Object.fromEntries(CHECKLIST.areas.map((a) => [a.key, a.items]));
+    const fix = (items) => items.filter((it) => {
+      const m = it.src === 'base' && T && /(a\d)-(\d+)$/.exec(it.id || ''); if (!m) return true;
+      const t = (T[m[1]] || [])[+m[2]]; if (t === undefined) return false;
+      it.text = t; return true;
+    });
+    if (T) { s.inspections.forEach((i) => { i.items = fix(i.items); }); if (s.draft && s.draft.items) s.draft.items = fix(s.draft.items); }
+    s.v = 10;
+  }
   return s;
 }
 let chan = null;
@@ -290,6 +302,7 @@ function wire(ACTS, render) {
     const t = e.target.closest('[data-act]');
     if (t && ACTS[t.dataset.act]) { e.preventDefault(); ACTS[t.dataset.act](t.dataset, t); }
   });
+  // 화면 전환 움직임(View Transitions)은 2026-10-19에 넣었다가 같은 날 뺐다 — 아이폰 사파리의 뒤로 넘기기 기본 움직임과 겹쳤다(사용자 제보)
   addEventListener('hashchange', () => { render(); scrollTo(0, 0); document.body.scrollTop = 0; });
   DB.ready.then(() => { DB.on(render); render(); });
 }

@@ -390,7 +390,7 @@ svg.i{flex:none;vertical-align:-.18em}
 .frow:active{background:#f5f7fb}
 
 /* 움직임 — 화면이 바뀔 때만 살짝 올라오며 나타남, 누르면 눌림 */
-.scr.enter .bd > *:not(.apptop){animation:rise .22s ease-out both}
+.scr.enter .bd > *:not(.apptop){animation:rise .22s ease-out backwards}  /* backwards — 끝난 뒤 transform을 붙들지 않게(홈 당김이 transform을 쓴다, 2026-10-19) */
 .scr.enter .bd > *:nth-child(3){animation-delay:.03s}
 .scr.enter .bd > *:nth-child(4){animation-delay:.06s}
 .scr.enter .bd > *:nth-child(5){animation-delay:.09s}
@@ -1144,8 +1144,6 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .rph.wait{justify-content:center}
 .rphe{font-size:13px;font-weight:700;line-height:1.35;color:var(--soft);text-align:center}
 .rph.none:not(.wait) .rphe{margin-bottom:28px}
-.rpup{display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:4px 10px;border:none;border-radius:8px;background:#fff;box-shadow:inset 0 0 0 1.5px #16284d;color:#16284d;font:inherit;font-size:12.5px;font-weight:700;line-height:1.25;text-align:left;cursor:pointer}
-.rpup svg{flex:none}
 .rnote{font-size:14px;line-height:1.45;color:var(--ink)}
 .rnote b{margin-right:6px;font-weight:700;color:var(--mid)}
 .rwhy{min-height:48px;font-size:15px}
@@ -1161,38 +1159,15 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .rphvb .rphart{position:static;width:100%;height:auto;aspect-ratio:4/3}  /* 작은 칸에서는 칸을 채우는 그림이라, 여기선 제자리에 둔다(닫기 단추를 덮던 것) */
 .rphvf{display:flex;flex-direction:column;gap:4px;padding:14px 16px 28px;color:#fff;font-size:15px}
 .rphvf span{font-size:13px;color:#aab3c2}
-/* 기업 정보 고치기 · 담당자 명함 (2026-10-14 사용자 지시) — 칸 머리 오른쪽 "고치기", 고친 칸 아래에 누가 언제 고쳤나 */
+/* 기업 정보 고치기 (2026-10-14 사용자 지시) — 칸 머리 오른쪽 "고치기", 고친 칸 아래에 누가 언제 고쳤나 */
 .gfied{min-height:38px;margin:-6px 0;padding:0 14px;border:none;border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px var(--line2);font:inherit;font-size:15px;font-weight:700;color:var(--brand);cursor:pointer}  /* 2026-10-15 글자만 있던 것 → 작은 보조 단추 */
 .gfied:active{background:var(--brand-l)}
 .gfiwho{font-size:12.5px;color:var(--soft)}
-.gfempty{display:flex;flex-direction:column;gap:10px;padding:2px 0}
-.gfempty > span{font-size:15px;color:var(--mid)}
-.gfebtn{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
-.gfebtn .btn{min-height:52px;font-size:16px}
 .fsheet .fform{display:flex;flex-direction:column;gap:6px}
 .fsheet .input{min-height:52px;font-size:17px}
 .fseg{display:flex;flex-wrap:wrap;gap:8px}
 .fseg button{flex:1 0 auto;min-height:48px;padding:0 14px;border:none;border-radius:12px;background:#f3f5f9;font:inherit;font-size:16px;font-weight:700;color:var(--ink);cursor:pointer}
 .fseg button.on{background:var(--brand-l);box-shadow:inset 0 0 0 2px var(--brand);color:var(--brand)}
-/* 명함 찍기 — 명함 비율(9:5) 네모와 네 귀퉁이. 시제품은 카메라 대신 회색 바탕 */
-.bcscan{display:grid;place-items:center;padding:18px 0 6px;border-radius:16px;background:#1d2533}
-.bcard{position:relative;display:grid;place-items:center;width:84%;aspect-ratio:9/5;margin-bottom:12px;border-radius:10px;background:rgba(255,255,255,.06)}
-.bcard > i{position:absolute;width:22px;height:22px;border:3px solid #fff}
-.bcard > i:nth-child(1){top:-2px;left:-2px;border-right:none;border-bottom:none;border-radius:8px 0 0 0}
-.bcard > i:nth-child(2){top:-2px;right:-2px;border-left:none;border-bottom:none;border-radius:0 8px 0 0}
-.bcard > i:nth-child(3){bottom:-2px;left:-2px;border-right:none;border-top:none;border-radius:0 0 0 8px}
-.bcard > i:nth-child(4){bottom:-2px;right:-2px;border-left:none;border-top:none;border-radius:0 0 8px 0}
-.bcard span{font-size:14px;color:#d6dce6}
-.bcard.read{gap:8px;align-content:center;background:rgba(255,255,255,.1);color:#fff}
-.bcard.read b{font-size:16px}
-.bcdots{display:flex;gap:6px;justify-content:center}
-.bcdots i{position:static;width:8px;height:8px;border:none;border-radius:50%;background:#fff;opacity:.3;animation:bcd 1s infinite}
-.bcdots i:nth-child(2){animation-delay:.2s}
-.bcdots i:nth-child(3){animation-delay:.4s}
-@keyframes bcd{50%{opacity:1}}
-@media (prefers-reduced-motion:reduce){.bcdots i{animation:none;opacity:.8}}
-.bcok{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--green-l);color:var(--green);font-size:15px;font-weight:700}
-.bcok svg{flex:none}
 /* 사진 AI — 점검하다가 그때그때 (2026-10-14). 체크리스트 아래 단추 줄 바로 위: 왼쪽 AI 소식 띠, 오른쪽 늘 있는 카메라 */
 .gcamrow{display:flex;align-items:center;gap:8px}
 .gaibd{flex:1;min-width:0;min-height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;border:none;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--line2);font:inherit;font-size:15px;font-weight:700;color:var(--ink);text-align:left}
@@ -1288,7 +1263,8 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .hks{margin-top:4px;font-size:13px;font-weight:600;color:var(--mid);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hks em{font-style:normal;font-weight:700;color:#c2620a}
 .hkb{margin-top:auto;padding-top:10px;display:flex;align-items:center;justify-content:space-between}
-.hkgo{width:40px;height:40px;border-radius:50%;background:#e6ecf7;color:var(--brand);display:flex;align-items:center;justify-content:center}
+/* 동그라미 화살표 대신 글자 "보기 >" (2026-10-19 사용자: 동그란 화살표가 AI스럽다 — 시안 1 글자 단추) */
+.hkgo{display:inline-flex;align-items:center;gap:1px;font-size:14px;font-weight:700;color:var(--brand)}
 .ghome .proto{margin-top:auto}
 .hpill{display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:999px;background:#f1f3f6;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
 .hpill.o{background:#fff3e6;color:#c2620a}
@@ -1302,15 +1278,14 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .tdtool{display:flex;align-items:center;gap:8px}
 .tdtool .harea{min-height:42px}
 .hit{display:flex;align-items:center;gap:6px;padding:4px 12px 4px 4px;border:1px solid #e9edf2;border-radius:22px;background:#fff}
-.hit.on{background:#e6ecf7;border-color:#e6ecf7}
-.hit.on .hpill:not(.o){background:#fff}
 .hitb{flex:1;min-width:0;display:block;padding:10px 8px 10px 12px;border:none;border-radius:18px;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 .hitb b{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;font-size:17px;font-weight:800}
 .hitb b small{font-size:12.5px;font-weight:700;color:var(--soft)}
 .hpl{display:flex;flex-wrap:wrap;gap:6px}
-.hgo{flex:none;width:46px;height:46px;padding:0;border:none;border-radius:50%;background:#e6ecf7;color:var(--brand);display:flex;align-items:center;justify-content:center;cursor:pointer}
-.hgo.dk{background:var(--brand);color:#fff}
-.hit.on .hgo:not(.dk){background:#fff}
+.hst{flex:none;display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 16px;border:none;border-radius:12px;background:var(--brand);color:#fff;font:inherit;font-size:15px;font-weight:800;white-space:nowrap;cursor:pointer}
+.hst:active{background:var(--brand-d)}
+.hst.lt{background:#e6ecf7;color:var(--brand)}
+.hst.lt:active{background:#d8e1f1}
 /* 오늘 방문 — 길찾기 · 전화 (2026-10-19), 두 곳 이상이면 옆으로 넘김 */
 .htac{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .htac a{display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border-radius:12px;background:#f1f3f6;font-size:14.5px;font-weight:700;color:var(--ink);text-decoration:none}
@@ -1341,21 +1316,82 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
   .htr{margin-top:6px}
   .hkc b{font-size:19px}
   .hkb{padding-top:6px}
-  .hkgo{width:36px;height:36px}
+  .hst{height:40px;padding:0 14px}
   .ghome .proto{display:none}
 }
 
 /* 지킴이 홈 — 위쪽 남색 바탕 (2026-10-19 사용자 지시: 흰 카드만이라 심심하다 → 색 입히기 시안 C, 남색으로).
    HIPA 표시 · 인사 · 찾기 뒤를 남색으로 깔고, 띠는 오늘 방문 카드 가운데서 끝난다.
    띠 길이는 guard.js homeBand()가 카드 자리를 재서 넣는다 — 글자 크기나 알림 줄이 늘어도 카드 가운데서 끊긴다 */
-.ghome .bd{position:relative;z-index:0}
-.ghome .bd::before{content:'';position:absolute;z-index:-1;left:0;right:0;top:0;height:var(--hband,300px);background:var(--brand);pointer-events:none}
+.ghome .bd{position:relative;z-index:0;overflow-y:clip}  /* 당겨 내린 내용이 스크롤 길이를 늘리지 않게 (2026-10-19) */
+.ghome .bd::before{content:'';position:absolute;z-index:-1;left:0;right:0;top:-300px;height:calc(var(--hband,300px) + 300px);background:var(--brand);pointer-events:none;transform:translateY(var(--pull,0px))}  /* 위로 300 더 깔아 당겨 내려도 틈이 안 보이게. 남색을 스크롤해도 제자리에 두는 것은 2026-10-19에 해 봤다가 되돌림(사용자) */
 .ghome .htd{box-shadow:0 8px 24px rgba(20,24,31,.10)}
 .ghome .htop{background:var(--brand)}
 .ghome .hlogo img{filter:brightness(0) invert(1)}
-.ghome .hbell{background:rgba(255,255,255,.14);color:#fff;box-shadow:none}
-.ghome .hbell em{background:#fff;color:var(--brand);box-shadow:0 0 0 2px var(--brand)}
+.ghome .hbell{background:none;color:#fff;box-shadow:none}  /* 둘레 원 없앰 (2026-10-19 사용자 지시) — 누르는 자리 크기는 그대로 */
+.ghome .hbell em{top:3px;right:3px;background:#fff;color:var(--brand);box-shadow:0 0 0 2px var(--brand)}  /* 원이 없어져 숫자를 종 가까이 */
 .ghome .hhi small{color:rgba(255,255,255,.75)}
 .ghome .hhi small .gtg{background:rgba(255,255,255,.15);color:#fff}
 .ghome .hhi b{color:#fff}
 .ghome .hsrch{box-shadow:none}
+/* 하단바 뒤(앱 틀 바탕)도 홈 바탕색으로 — 흰 틀이 비쳐 하단바 둘레만 색이 달랐다 (2026-10-19 사용자 제보) */
+.app:has(.ghome){background:#f2f4f7}
+/* 홈 찾기 칸 — 누르면 바로 입력, 결과는 홈 자리에 (2026-10-19 사용자 지시: 공장 탭으로 넘어가지 않게) */
+.hsrch{cursor:text}
+.hsrch input{flex:1;min-width:0;height:100%;min-height:44px;padding:0;border:none;background:none;outline:none;font:inherit;font-size:16px;font-weight:600;color:var(--ink);-webkit-appearance:none;appearance:none}
+.hsrch input::placeholder{color:#9aa3af}
+.hsrch input::-webkit-search-cancel-button{display:none}
+.hqx{flex:none;width:30px;height:30px;margin-right:-8px;padding:0;border:none;border-radius:50%;background:#eef0f3;color:var(--mid);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.hsrch input:placeholder-shown + .hqx{display:none}
+.hmain{display:contents}
+
+/* 할 일 화면도 홈과 같은 모양 (2026-10-19 사용자 지시) — 옅은 회색 바탕 위 흰 카드, 글자 단추, 둥근 알약 탭 · 권역 · 정렬 */
+.app:has(.gtodo),.gtodo{background:#f2f4f7}
+.gtodo .tdtabs button{background:#fff;box-shadow:0 1px 6px rgba(20,24,31,.05)}
+.gtodo .tdtabs button.on{background:var(--brand);box-shadow:none}
+.gtodo .harea{border:none;border-radius:999px;box-shadow:0 2px 12px rgba(20,24,31,.05)}
+.gtodo .harea.on{box-shadow:inset 0 0 0 1.5px var(--brand)}
+.gtodo .hsort{border:none;border-radius:999px;padding:3px;gap:2px;box-shadow:0 2px 12px rgba(20,24,31,.05)}
+.gtodo .hsort button{min-height:36px;border-radius:999px;padding:0 14px}
+.gtodo .hsort button + button{border-left:none}
+.gtodo .hit{padding:8px 14px 8px 6px;border:none;border-radius:24px;background:#fff;box-shadow:0 2px 12px rgba(20,24,31,.05)}
+.hpill.td{background:#e6ecf7;color:var(--brand)}
+
+/* 앱 안 글자가 길게 누르거나 끌 때 잡히지 않게 (2026-10-19 사용자 지시). 입력 칸만 고르기 그대로 */
+.app,.ctl{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.app input,.app textarea,.app [contenteditable],.ctl input,.ctl textarea{-webkit-user-select:text;user-select:text}
+.app img,.app a{-webkit-user-drag:none}
+/* 할 일 줄의 시간 · 미흡 · 기한은 알약 대신 글자 줄로 (2026-10-19 사용자: 색 알약이 AI스럽다). 사이는 가는 세로줄, 색은 글자에만 */
+.hit .hpl{gap:0;row-gap:4px}
+.hit .hpill{height:auto;padding:0;border-radius:0;background:none;font-size:14.5px;font-weight:600;color:var(--mid);line-height:1.3}
+.hit .hpill + .hpill{margin-left:10px;padding-left:10px;border-left:1px solid #dfe3e9}
+.hit .hpill.td{font-weight:800;color:var(--ink)}
+.hit .hpill.o{background:none;font-weight:700;color:#c2620a}
+.hit .hitb b{margin-bottom:5px}
+/* 홈 카드 이름 옆 아이콘 (2026-10-19 사용자 지시) */
+.hkc b{display:flex;align-items:center;gap:6px}
+.hkc b svg{flex:none;color:var(--brand)}
+/* 점검 결과 탭 — 목록 머리 오른쪽 정렬 안내 (2026-10-19) */
+.hlh .hlhs{margin-left:auto;font-size:13.5px;font-weight:700;color:var(--mid)}
+
+/* 홈 당겨서 새로고침 · 위아래 끝 스프링 (2026-10-19 사용자 지시, guard.js PULL — 움직임은 JS가 프레임마다 그린다). 머리 줄(.htop)은 두고 내용과 남색 띠만 움직인다.
+   도는 원은 내용보다 앞 DOM이라 내용 밑에 깔리고, 틈이 닫히면 투명해진다 */
+.ghome .bd > :not(.htop):not(.ptr):not(.hmain),.ghome .hmain > *{transform:translateY(var(--pull,0px))}
+.ptr{position:absolute;z-index:0;top:56px;left:50%;width:30px;height:30px;margin-left:-15px;opacity:0;pointer-events:none}
+.ptr i{display:block;width:100%;height:100%;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;transform:rotate(var(--rot,0deg))}
+.ptr.spin i{animation:gspin .7s linear infinite}
+/* 점검 결과 칸 "이번 주 n건"이 좁은 폰에서 "보기"에 붙지 않게 (2026-10-19) */
+.hkb{gap:6px}
+@media (max-width:379px){.hkc[data-v=result] .hpill{padding:0 8px;font-size:12px;letter-spacing:-.02em}}
+/* 할 일 화면의 점검 · 판정 카드 — 점검 결과 탭과 같은 카드 (2026-10-19) */
+.gtodo .fcard.tdc{border-radius:20px}
+
+/* 큰 제목 — 스크롤하면 머리 줄의 작은 제목으로 줄어든다 (2026-10-19 사용자 지시, guard.js ltitle · ltCheck) */
+.ltitle{margin:8px 2px 2px;font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.2}
+.app:has(.ltitle) .apptop .crumb{opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s}
+.app:has(.ltitle) .apptop .head{border-bottom-color:transparent;transition:border-color .2s}
+.app .apptop.shrunk .crumb{opacity:1;transform:none}
+.app .apptop.shrunk .head{border-bottom-color:var(--ring)}
+/* 재점검 탭 — 판정 필요 · 시정 중 고르기 칸 (2026-10-19). 거리순 · 일정순과 같은 모양, 한 줄 가득 */
+.gtodo .hsort.rsub{margin-left:0;display:grid;grid-template-columns:1fr 1fr}
+.gtodo .hsort.rsub button em{font-style:normal;opacity:.7}
