@@ -7,21 +7,18 @@ const OPER = (() => {
   const UI = { menu: false, lastPath: null, dlg: null, f: { rec: {}, fac: {}, fix: 'all' }, okOpen: false, cl: null, ver: null, nt: null,
     nf: {}, nn: { to: '지킴이' }, fu: null, view: 'all', zoom: 1, c: null, mv: null, sq: '', sOpen: false, si: -1, q: '', qf: null, enterLater: false, tip: null, bigMap: false, bell: false, sqi: 0, gu: '' };
   const TABS = [['', '홈'], ['insp', '점검'], ['factories', '공장'], ['squads', '점검조'], ['checklist', '체크리스트'], ['stats', '통계'], ['board', '공지·자료']];
-  const PAGE = {
-    '': ['운영 현황판', '오늘 손쓸 곳과 점검조·센서 사이트 상태를 확인하세요. 산업안전지킴이 운영센터 화면이에요.'],
-    insp: ['점검', '지킴이가 낸 점검을 검사하고, 점검 기록 · 방문 일정 · 개선 요청을 봐요.'],
-    factories: ['공장', '점검 대상 공장을 찾고 등록해요. 센서 사이트는 센서도 여기서 관리해요. 기록은 운영자도 고칠 수 없어요.'],
-    squads: ['점검조', '조를 꾸리고 읍·면·동 권역을 맡겨요. 지킴이 가입과 근무 상태도 여기서 관리해요.'],
-    checklist: ['체크리스트', '지킴이가 쓰는 점검 문항의 판이에요. 문항을 고치면 새 판으로 올려요.'],
-    stats: ['통계', '9월 점검 실적과 개선지도, 센서 경보, AI 제안이 얼마나 쓰였는지 봐요.'],
-    board: ['공지 · 자료', '지킴이와 공장주에게 알리고, 교육 자료와 양식을 올려요.'],
-    me: ['내 정보', '운영자 계정 정보예요.'],
-  };
-  // 모든 탭이 홈과 같은 틀(opShell — 남색 띠 · 흰 머리글 · 가로 메뉴 · 종)을 쓴다 (2026-10-01 사용자 지시). 화면 이름과 설명은 본문 맨 위
-  function frame(active, body, { key = active, crumb = null } = {}) {
-    const s = DB.s, [title, desc] = PAGE[key], name = crumb || title;
-    return opShell(s, todoItems(s), active, name, `<div class="oppage"><h1>${name}</h1>${desc ? `<p>${desc}</p>` : ''}</div>${body}`);
+  // 화면 이름 — 지킴이 앱처럼 큰 제목만 두고 설명 줄은 뺐다 (2026-10-20 사용자: 운영자 웹도 지킴이 앱과 비슷한 디자인으로)
+  const PAGE = { insp: '점검', factories: '공장', squads: '점검조', checklist: '체크리스트', stats: '통계', board: '공지 · 자료', me: '내 정보' };
+  // 모든 탭이 홈과 같은 틀(opShell — 흰 머리글 · 가로 메뉴 · 종)을 쓴다 (2026-10-01 사용자 지시).
+  // 본문 맨 위에 큰 제목. 한 곳을 연 화면(공장 · 조 · 새 판 …)은 제목 위에 돌아갈 곳, 아래에 짧은 사실 조각(세로줄로 나눔) — 지킴이 앱 공장 창처럼
+  function frame(active, body, { key = active, title = null, back = null, sub = [] } = {}) {
+    const s = DB.s, name = title || PAGE[key];
+    const bk = back ? `<button class="opback" ${back.act ? `data-act="${back.act}"` : `data-go="${back.go}"`}>${sv(OPI.left, 18)}${back.t}</button>` : '';
+    const subs = sub.filter(Boolean);
+    return opShell(s, todoItems(s), active, `<div class="oppage">${bk}<h1>${name}</h1>${subs.length ? `<div class="opsubt">${subs.map((x) => `<span>${x}</span>`).join('')}</div>` : ''}</div>${body}`);
   }
+  // 위 탭 — 지킴이 앱 할 일 화면의 알약 탭 (고른 탭은 남색 채움, 개수는 이름 옆)
+  const tabs = (on, list) => `<nav class="optabs">${list.map(([p, t, n]) => `<button class="${p === on ? 'on' : ''}" data-go="${p}"${p === on ? ' aria-current="page"' : ''}>${t}${n ? `<em>${n}</em>` : ''}</button>`).join('')}</nav>`;
 
   /* ---------- 작은 도구 ---------- */
   const OPS = (s) => s.op || {};
@@ -42,7 +39,8 @@ const OPER = (() => {
   const AREA = Object.fromEntries(CHECKLIST.areas.map((a) => [a.key, a]));
   const srcTag = (x) => (x.src === 'ai' ? '<span class="aitag2">AI 제안</span>' : x.src === 'self' ? '<span class="pill gray">직접 더함</span>'
     : x.src === 'prev' ? '<span class="pill amber">지난번 미흡</span>' : `<span class="pill gray">${x.area ? `${AREA[x.area].no} ${AREA[x.area].name}` : '기본'}</span>`);
-  const kv = (rows) => `<div class="facts opfacts">${rows.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>`;
+  // 이름표 · 값 표 — 지킴이 앱 기업 정보처럼 왼쪽 회색 이름, 오른쪽 굵은 값 (2026-10-20, 전에는 회색 네모 칸)
+  const kv = (rows) => `<dl class="opkv2">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
   const seg = (act, cur, opts, extra = '') => `<div class="wseg">${opts.map((o) => `<span class="${cur === o ? 'on' : ''}" data-act="${act}" data-v="${o}"${extra}>${o}</span>`).join('')}</div>`;
   const sel = (key, val, opts, label) => `<label class="opfi"><span class="lbl">${label}</span><select class="input" data-opf="${key}">${opts.map(([v, t]) => `<option value="${esc(v)}"${v === (val || '') ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`;
   const find = (key, val, ph) => `<label class="opfi grow"><span class="lbl">찾기</span><input class="input" id="opf-${key.replace('.', '-')}" data-opf="${key}" value="${esc(val || '')}" placeholder="${ph}"></label>`;
@@ -279,7 +277,7 @@ const OPER = (() => {
   function refreshTip() {
     const w = $('.opmapw');
     if (!w) return;
-    const old = w.querySelector('.optip2'), html = tipBox(DB.s, todoItems(DB.s));
+    const old = w.querySelector('.optip2'), html = fmtDates(tipBox(DB.s, todoItems(DB.s)));
     if (old) old.outerHTML = html; else if (html) w.insertAdjacentHTML('beforeend', html);
   }
   function heroMap(s, todo, dim = {}) {
@@ -460,20 +458,20 @@ const OPER = (() => {
       <div class="opax"><span style="left:0">${pts[0][0]}</span>${k ? `<span style="left:${X(k)}%">${pts[k][0]}</span>` : ''}<span style="left:100%">${pts[n - 1][0]}</span></div>`;
   }
 
-  // 틀 — 지킴이 앱처럼 남색 띠(+ 안전 줄무늬) 맨 위, 그 아래 흰 머리글(파란 방패 로고 · 가로 메뉴 · 종 · 조작판 · 내 이름).
+  // 틀 — 흰 머리글(HIPA 표시 · 가로 메뉴 · 종 · 조작판 · 내 이름). 홈에서는 머리글과 그 아래 띠가 남색 — 지킴이 앱 홈과 같다 (2026-10-20 사용자 지시).
+  // 전에는 맨 위에 남색 띠(+ 안전 줄무늬, 화면 이름 · 운영센터 · 시각)가 한 줄 더 있었다 — 지킴이 앱처럼 머리를 한 줄로, 시각은 홈 인사말로 옮김.
   // 메뉴는 보통 웹처럼 아이콘 옆 이름 (2026-10-01 사용자 지시 — 왼쪽 사이드바로 옮겼다가 같은 날 다시 위로). 휴대폰에서는 지킴이 앱처럼 화면 아래 뜬 막대
   const mainW = () => Math.min(innerWidth - (innerWidth <= 760 ? 24 : 40), 1240);
-  function opShell(s, todo, active, title, body) {
+  function opShell(s, todo, active, body) {
     const n = todo.length, hot = todo.some((x) => x.k === 'alarm');
-    return `<div class="oph"><div class="opband"><div class="opbi"><button class="hm" data-go="" aria-label="홈">${I('home', 19)}</button><span class="sep">›</span><span>${title}</span>
-        <span class="end"><span>산업안전지킴이 운영센터</span><span>${hm(s.clock)} 기준</span></span></div></div>
+    return `<div class="oph${active === '' ? ' ophome' : ''}">
       <header class="optop"><div class="opin">
-        <button class="brand opbrand" data-go="" aria-label="산업안전 운영 홈"><i class="mark"></i><span><b>산업안전 운영</b><small>산업안전지킴이 운영센터</small></span></button>
+        <button class="opbrand" data-go="" aria-label="운영센터 홈"><img src="hipa-logo.svg" alt="HIPA"><span>운영센터</span></button>
         <nav class="opnav" aria-label="메뉴">${TABS.map(([p, t]) => `<button class="${p === active ? 'on' : ''}" data-go="${p}"${p === active ? ' aria-current="page"' : ''}>${tabIcon(p, 20)}<span>${t}</span></button>`).join('')}</nav>
         <div class="opright">
-          <button class="opic${UI.bell ? ' on' : ''}" data-act="bell" aria-label="오늘 할 일 ${n}건" aria-expanded="${UI.bell}">${I('bell', 20)}${n ? `<em class="${hot ? 'hot' : ''}">${n}</em>` : ''}</button>
-          <button class="opic" data-act="ctl" aria-label="시연 조작판" title="진행자용 시연 조작판">${I('gear', 20)}</button>
-          <button class="opme" data-go="me">${esc(ME)} ${chev(15)}</button></div>
+          <button class="opic${UI.bell ? ' on' : ''}" data-act="bell" aria-label="오늘 할 일 ${n}건" aria-expanded="${UI.bell}">${I('bell', 23)}${n ? `<em class="${hot ? 'hot' : ''}">${n}</em>` : ''}</button>
+          <button class="opic" data-act="ctl" aria-label="시연 조작판" title="진행자용 시연 조작판">${I('gear', 22)}</button>
+          <button class="opme${active === 'me' ? ' on' : ''}" data-go="me">${I('user', 20)}<span>${esc(ME)}</span></button></div>
         ${UI.bell ? `<div class="opbell"><div class="opch"><b>오늘 할 일</b><em class="opcnt">${n}건</em><span class="opmut r">${hm(s.clock)} 기준</span></div>
           <div class="oplist">${todo.map((x) => `<button class="oprow" data-go="${x.go}"><span class="opth k-${x.k}">${todoIcon(x, 20)}</span>
             <span class="optx"><span class="optg k-${x.k}">${x.tag}</span><b>${esc(x.t)}${x.w ? `<span>${esc(x.w)}</span>` : ''}</b><small>${x.d.map((p) => `<span>${esc(p)}</span>`).join('')}</small></span></button>`).join('') || '<div class="opnone">지금 할 일이 없어요</div>'}</div></div>` : ''}
@@ -508,12 +506,14 @@ const OPER = (() => {
       <div class="opnums">${num('9월 점검', `${resN}<small>건</small>`, '9월 1일 ~ 17일')}${ring('9월 점검실적', done, plan, `${plan}곳 중 ${done}곳`)}</div></div>`;
     // 아이콘 네모는 같은 날 사용자 지시로 되돌림 ("원래 있던 아이콘 … 좀 더 꾸며줘") — 종류별 색: 검사 대기 파랑 · 경보 빨강 · 고장 주황 · 그 밖 남색
     // 숫자 밑 설명 줄(공장 이름 · 경보 난 센서 · 신청자 · 방문 시각)은 같은 날 사용자 지시로 뺐다 — 이름 · 아이콘 · 숫자만
-    const tile = (go, k, ic, t, val, hot) => `<button class="opc optile${hot ? ' hot' : ''}" data-go="${go}"><span class="optt"><i class="opti k-${k}">${ic}</i>${t}</span><b class="opv">${val}</b></button>`;
+    // 2026-10-20 지킴이 앱 홈 카드처럼 — 이름 앞 선 아이콘(바탕 네모 없음), 아래 줄에 숫자와 "보기 >"
+    const tile = (go, k, ic, t, val, hot) => `<button class="opc optile${hot ? ' hot' : ''}" data-go="${go}"><span class="optt"><i class="opti k-${k}">${ic}</i>${t}</span>
+      <span class="opvb"><b class="opv">${val}</b><span class="opsee">보기 ${chev(14)}</span></span></button>`;
     const tiles = `<div class="optl">
-      ${tile(w[0] ? `insp/v/${w[0].id}` : 'insp', 'wait', I('clipboard', 18), '제출 검사 대기', `${w.length}<small>건</small>`)}
-      ${tile('factories/sensor', live.length ? 'alarm' : faultN ? 'fault' : 'ok', I('alert', 18), '센서 경보', `${live.length}<small>건</small>`, live.length)}
-      ${tile('squads/guards', 'apply', I('user', 18), '가입 신청', `${ap.length}<small>명</small>`)}
-      ${tile('insp/visits', 'visit', I('calendar', 18), '오늘 방문', `${today.length}<small>곳</small>`)}</div>`;
+      ${tile(w[0] ? `insp/v/${w[0].id}` : 'insp', 'wait', I('clipboard', 20), '제출 검사 대기', `${w.length}<small>건</small>`)}
+      ${tile('factories/sensor', live.length ? 'alarm' : faultN ? 'fault' : 'ok', I('alert', 20), '센서 경보', `${live.length}<small>건</small>`, live.length)}
+      ${tile('squads/guards', 'apply', I('user', 20), '가입 신청', `${ap.length}<small>명</small>`)}
+      ${tile('insp/visits', 'visit', I('calendar', 20), '오늘 방문', `${today.length}<small>곳</small>`)}</div>`;
     // ② 점검조 — 조를 넘겨 가며 맡은 구역을 본다
     const i0 = ((UI.sqi % qs.length) + qs.length) % qs.length, q = qs[i0], t = ts[i0], prev = qs[(i0 + qs.length - 1) % qs.length], next = qs[(i0 + 1) % qs.length];
     const sentN = ts.filter((x) => x.sentOk).length, wMax = Math.max(1, ...ts.map((x) => x.week));
@@ -553,7 +553,10 @@ const OPER = (() => {
     // 범례 핀은 지도 핀과 같은 모양 (2026-10-01 사용자: 돌린 네모가 어색하다)
     const lgPin = (k) => `<svg class="lgpin k-${k}" viewBox="0 0 24 32" width="11" height="15" aria-hidden="true"><path d="${PIN_D}"/><circle cx="12" cy="12" r="4.6"/></svg>`;
     const guSel = `<div class="opgu">${[['', '전체'], ...Object.keys(GUC).map((g) => [g, g])].map(([v, l]) => `<button class="${UI.gu === v ? 'on' : ''}" data-act="gu" data-v="${v}" style="--gc:${GUC[v] || '#2458d6'}" aria-pressed="${UI.gu === v}">${v ? '<i></i>' : ''}${l}</button>`).join('')}</div>`;
-    return opShell(s, todo, '', '홈', `
+    // 지킴이 앱 홈처럼 남색 띠 위에 날짜 · 인사말, 띠는 지도 칸 위쪽에서 끝난다 (2026-10-20)
+    return opShell(s, todo, '', `
+      <div class="ophero" style="--mh:${mapH()}px">
+        <div class="ophi"><small>9월 17일 목요일 ${hm(s.clock)}</small><b>안녕하세요, ${esc(ME)}님</b></div>
         <section class="opmapw" style="height:${mapH()}px">${heroMap(s, todo)}
           <div class="opmtl"><div class="opsbox"><label class="opsearch">${sv(OPI.search, 18)}<input id="ophq" value="${esc(UI.sq)}" placeholder="공장 이름으로 찾기" aria-label="공장 이름, 읍·면·동, 업종으로 찾기" autocomplete="off" enterkeyhint="search" role="combobox" aria-expanded="${UI.sOpen}">
               ${UI.qf ? `<span class="opsn">${UI.qf.length}곳</span>` : ''}<button class="opsx" data-act="sClear" aria-label="찾기 지우기"${UI.sq || UI.qf ? '' : ' hidden'}>${I('close', 16)}</button></label>${suggBox()}</div>
@@ -562,56 +565,54 @@ const OPER = (() => {
           <div class="opzoom"><button class="opmb" data-act="zoom" data-v="1" aria-label="확대"${UI.zoom >= ZMAX ? ' disabled' : ''}>${I('plus', 20)}</button><button class="opmb" data-act="zoom" data-v="-1" aria-label="축소"${UI.zoom <= 1 ? ' disabled' : ''}>${sv(OPI.minus, 20)}</button></div>
           <div class="oplegend"><span>${lgPin('alarm')}경보</span><span>${lgPin('wait')}검사 대기</span><span>${lgPin('site')}센서 사이트</span><span><i class="dot"></i>점검 대상</span><span><i class="sq"></i>할 일 있는 동</span><span><i class="me"></i>내 위치</span></div>
           ${tipBox(s, todo)}
-        </section>
+        </section></div>
         <section class="opgrid"><div class="opcol">${cVol}${tiles}</div>${cSq}<div class="opcol">${cNext}${cFix}</div></section>
         <div class="proto">시제품이라 다른 조 숫자, 일별 점검 건수, 6~8월 개선지도는 가상이에요.<br>지도 경계 출처: 통계청 SGIS, vuski/admdongkor (CC BY 4.0)</div>
         ${UI.bigMap ? bigMap(s, todo) : ''}`);
   }
 
   /* ---------- M2 점검 — 제출 검사 · 점검 기록 · 방문 일정 · 개선 요청 · 주간 보고 ---------- */
-  function inspTabs(s, on) {
-    const n = waiting(s).length;
-    return `<nav class="wtabs sub">${[['insp', `제출 검사${n ? ` <span class="pill blue">${n}</span>` : ''}`], ['insp/all', '점검 기록'], ['insp/visits', '방문 일정'], ['insp/fix', '개선 요청'], ['insp/weekly', '주간 보고']]
-      .map(([p, t]) => `<button class="${p === on ? 'on' : ''}" data-go="${p}">${t}</button>`).join('')}</nav>`;
-  }
+  const inspTabs = (s, on) => tabs(on, [['insp', '제출 검사', waiting(s).length], ['insp/all', '점검 기록'], ['insp/visits', '방문 일정'], ['insp/fix', '개선 요청'], ['insp/weekly', '주간 보고']]);
   function inspDetail(s, i, act) {
     const f = FACTORIES[i.fid], st = stOf(i), prev = i.items.filter((x) => x.ref), bad = badOf(i);
     // 답은 양호 · 보통 · 불량 · 해당 없음 (2026-10-07). 개선 요청은 불량만
     const ok = i.items.filter((x) => x.answer === 'ok' && !x.ref), mid = i.items.filter((x) => x.answer === 'mid' && !x.ref), na = i.items.filter((x) => x.answer === 'na' && !x.ref), none = i.items.filter((x) => !x.answer);
     const noMemo = bad.filter((x) => !x.memo && !(x.risks || []).length), hist = [...(i.backs || []), ...(i.back ? [i.back] : [])];
-    const line = (x, w) => `<div class="small">· ${esc(x.text)} — ${w}${x.eval ? ` (${esc(x.eval)})` : ''}</div>`;
+    // 2026-10-20 지킴이 앱 결로 — `·` 이음 · 그림 문자(✓ ⚠ 📷 🔒 ▸)를 걷고, 개수는 세로줄로 나눈 조각, 접고 펴기는 꺾쇠 아이콘
+    const line = (x, w) => `<div class="opln"><span>${esc(x.text)}</span><b>${w}</b>${x.eval ? `<small>${esc(x.eval)}</small>` : ''}</div>`;
+    const cnt = [['양호', ok.length], ['보통', mid.length], ['해당 없음', na.length], ['답 없음', none.length]].filter(([k, n]) => n || k === '양호');
     return `
       <div class="rowx"><span class="opttl">${f.name}</span>${stPill(i)}</div>
       ${kv([['점검번호', insNo(s, i)], ['점검일', i.date], ['지킴이', `${insTeam(i)} ${esc(i.by)}`], ['읍·면·동', f.dong], ['업종', f.type], ['결과', i.result || RESULTS[0]], ['판', i.ver || CHECKLIST.ver], ['문항', i.items.length + '개']])}
-      ${hist.map((b) => `<div class="warn"><b>${b.at} 반려</b> · ${esc(b.note)}${b === i.back ? '' : ' → 고쳐서 다시 냄'}</div>`).join('')}
-      ${prev.length ? `<div class="lbl">지난번 미흡 확인 ${prev.length}개</div>${prev.map((x) => `<div class="item2${x.answer === 'bad' ? ' strong' : ''}"><div class="rowx"><b>${esc(x.text)}</b><span class="state">${FIXED_ANS(x.answer) ? '✓ 고쳐짐' : x.answer === 'bad' ? '⚠ 안 고쳐짐' : '답 없음'}</span></div>
+      ${hist.map((b) => `<div class="warn"><b>${b.at} 반려</b><br>${esc(b.note)}${b === i.back ? '' : '<br>고쳐서 다시 냄'}</div>`).join('')}
+      ${prev.length ? `<div class="lbl">지난번 미흡 확인 ${prev.length}개</div>${prev.map((x) => `<div class="item2${x.answer === 'bad' ? ' strong' : ''}"><div class="rowx"><b>${esc(x.text)}</b><span class="state">${FIXED_ANS(x.answer) ? '고쳐짐' : x.answer === 'bad' ? '안 고쳐짐' : '답 없음'}</span></div>
         ${x.reason ? `<div class="small">안 고쳐진 사정: ${esc(x.reason)}</div>` : ''}${(x.risks || []).length ? `<div class="small">위험요인: ${x.risks.map(esc).join(', ')}</div>` : ''}${x.memo ? `<div class="small">위험요인 내용: ${esc(x.memo)}</div>` : ''}</div>`).join('')}` : ''}
       <div class="lbl">불량 ${bad.length}개</div>
       ${bad.map((x) => `<div class="item2 strong"><div class="rowx"><b>${esc(x.text)}</b>${srcTag(x)}</div>
-        ${(x.risks || []).length ? `<div class="small">위험요인: <b class="ink">${x.risks.map(esc).join(', ')}</b></div>` : ''}<div class="small">${x.memo ? `위험요인 내용: ${esc(x.memo)}` : '<b class="opno">위험요인 내용 없음</b>'}${x.shot ? ' · 📷 사진 1장' : ''}</div>${x.eval ? `<div class="small">평가 내용: ${esc(x.eval)}</div>` : ''}</div>`).join('') || '<div class="small">불량 없음</div>'}
-      <button class="add" data-act="okToggle">양호 ${ok.length}개${mid.length ? ` · 보통 ${mid.length}개` : ''}${na.length ? ` · 해당 없음 ${na.length}개` : ''}${none.length ? ` · 답 없음 ${none.length}개` : ''} ${UI.okOpen ? '▾ 접기' : '▸ 펼치기'}</button>
-      ${UI.okOpen ? [...none.map((x) => line(x, '<b class="ink">답 없음</b>')), ...ok.map((x) => line(x, '양호')), ...mid.map((x) => line(x, '보통')), ...na.map((x) => line(x, '해당 없음'))].join('') : ''}
+        ${(x.risks || []).length ? `<div class="small">위험요인: <b class="ink">${x.risks.map(esc).join(', ')}</b></div>` : ''}<div class="small">${x.memo ? `위험요인 내용: ${esc(x.memo)}` : '<b class="opno">위험요인 내용 없음</b>'}</div>${x.shot ? '<div class="small">사진 1장</div>' : ''}${x.eval ? `<div class="small">평가 내용: ${esc(x.eval)}</div>` : ''}</div>`).join('') || '<div class="small">불량 없음</div>'}
+      <button class="add opfold" data-act="okToggle" aria-expanded="${UI.okOpen}"><span class="opsubt">${cnt.map(([k, n]) => `<span>${k} ${n}개</span>`).join('')}</span>${I(UI.okOpen ? 'chevronDown' : 'chevron', 18)}</button>
+      ${UI.okOpen ? [...none.map((x) => line(x, '답 없음')), ...ok.map((x) => line(x, '양호')), ...mid.map((x) => line(x, '보통')), ...na.map((x) => line(x, '해당 없음'))].join('') : ''}
       ${act && st === 'wait' ? `
-        ${noMemo.length || none.length ? `<div class="warn"><b>살펴볼 점</b>${noMemo.length ? `<br>· 불량 항목 ${noMemo.length}개에 위험요인이 없어요` : ''}${none.length ? `<br>· 답하지 않은 항목이 ${none.length}개 있어요` : ''}</div>` : ''}
+        ${noMemo.length || none.length ? `<div class="warn"><b>살펴볼 점</b>${noMemo.length ? `<br>불량 항목 ${noMemo.length}개에 위험요인이 없어요` : ''}${none.length ? `<br>답하지 않은 항목이 ${none.length}개 있어요` : ''}</div>` : ''}
         <div class="row opact"><button class="btn ghost inl" data-act="backOpen" data-id="${i.id}">반려</button><button class="btn inl" data-act="okOpenDlg" data-id="${i.id}">승인</button></div>` : ''}
-      ${st === 'ok' ? `<div class="small">🔒 ${i.okAt ? `${i.okAt} ${esc(i.okBy || '운영자')} 승인 · ` : ''}승인한 점검은 고칠 수 없어요${bad.length ? ` · 불량 ${bad.length}개는 공장주에게 개선 요청으로 갔어요` : ''}</div>` : ''}
+      ${st === 'ok' ? `<div class="opnote">${I('lock', 16)}<span>${i.okAt ? `${i.okAt} ${esc(i.okBy || '운영자')} 승인<br>` : ''}승인한 점검은 고칠 수 없어요${bad.length ? `<br>불량 ${bad.length}개는 공장주에게 개선 요청으로 갔어요` : ''}</span></div>` : ''}
       ${st === 'back' ? '<div class="small">지킴이가 고쳐서 다시 내기를 기다려요</div>' : ''}`;
   }
   function review(s, id) {
     const list = waiting(s), cur = list.find((i) => i.id === id) || list[0];
-    if (!cur) return frame('insp', `${inspTabs(s, 'insp')}<div class="kcard"><div class="kt">검사 기다리는 점검이 없어요</div>
-      <div class="small">지킴이가 점검을 내면 여기에 올라와요. 처리한 점검은 점검 기록에서 봐요.</div><button class="more" data-go="insp/all">점검 기록 보기</button></div>`);
+    if (!cur) return frame('insp', `${inspTabs(s, 'insp')}<div class="kcard opempty"><div class="kt">검사 기다리는 점검이 없어요</div><button class="more" data-go="insp/all">점검 기록 보기</button></div>`);
     return frame('insp', `${inspTabs(s, 'insp')}
       <div class="split"><div class="list"><div class="lbl">오래된 것부터 ${list.length}건</div>
         ${list.map((i) => `<button class="q ${i === cur ? 'now' : ''}" data-go="insp/v/${i.id}"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span>${(i.backs || []).length ? '<span class="pill amber">다시 냄</span>' : ''}</div>
-          <div class="small">${insTeam(i)} ${esc(i.by)} · ${i.date} 점검<br>${i.result || RESULTS[0]} · 불량 ${badOf(i).length}개</div></button>`).join('')}</div>
+          <div class="opsubt"><span>${i.date} 점검</span><span>${insTeam(i)} ${esc(i.by)}</span></div><div class="opsubt"><span>${i.result || RESULTS[0]}</span><span>불량 ${badOf(i).length}개</span></div></button>`).join('')}</div>
       <div class="detail">${inspDetail(s, cur, true)}</div></div>`);
   }
+  // 점검 한 건 — 한 곳을 연 화면이라 위 탭 대신 돌아가기 (2026-10-20)
   function inspView(s, id) {
     const i = s.inspections.find((x) => x.id === id);
     if (!i) return recList(s);
     if (stOf(i) === 'wait') return review(s, id);
-    return frame('insp', `${inspTabs(s, 'insp/all')}<div><button class="link" data-act="back">← 뒤로</button></div><div class="detail opone">${inspDetail(s, i, false)}</div>`);
+    return frame('insp', `<div class="detail opone">${inspDetail(s, i, false)}</div>`, { title: '점검 보기', back: { act: 'back', t: '뒤로' } });
   }
   function recList(s) {
     const F = UI.f.rec, sq = squads(s);
@@ -642,7 +643,7 @@ const OPER = (() => {
     rows.sort((a, b) => visitKey(a.when) - visitKey(b.when));
     const none = allFids(s).filter((fid) => !s.visits[fid]).length;
     return frame('insp', `${inspTabs(s, 'insp/visits')}
-      <div class="small">지킴이가 정해 둔 방문일이에요. 공장주와 따로 날을 맞추거나 미리 안 정하고 가기도 해요. 방문일이 없는 공장 ${none}곳.</div>
+      <div class="opsubt opcount"><span>방문일 정한 곳 ${rows.length}곳</span><span>안 정한 곳 ${none}곳</span></div>
       <div class="tscroll"><table><tr><th>방문</th><th>공장</th><th>읍·면·동</th><th>점검조</th><th></th></tr>
         ${rows.map((r) => { const f = FACTORIES[r.fid], q = sqOfDong(s, f.dong); return `<tr class="click" data-go="factory/${r.fid}"><td><b>${esc(r.when)}</b></td><td>${f.name}</td><td>${f.dong}</td><td>${q ? q.name : '—'}</td><td class="go">보기 ›</td></tr>`; }).join('')}
       </table></div>`);
@@ -651,16 +652,16 @@ const OPER = (() => {
     const all = tracked(s), k = UI.f.fix, cnt = (x) => all.filter((e) => e.st === x).length;
     const rows = all.filter((e) => k === 'all' || e.st === k);
     const news = (e) => { const l = (e.it.log || []).slice(-1)[0]; if (!l) return '—';
-      return l.t === 'fix' ? `${l.at} 공장주 "고쳤어요"${l.note ? ` · ${esc(l.note)}` : ''}` : `${l.at} 점검에서 ${l.result === 'fixed' ? '고쳐짐' : '안 고쳐짐'}${l.reason ? ` · ${esc(l.reason)}` : ''}`; };
-    const chips = [['all', `전체 ${all.length}`], ['todo', `아직 안 고침 ${cnt('todo')}`], ['claimed', `고쳤다고 함 ${cnt('claimed')}`], ['back', `안 고쳐짐 ${cnt('back')}`], ['fixed', `고쳐짐 확인 ${cnt('fixed')}`]];
+      return l.t === 'fix' ? `${l.at} 공장주 "고쳤어요"${l.note ? `<br>${esc(l.note)}` : ''}` : `${l.at} 점검에서 ${l.result === 'fixed' ? '고쳐짐' : '안 고쳐짐'}${l.reason ? `<br>${esc(l.reason)}` : ''}`; };
+    const chips = [['all', '전체', all.length], ['todo', '아직 안 고침', cnt('todo')], ['claimed', '고쳤다고 함', cnt('claimed')], ['back', '안 고쳐짐', cnt('back')], ['fixed', '고쳐짐 확인', cnt('fixed')]];
+    // 상태 거르기 — 지킴이 앱 고르기 칸처럼 한 상자를 나눈 칸, 고른 칸은 옅은 남색 (2026-10-20)
     return frame('insp', `${inspTabs(s, 'insp/fix')}
-      <div class="wseg">${chips.map(([v, t]) => `<span class="${k === v ? 'on' : ''}" data-act="fixF" data-v="${v}">${t}</span>`).join('')}</div>
+      <div class="opseg">${chips.map(([v, t, n]) => `<button class="${k === v ? 'on' : ''}" data-act="fixF" data-v="${v}" aria-pressed="${k === v}">${t}<em>${n}</em></button>`).join('')}</div>
       <div class="tscroll"><table><tr><th>공장</th><th>불량 항목</th><th>찾은 날</th><th>지킴이</th><th>상태</th><th>마지막 소식</th><th></th></tr>
         ${rows.map((e) => `<tr class="click" data-go="factory/${e.ins.fid}"><td><b>${FACTORIES[e.ins.fid].name}</b></td><td>${esc(e.it.text)}</td><td>${e.ins.date}</td><td>${esc(e.ins.by)}</td>
           <td><span class="pill ${WORD[e.st][1]}">${WORD[e.st][0]}</span></td><td class="small">${news(e)}</td><td class="go">보기 ›</td></tr>`).join('')}
       </table></div>
       ${rows.length ? '' : '<div class="small">맞는 항목이 없어요.</div>'}
-      <div class="small">승인한 점검의 불량 항목이 공장주에게 개선 요청으로 가요. 고쳐졌는지는 다음 점검 때 지킴이가 확인하고, 그 점검을 승인하면 상태가 바뀌어요.</div>
       <div class="proto">시제품 · 개선 요청 목록은 ${TEAM.name} 것만 있어요</div>`);
   }
   // 주간 보고 — 진흥원 답을 받은 뒤 다시 만든다 (2026-10-01 사용자 결정). 지금은 기존 웹 목록 칸 그대로 받은 것만 보인다
@@ -669,8 +670,8 @@ const OPER = (() => {
     const others = squads(s).filter((q) => q.id !== 'e1' && q.sent).map((q) => ({ team: q.name, by: q.lead, area: q.areas[0], firms: q.week, c: [q.week, 0, 0, 0], at: '9/16' }));
     const rows = [...ours, ...others], notSent = squads(s).filter((q) => !sqStats(s, q).sentOk).map((q) => q.name);
     return frame('insp', `${inspTabs(s, 'insp/weekly')}
-      <div class="warn">⏸ 주간 보고는 진흥원에 업무 방식을 물은 뒤 다시 만들어요. 지금은 기존 웹 목록 모양으로 받은 것만 보여요.</div>
-      <div class="small">${WEEK.label} · 받은 보고 ${rows.length}건${notSent.length ? ` · 미제출 조: ${notSent.join(', ')}` : ''}</div>
+      <div class="warn">주간 보고는 진흥원에 업무 방식을 물은 뒤 다시 만들어요. 지금은 기존 웹 목록 모양으로 받은 것만 보여요.</div>
+      <div class="opsubt opcount"><span>${WEEK.label}</span><span>받은 보고 ${rows.length}건</span>${notSent.length ? `<span>미제출 ${notSent.join(', ')}</span>` : ''}</div>
       <div class="tscroll"><table><tr><th>번호</th><th>점검조</th><th>작성자</th><th>행정구역</th><th>기업수</th>${RESULTS.map((r) => `<th>${r}</th>`).join('')}<th>등록일</th></tr>
         ${rows.map((r, k) => `<tr><td>${rows.length - k}</td><td><b>${esc(r.team)}</b></td><td>${esc(r.by)}</td><td>${esc(r.area)}</td><td>${r.firms}</td>${r.c.map((n) => `<td>${n}</td>`).join('')}<td>${r.at}</td></tr>`).join('')}
       </table></div>`);
@@ -692,7 +693,7 @@ const OPER = (() => {
     });
     const dongs = ALL_DONGS.filter((d) => allFids(s).some((fid) => facOf(s, fid).dong === d)), types = [...new Set(allFids(s).map((fid) => facOf(s, fid).type))];
     return frame('factories', `
-      <div class="rowx"><span class="kt plain">공장 ${rows.length}곳</span><button class="btn inl" data-go="factories/new">＋ 공장 등록</button></div>
+      <div class="rowx"><span class="kt plain">공장 ${rows.length}곳</span><button class="btn inl" data-go="factories/new">${I('plus', 18)}공장 등록</button></div>
       <div class="opf">${sel('fac.dong', F.dong, [['', '모든 읍·면·동'], ...dongs.map((d) => [d, d])], '읍·면·동')}${sel('fac.type', F.type, [['', '모든 업종'], ...types.map((t) => [t, t])], '업종')}
         ${sel('fac.kind', F.kind, [['', '전체'], ['소공인', '소공인'], ['소기업', '소기업'], ['중소기업', '중소기업']], '기업 종류')}
         ${sel('fac.sq', F.sq, [['', '모든 조'], ...squads(s).map((q) => [q.id, q.name])], '맡은 조')}
@@ -712,7 +713,6 @@ const OPER = (() => {
     const inp = (id, label, ph, must) => `<label class="opfld"><span class="lbl">${label}${must ? ' *' : ''}</span><input class="input" id="${id}" placeholder="${ph}"></label>`;
     const nseg = (k, opts) => seg('nfSet', d[k], opts, ` data-k="${k}"`);
     return frame('factories', `
-      <div class="rowx"><span class="h1"><button class="link" data-go="factories">← 공장 목록</button> 공장 등록</span><span class="small">* 꼭 적을 칸</span></div>
       <div class="kgrid">
         <div class="kcard"><div class="kt">기업 정보</div>
           ${inp('nfName', '기업명', '예: 대성정밀', 1)}${inp('nfBiz', '사업자번호', '000-00-00000', 1)}${inp('nfCeo', '대표자', '예: 박대표', 1)}
@@ -723,32 +723,33 @@ const OPER = (() => {
         <div class="kcard"><div class="kt">위치 · 등록사유</div>
           <label class="opfld"><span class="lbl">읍·면·동 *</span><select class="input" data-opnf="dong"><option value="">고르세요</option>${ALL_DONGS.map((x) => `<option${x === d.dong ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
           ${inp('nfAddr', '주소', '예: 동탄산업로 12')}
-          <div class="small">맡을 조: <b class="ink">${q ? q.name : d.dong ? '이 읍·면·동을 맡은 조가 없어요' : '읍·면·동을 고르면 정해져요'}</b></div>
+          ${kv([['맡을 조', q ? q.name : d.dong ? '맡은 조 없음' : '읍·면·동을 고르면 정해져요']])}
           <div class="lbl">등록사유 *</div>${nseg('why', ['현장등록', '점검신청', '점검거부', '기업DB', '기타'])}
           ${d.why === '점검거부' ? '<div class="warn">점검 거부로 등록하면 기록으로만 남겨요. 지킴이 목록에는 올리지 않아요.</div>' : ''}</div>
         <div class="kcard"><div class="kt">공장주 초대</div>
-          ${inp('nfTel', '대표 휴대폰', '010-0000-0000', 1)}
-          <div class="small">등록하면 이 번호로 초대 문자가 가요. 공장주는 휴대폰 번호로 인증하고 들어와요.</div></div>
+          ${inp('nfTel', '대표 휴대폰', '010-0000-0000', 1)}</div>
       </div>
-      <div class="row opact"><button class="btn ghost inl" data-go="factories">취소</button><button class="btn inl" data-act="nfSave">등록하고 초대 보내기</button></div>`);
+      <div class="row opact"><button class="btn ghost inl" data-go="factories">취소</button><button class="btn inl" data-act="nfSave">등록하고 초대 보내기</button></div>`,
+      { title: '공장 등록', back: { go: 'factories', t: '공장 목록' }, sub: ['* 꼭 적을 칸'] });
   }
   const STW = { watch: ['감시 중', 'green'], repair: ['수리 중', 'gray'], unknown: ['값 모름', 'amber'] };
   const SEN_KINDS = [['vib', '진동 · 온도'], ['gas', '가스'], ['power', '전기'], ['leak', '누수'], ['th', '온습도']];
   function addedRows(s, fid) {
     return ((OPS(s).sensorsAdd || {})[fid] || []).map((x) => `<div class="srow2"><span class="sic">${I(TYPE_ICON[x.kind] || 'alert', 20)}</span><div class="stx"><b>${esc(x.name)}</b>
-      <small>${esc(x.zone)} · ${x.on === '기계' ? `${esc(x.machine)}에 붙임` : '공간에 둠'} · ${x.limit ? `사양서 한계 ${esc(x.limit)}` : '사양서 한계 없음'}</small></div><span class="pill gray">설치 기다림</span></div>`).join('');
+      <small class="opsubt"><span>${esc(x.zone)}</span><span>${x.on === '기계' ? `${esc(x.machine)}에 붙임` : '공간에 둠'}</span><span>${x.limit ? `사양서 한계 ${esc(x.limit)}` : '사양서 한계 없음'}</span></small></div><span class="pill gray">설치 기다림</span></div>`).join('');
   }
   function sensorAdmin(s, fid) {
     return `<div class="kcard"><div class="kt">센서 ${SITE_SENSORS(fid).length}대</div>${SITE_SENSORS(fid).map((k) => {
       const st = SIM.sensor(s, k), f = (s.faults || []).find((x) => x.key === k && x.status === 'open');
       const live = s.alarms.find((a) => a.key === k && SIM.live(a));
       const [w, c] = live && st.state === 'watch' ? ['경보 중', 'red'] : STW[st.state];
-      let sub = SENSORS[k].where, act = '';
-      if (f) { sub = `${f.at} ${f.by} 고장 신고 · "${f.reason}"${f.memo ? ' · ' + f.memo : ''}${f.photo ? ' · 📷 사진' : ''}`; act = `<button class="more sm" data-act="opFault" data-k="${k}">신고 확인</button>`; }
-      else if (st.state === 'repair') { sub = `${st.since} ${st.by} 수리 중으로 돌림${st.note ? ' · ' + st.note : ''}`; act = `<button class="more sm" data-act="opRestore" data-k="${k}">수리 끝 · 감시로 되돌리기</button>`; }
-      else if (st.state === 'unknown') sub = `${st.since}부터 값이 안 와요 · 설치 담당에게 확인`;
-      return `<div class="srow2"><span class="sic">${I(iconOf(k), 20)}</span><div class="stx"><b>${SENSORS[k].title}</b><small>${esc(sub)}</small></div><span class="pill ${c}">${w}</span>${act}</div>`;
-    }).join('')}${addedRows(s, fid)}<button class="more" data-act="senOpen" data-fid="${fid}">＋ 센서 더하기</button></div>`;
+      // 자세한 것은 줄을 나눠 쓴다 (2026-10-20 — `·`로 잇지 않기)
+      let sub = [SENSORS[k].where], act = '';
+      if (f) { sub = [`${f.at} ${f.by} 고장 신고`, `"${f.reason}"`, f.memo, f.photo && '사진 있음']; act = `<button class="more sm" data-act="opFault" data-k="${k}">신고 확인</button>`; }
+      else if (st.state === 'repair') { sub = [`${st.since} ${st.by} 수리 중으로 돌림`, st.note]; act = `<button class="more sm" data-act="opRestore" data-k="${k}">감시로 되돌리기</button>`; }
+      else if (st.state === 'unknown') sub = [`${st.since}부터 값이 안 와요`, '설치 담당에게 확인'];
+      return `<div class="srow2"><span class="sic">${I(iconOf(k), 20)}</span><div class="stx"><b>${SENSORS[k].title}</b><small>${sub.filter(Boolean).map(esc).join('<br>')}</small></div><span class="pill ${c}">${w}</span>${act}</div>`;
+    }).join('')}${addedRows(s, fid)}<button class="more" data-act="senOpen" data-fid="${fid}">${I('plus', 18)}센서 더하기</button></div>`;
   }
   function factory(s, fid) {
     const f = facOf(s, fid);
@@ -761,42 +762,38 @@ const OPER = (() => {
     const info = kv([['대표', esc(fm.ceo)], ['사업자번호', esc(fm.biz)], ['업종', esc(fm.ksic ? `${f.type} (${fm.ksic[0]})` : f.type)], ['기업 종류', fm.kind], ['소유 형태', fm.own || '—'],
       ['근로자', `${f.workers || '—'}명${fm.foreign ? ` (외국인 ${fm.foreign})` : ''}`], ['주소', `화성시 ${f.dong} ${esc(fm.addr || '')}`], ['전화', esc(fm.tel)], ['등록사유', fm.why]]);
     const nowCard = `<div class="kcard ${live.length ? 'kalarm' : ''}"><div class="kt">지금 ${live.length ? `경보 ${live.length}건` : '이상 없음'}</div>
-      ${live.map((a) => `<div class="small ink">⚠ ${esc(SIM.title(a))} · ${a.status === 'open' ? '조치 안 됨' : a.status === 'remind' ? '다시 알림 중' : '조치됨, 지켜보는 중'}${a.escalated ? ' · <b>미루기 다 씀</b>' : ''}</div>`).join('') || '<div class="small">센서 모두 감시 중</div>'}
-      ${live.length ? '<div class="small">센서 고장이면 공장주 신고를 받아 "수리 중"으로 돌려요</div>' : ''}</div>`;
+      ${live.map((a) => `<div class="small ink"><b>${esc(SIM.title(a))}</b><br>${a.status === 'open' ? '조치 안 됨' : a.status === 'remind' ? '다시 알림 중' : '조치됨, 지켜보는 중'}${a.escalated ? '<br><b>미루기 다 씀</b>' : ''}</div>`).join('') || '<div class="small">센서 모두 감시 중</div>'}</div>`;
+    // 2026-10-20 지킴이 앱 공장 창처럼 — 위에 돌아갈 곳 · 큰 이름 · 사실 조각, 카드 안은 이름표 · 값 표, 그림 문자와 설명 줄은 뺌
     return frame('factories', `
-      <div class="rowx"><span class="h1"><button class="link" data-go="factories">← 공장 목록</button> ${esc(f.name)}</span>
-        <span class="small">화성시 ${f.dong} · ${esc(f.type)} · 맡은 조 ${q ? `<button class="link" data-go="squads/${q.id}">${q.name}</button>` : '<b class="ink">없음</b>'}</span></div>
       <div class="kgrid">
-        <div class="kcard"><div class="kt">기업 정보</div>${info}${isNew ? `<div class="small">🔗 ${fm.at} 공장주 초대 보냄 · 아직 가입 안 함</div>` : ''}</div>
+        <div class="kcard"><div class="kt">기업 정보</div>${info}${isNew ? `<div class="small">${fm.at} 공장주 초대 보냄<br>아직 가입 안 함</div>` : ''}</div>
         ${f.ll ? `<div class="kcard"><div class="kt">위치</div><div class="opfmap" id="opNv" data-mode="fac:${fid}">${NV.st === 'ready' ? '' : miniMap(fid)}</div>
-          <div class="small">화성시 ${f.dong} ${esc(fm.addr || '')}${NV.st === 'fail' ? ' · 네이버 지도를 불러오지 못해 그림 지도로 보여요' : ''}</div></div>` : ''}
+          <div class="small">화성시 ${f.dong} ${esc(fm.addr || '')}${NV.st === 'fail' ? '<br>네이버 지도를 불러오지 못해 그림 지도로 보여요' : ''}</div></div>` : ''}
         <div class="kcard"><div class="kt">지킴이 점검 ${list.length}건</div>
-          <div class="small">다음 방문: <b class="ink">${esc(visit)}</b></div>
-          ${list.map((i) => `<button class="rrow oprr" data-go="insp/v/${i.id}"><span><b>${i.date}</b> ${esc(i.by)} · ${i.result || RESULTS[0]}</span><span>불량 ${badOf(i).length}개 ${stPill(i)}</span></button>`).join('')
-            || `<div class="small">${fm.why === '점검거부' ? '점검을 거부한 공장이에요 · 기록으로만 남겨요' : '아직 점검 기록이 없어요'}</div>`}</div>
+          ${kv([['다음 방문', esc(visit)]])}
+          ${list.map((i) => `<button class="rrow oprr" data-go="insp/v/${i.id}"><span class="opsubt"><span><b>${i.date}</b></span><span>${esc(i.by)}</span><span>${i.result || RESULTS[0]}</span></span><span>불량 ${badOf(i).length}개 ${stPill(i)}</span></button>`).join('')
+            || `<div class="small">${fm.why === '점검거부' ? '점검을 거부한 공장이에요<br>기록으로만 남겨요' : '아직 점검 기록이 없어요'}</div>`}</div>
         <div class="kcard"><div class="kt">남은 개선 요청 ${open.length}개</div>
-          ${open.map((e) => `<div class="rrow"><span>${esc(e.it.text)}<br><span class="small">${e.ins.date} 점검</span></span><span class="pill ${WORD[e.st][1]}">${WORD[e.st][0]}</span></div>`).join('') || '<div class="small">남은 것 없음</div>'}
-          <div class="small">고쳐졌는지는 다음 점검 때 지킴이가 확인해요.</div></div>
-        ${hasS ? nowCard + sensorAdmin(s, fid) : `<div class="kcard"><div class="kt">센서</div>${addedRows(s, fid) || '<div class="small">센서를 달지 않은 곳이에요 · 지킴이 점검만 해요</div>'}
-          <button class="more" data-act="senOpen" data-fid="${fid}">＋ 센서 달기</button></div>`}
+          ${open.map((e) => `<div class="rrow"><span>${esc(e.it.text)}<br><span class="small">${e.ins.date} 점검</span></span><span class="pill ${WORD[e.st][1]}">${WORD[e.st][0]}</span></div>`).join('') || '<div class="small">남은 것 없음</div>'}</div>
+        ${hasS ? nowCard + sensorAdmin(s, fid) : `<div class="kcard"><div class="kt">센서</div>${addedRows(s, fid) || '<div class="small">센서를 달지 않은 곳이에요</div>'}
+          <button class="more" data-act="senOpen" data-fid="${fid}">${I('plus', 18)}센서 달기</button></div>`}
       </div>
       ${hasS ? `<div class="kt plain">센서 이상 기록</div>
       ${al.length ? `<div class="tscroll"><table><tr><th>시작</th><th>무엇이</th><th>조치 완료</th><th>끝남</th></tr>
-        ${al.map((a) => { const k = a.acks[0]; return `<tr><td>${a.day} ${hm(a.start)}</td><td><b>${esc(SIM.title(a))}</b></td><td>${k ? `${esc(k.by)} · ${k.at - a.start}분 뒤` : '—'}</td><td>${SIM.live(a) ? '<b>진행 중</b>' : SIM.endWord(a)}</td></tr>`; }).join('')}
+        ${al.map((a) => { const k = a.acks[0]; return `<tr><td>${a.day} ${hm(a.start)}</td><td><b>${esc(SIM.title(a))}</b></td><td>${k ? `${esc(k.by)}<br><span class="small">${k.at - a.start}분 뒤</span>` : '—'}</td><td>${SIM.live(a) ? '<b>진행 중</b>' : SIM.endWord(a)}</td></tr>`; }).join('')}
       </table></div>` : '<div class="kcard"><div class="small">최근 3개월 기록 없음</div></div>'}
-      <div class="small">🔒 기록은 운영자도 고칠 수 없어요.</div>` : ''}
-      ${isNew ? '<div class="proto">시제품 · 새로 등록한 공장은 지킴이 앱에 아직 안 이어져요</div>' : ''}`);
+      <div class="opnote">${I('lock', 16)}<span>기록은 운영자도 고칠 수 없어요</span></div>` : ''}
+      ${isNew ? '<div class="proto">시제품 · 새로 등록한 공장은 지킴이 앱에 아직 안 이어져요</div>' : ''}`,
+      { title: esc(f.name), back: { go: 'factories', t: '공장 목록' },
+        sub: [`화성시 ${f.dong}`, esc(f.type), q ? `<button class="link" data-go="squads/${q.id}">${q.name}</button> 담당` : '맡은 조 없음'] });
   }
 
   /* ---------- M4 점검조 — 조 목록 · 조 편성 · 지킴이 명단 ---------- */
-  function sqTabs(s, on) {
-    const n = pendingApps(s).length;
-    return `<nav class="wtabs sub"><button class="${on === 'list' ? 'on' : ''}" data-go="squads">조 목록</button><button class="${on === 'guards' ? 'on' : ''}" data-go="squads/guards">지킴이 명단${n ? ` <span class="pill blue">가입 신청 ${n}</span>` : ''}</button></nav>`;
-  }
+  const sqTabs = (s, on) => { const n = pendingApps(s).length; return tabs(on, [['squads', '조 목록'], ['squads/guards', '지킴이 명단', n ? `가입 신청 ${n}` : '']]); };
   function sqList(s) {
     const qs = squads(s), loose = ALL_DONGS.filter((d) => !qs.some((q) => q.areas.includes(d)));
-    return frame('squads', `${sqTabs(s, 'list')}
-      ${loose.length ? `<div class="warn">맡은 조가 없는 읍·면·동 ${loose.length}곳: ${loose.join(', ')} · 이곳 공장은 지킴이 목록에 안 올라요</div>` : ''}
+    return frame('squads', `${sqTabs(s, 'squads')}
+      ${loose.length ? `<div class="warn">맡은 조가 없는 읍·면·동 ${loose.length}곳: ${loose.join(', ')}<br>이곳 공장은 지킴이 목록에 안 올라요</div>` : ''}
       <div class="tscroll"><table><tr><th>점검조</th><th>조장</th><th>조원</th><th>담당 권역</th><th>공장</th><th>9월 점검</th><th>등록년도</th><th></th></tr>
         ${qs.map((q) => { const t = sqStats(s, q); return `<tr class="click" data-go="squads/${q.id}"><td><b>${esc(q.name)}</b></td><td>${esc(q.lead)}</td><td>${q.members.filter((m) => m !== q.lead).map(esc).join(', ') || '—'}</td>
           <td>${areaText(q.areas)}</td><td>${t.firms}곳</td><td>${t.month}곳</td><td>${q.since}</td><td class="go">편성 ›</td></tr>`; }).join('')}
@@ -807,27 +804,25 @@ const OPER = (() => {
     if (!q) return sqList(s);
     const g = guardsAll(s), t = sqStats(s, q);
     const free = Object.keys(g).filter((n) => !sqOfGuard(s, n) && g[n].work !== '퇴직');
-    return frame('squads', `${sqTabs(s, 'list')}
-      <div class="rowx"><span class="h1"><button class="link" data-go="squads">← 조 목록</button> ${esc(q.name)}</span><span class="small">${q.since}년 등록 · 공장 ${t.firms}곳 · 9월 점검 ${t.month}곳 · 이번 주 ${t.week}건</span></div>
+    // 조 한 곳 — 위 탭 대신 돌아가기, 사실 조각은 이름 아래 (2026-10-20)
+    return frame('squads', `
       <div class="kgrid">
         <div class="kcard"><div class="kt">조원 ${q.members.length}명</div>
-          ${q.members.map((m) => `<div class="srow2"><div class="stx"><b>${esc(m)}${m === q.lead ? ' <span class="pill blue">조장</span>' : ''}</b><small>${g[m] ? `${g[m].field} · ${g[m].work}` : ''}</small></div>
+          ${q.members.map((m) => `<div class="srow2"><div class="stx"><b>${esc(m)}${m === q.lead ? ' <span class="pill blue">조장</span>' : ''}</b><small class="opsubt">${g[m] ? `<span>${g[m].field}</span><span>${g[m].work}</span>` : ''}</small></div>
             ${m !== q.lead ? `<button class="more sm" data-act="sqLead" data-id="${q.id}" data-m="${esc(m)}">조장으로</button><button class="more sm danger" data-act="sqOut" data-id="${q.id}" data-m="${esc(m)}">빼기</button>` : ''}</div>`).join('')}
-          ${free.length ? `<div class="row"><select class="input" id="sqAdd">${free.map((n) => `<option value="${esc(n)}">${esc(n)} (${g[n].field} · ${g[n].work})</option>`).join('')}</select><button class="btn inl" data-act="sqIn" data-id="${q.id}">넣기</button></div>`
-            : '<div class="small">넣을 수 있는 지킴이가 없어요 · 모두 조가 있어요</div>'}
-          <div class="small">기존 웹처럼 조장 한 명과 조원으로 꾸려요. 조장은 다른 사람을 조장으로 바꾼 뒤에 뺄 수 있어요.</div></div>
+          ${free.length ? `<div class="row"><select class="input" id="sqAdd">${free.map((n) => `<option value="${esc(n)}">${esc(n)} (${g[n].field}, ${g[n].work})</option>`).join('')}</select><button class="btn inl" data-act="sqIn" data-id="${q.id}">넣기</button></div>`
+            : '<div class="small">넣을 수 있는 지킴이가 없어요</div>'}</div>
         <div class="kcard"><div class="kt">담당 권역 ${q.areas.length}곳</div>
-          <div class="wseg opdong">${ALL_DONGS.map((d) => { const o = sqOfDong(s, d); return `<span class="${o && o.id === q.id ? 'on' : ''}" data-act="sqArea" data-id="${q.id}" data-d="${d}">${d}${o && o.id !== q.id ? `<small>${esc(o.name)}</small>` : ''}</span>`; }).join('')}</div>
-          <div class="small">누르면 맡기거나 풀어요. 다른 조가 맡은 곳을 누르면 이 조로 옮겨요.</div></div>
+          <div class="wseg opdong">${ALL_DONGS.map((d) => { const o = sqOfDong(s, d); return `<span class="${o && o.id === q.id ? 'on' : ''}" data-act="sqArea" data-id="${q.id}" data-d="${d}">${d}${o && o.id !== q.id ? `<small>${esc(o.name)}</small>` : ''}</span>`; }).join('')}</div></div>
       </div>
-      ${q.id === 'e1' ? '<div class="proto">시제품 · 조 편성을 바꿔도 지킴이 앱에는 아직 안 이어져요</div>' : ''}`);
+      ${q.id === 'e1' ? '<div class="proto">시제품 · 조 편성을 바꿔도 지킴이 앱에는 아직 안 이어져요</div>' : ''}`,
+      { title: esc(q.name), back: { go: 'squads', t: '조 목록' }, sub: [`${q.since}년 등록`, `공장 ${t.firms}곳`, `9월 점검 ${t.month}곳`, `이번 주 ${t.week}건`] });
   }
   function guardList(s) {
     const g = guardsAll(s), ap = pendingApps(s), rej = APPLICANTS.filter((a) => (OPS(s).apply || {})[a.name] === 'no');
-    return frame('squads', `${sqTabs(s, 'guards')}
+    return frame('squads', `${sqTabs(s, 'squads/guards')}
       ${ap.length ? `<div class="kcard bookreq"><div class="kt">가입 신청 ${ap.length}명</div>
-        ${ap.map((a) => `<div class="srow2"><div class="stx"><b>${a.name}</b><small>${a.field} · ${a.at} 신청 · ${a.tel}</small></div><button class="btn ghost inl" data-act="apNo" data-n="${a.name}">반려</button><button class="btn inl" data-act="apOk" data-n="${a.name}">승인</button></div>`).join('')}
-        <div class="small">승인하면 조가 없는 지킴이로 올라요. 조 목록에서 조에 넣어 주세요.</div></div>` : ''}
+        ${ap.map((a) => `<div class="srow2"><div class="stx"><b>${a.name}</b><small class="opsubt"><span>${a.field}</span><span>${a.at} 신청</span><span>${a.tel}</span></small></div><button class="btn ghost inl" data-act="apNo" data-n="${a.name}">반려</button><button class="btn inl" data-act="apOk" data-n="${a.name}">승인</button></div>`).join('')}</div>` : ''}
       <div class="tscroll"><table><tr><th>이름</th><th>분야</th><th>점검조</th><th>근무 상태</th><th>가입</th></tr>
         ${Object.entries(g).map(([n, x]) => { const q = sqOfGuard(s, n); return `<tr><td><b>${esc(n)}</b>${q && q.lead === n ? ' <span class="pill blue">조장</span>' : ''}</td><td>${x.field}</td>
           <td>${q ? `<button class="link" data-go="squads/${q.id}">${esc(q.name)}</button>` : '<span class="pill amber">조 없음</span>'}</td>
@@ -844,13 +839,13 @@ const OPER = (() => {
     const vs = vers(s), v = vs.find((x) => x.ver === UI.ver) || vs[0], areas = areasOf(v);
     const used = s.inspections.filter((i) => (i.ver || CHECKLIST.ver) === v.ver).length;
     return frame('checklist', `
-      <div class="rowx"><span class="kt plain">판 ${vs.length}개</span><button class="btn inl" data-go="checklist/new">＋ 새 판 만들기</button></div>
+      <div class="rowx"><span class="kt plain">판 ${vs.length}개</span><button class="btn inl" data-go="checklist/new">${I('plus', 18)}새 판 만들기</button></div>
       <div class="split"><div class="list">${vs.map((x, k) => `<button class="q ${x === v ? 'now' : ''}" data-act="verSel" data-v="${x.ver}">
-          <div class="rowx"><span class="t">${x.ver}</span>${k === 0 ? '<span class="pill green">지금 씀</span>' : ''}</div><div class="small">${x.at} 올림 · ${x.n}문항<br>${esc(x.what)}</div></button>`).join('')}</div>
+          <div class="rowx"><span class="t">${x.ver}</span>${k === 0 ? '<span class="pill green">지금 씀</span>' : ''}</div><div class="opsubt"><span>${x.at} 올림</span><span>${x.n}문항</span></div><div class="small">${esc(x.what)}</div></button>`).join('')}</div>
         <div class="detail">
-          <div class="rowx"><span class="opttl">${v.ver}</span><span class="small">🔒 올린 판은 고칠 수 없어요</span></div>
+          <div class="rowx"><span class="opttl">${v.ver}</span><span class="opnote">${I('lock', 16)}<span>올린 판은 고칠 수 없어요</span></span></div>
           ${kv([['올린 날', v.at], ['문항', v.n + '개'], ['이 판으로 한 점검', used + '건'], ['바뀐 점', esc(v.what)]])}
-          ${areas ? areas.map((a) => `<div class="kcard"><div class="kt">${a.no} ${a.name} <span class="small">${a.common ? '공통' : '설비별'} · ${a.items.length}문항</span></div>
+          ${areas ? areas.map((a) => `<div class="kcard"><div class="kt">${a.no} ${a.name} <span class="opsubt"><span>${a.common ? '공통' : '설비별'}</span><span>${a.items.length}문항</span></span></div>
             <ol class="opol">${a.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ol></div>`).join('')
             : '<div class="kcard"><div class="small">지난 판의 문항은 시제품에 없어요. 판 번호와 바뀐 점만 남겨 두었어요.</div></div>'}
         </div></div>
@@ -863,15 +858,14 @@ const OPER = (() => {
     if (!UI.cl) UI.cl = areasOf(cur).map((a) => ({ key: a.key, no: a.no, name: a.name, common: a.common, items: a.items.map((t) => ({ t, o: t })) }));
     const c = clCount(UI.cl), next = nextVer(s);
     return frame('checklist', `
-      <div class="rowx"><span class="h1"><button class="link" data-act="clCancel">← 판 목록</button> 새 판 만들기</span><span class="small">${cur.ver}을 바탕으로 · 새 판 번호 <b class="ink">${next}</b></span></div>
-      <div class="kcard"><div class="kbody"><div class="kv">${c.n}<small>문항</small></div><div class="kside"><div><span>고침</span><em>${c.fix}</em></div><div><span>새 항목</span><em>${c.add}</em></div><div><span>뺌</span><em>${c.del}</em></div></div></div>
-        <div class="small">문항을 고치거나 빼고 더한 뒤 올려요. 올리기 전에는 지킴이에게 안 가요.</div></div>
-      ${UI.cl.map((a, ai) => `<div class="kcard"><div class="kt">${a.no} ${a.name} <span class="small">${a.common ? '공통' : '설비별'}</span></div>
+      <div class="kcard"><div class="kbody"><div class="kv">${c.n}<small>문항</small></div><div class="kside"><div><span>고침</span><em>${c.fix}</em></div><div><span>새 항목</span><em>${c.add}</em></div><div><span>뺌</span><em>${c.del}</em></div></div></div></div>
+      ${UI.cl.map((a, ai) => `<div class="kcard"><div class="kt">${a.no} ${a.name} <span class="opsubt"><span>${a.common ? '공통' : '설비별'}</span></span></div>
         ${a.items.map((x, k) => { const mark = x.del ? ['뺌', 'gray'] : x.o == null ? ['새 항목', 'blue'] : x.t !== x.o ? ['고침', 'amber'] : null;
           return `<div class="opcl${x.del ? ' del' : ''}"><span class="opn">${k + 1}</span><input class="input" id="cl-${ai}-${k}" data-opcl="${ai}:${k}" value="${esc(x.t)}"${x.del ? ' disabled' : ''} aria-label="${a.name} ${k + 1}번 문항">
             ${mark ? `<span class="pill ${mark[1]}">${mark[0]}</span>` : ''}<button class="more sm${x.del ? '' : ' danger'}" data-act="clDel" data-a="${ai}" data-k="${k}">${x.del ? '되살리기' : '빼기'}</button></div>`; }).join('')}
-        <button class="add" data-act="clAdd" data-a="${ai}">＋ 이 영역에 문항 더하기</button></div>`).join('')}
-      <div class="row opact"><button class="btn ghost inl" data-act="clCancel">그만두기</button><button class="btn inl" data-act="clUp">${next}로 올리기</button></div>`);
+        <button class="add" data-act="clAdd" data-a="${ai}">${I('plus', 18)}이 영역에 문항 더하기</button></div>`).join('')}
+      <div class="row opact"><button class="btn ghost inl" data-act="clCancel">그만두기</button><button class="btn inl" data-act="clUp">${next}로 올리기</button></div>`,
+      { title: '새 판 만들기', back: { act: 'clCancel', t: '판 목록' }, sub: [`${cur.ver} 바탕`, `새 판 번호 <b>${next}</b>`] });
   }
 
   /* ---------- M6 통계 ---------- */
@@ -884,17 +878,17 @@ const OPER = (() => {
     const items = s.inspections.flatMap((i) => i.items), ai = items.filter((x) => x.src === 'ai'), withAi = s.inspections.filter((i) => i.items.some((x) => x.src === 'ai'));
     return frame('stats', `
       <div class="kgrid">
-        ${kcard({ t: '점검실적 · 9월', v: pct(done, plan), unit: '%', rows: [['계획', plan + '곳'], ['실적', done + '곳']] })}
+        ${kcard({ t: '9월 점검실적', v: pct(done, plan), unit: '%', rows: [['계획', plan + '곳'], ['실적', done + '곳']] })}
         ${kcard({ t: '9월 점검 결과', v: resN, unit: '건', rows: RESULTS.map((r, k) => [r, res[k] + '건']) })}
-        ${kcard({ t: '개선지도', v: pct(fxOk, fxReq), unit: fxReq ? '%' : '', rows: [['요청', fxReq + '건'], ['고쳐짐 확인', fxOk + '건']], go: 'insp/fix' })}
+        ${kcard({ t: '개선지도', v: pct(fxOk, fxReq), unit: fxReq ? '%' : '', rows: [['요청', fxReq + '건'], ['고쳐짐 확인', fxOk + '건']], go: 'insp/fix', more: '개선 요청 보기' })}
       </div>
-      <div class="kcard"><div class="kt">월별 점검 건수 <span class="small">모든 조 · 9월은 17일까지</span></div>
+      <div class="kcard"><div class="kt">월별 점검 건수 <span class="opsubt"><span>모든 조</span><span>9월은 17일까지</span></span></div>
         <div class="opbars">${months.map(([m, n], k) => `<div class="opbar${k === months.length - 1 ? ' now' : ''}"><em>${n}</em><i style="height:${Math.round((n / max) * 140)}px"></i><span>${m}</span></div>`).join('')}</div></div>
       <div class="kt plain">조별 9월</div>
       <div class="tscroll"><table><tr><th>점검조</th><th>공장</th><th>9월 실적</th><th>실적률</th>${RESULTS.map((r) => `<th>${r}</th>`).join('')}<th>개선 요청</th><th>고쳐짐 확인</th></tr>
         ${qs.map(({ q, t }) => `<tr class="click" data-go="squads/${q.id}"><td><b>${esc(q.name)}</b></td><td>${t.firms}곳</td><td>${t.month}곳</td><td>${pct(t.month, t.firms)}%</td>${t.res.map((n) => `<td>${n}</td>`).join('')}<td>${t.fx[0]}</td><td>${t.fx[1]}</td></tr>`).join('')}
       </table></div>
-      <div class="kt plain">센서 사이트 <span class="small">· 최근 3개월</span></div>
+      <div class="kt plain">센서 사이트 <span class="opsubt"><span>최근 3개월</span></span></div>
       <div class="tscroll"><table><tr><th>공장</th><th>경보</th><th>조치까지 평균</th><th>아무도 안 누름</th><th>수리로 닫힘</th><th>고장 신고</th><th>지금 값 모름</th></tr>
         ${Object.keys(FACTORIES).filter(HAS_SENSORS).map((fid) => { const al = s.alarms.filter((a) => alarmFid(a) === fid), ak = al.filter((a) => a.acks.length);
           return `<tr class="click" data-go="factory/${fid}"><td><b>${FACTORIES[fid].name}</b></td><td>${al.length}건</td><td>${ak.length ? Math.round(sum(ak.map((a) => a.acks[0].at - a.start)) / ak.length) + '분' : '—'}</td>
@@ -906,7 +900,6 @@ const OPER = (() => {
         ${kcard({ t: 'AI 제안 쓰임', v: pct(ai.length, withAi.length * AI_SHOWN), unit: withAi.length ? '%' : '', rows: [['보여 준 제안', withAi.length * AI_SHOWN + '개'], ['지킴이가 더함', ai.length + '개'], ['그중 불량', ai.filter((x) => x.answer === 'bad').length + '개']] })}
         ${kcard({ t: '지킴이가 직접 더한 문항', v: items.filter((x) => x.src === 'self').length, unit: '개', rows: [['AI를 쓴 점검', withAi.length + '건'], ['모든 점검', s.inspections.length + '건']] })}
       </div>
-      <div class="small">AI 제안은 지킴이가 원할 때만 써요. 기본 체크리스트가 먼저예요. 더한 제안에서 "불량"이 많이 나올수록 쓸모 있는 제안이에요.</div>
       <div class="proto">시제품 · 다른 조 숫자와 4~8월은 가상이에요. AI·센서 숫자는 ${TEAM.name}과 센서 사이트 3곳 기록에서 셌어요</div>`);
   }
 
@@ -916,13 +909,11 @@ const OPER = (() => {
   const TO = ['지킴이', '공장주', '모두'];
   const toCount = (s, to) => { const gN = Object.values(guardsAll(s)).filter((x) => x.work === '근무').length, oN = allFids(s).length;
     return to === '지킴이' ? `지킴이 ${gN}명` : to === '공장주' ? `공장주 ${oN}명` : `지킴이 ${gN}명과 공장주 ${oN}명`; };
-  function bdTabs(on) {
-    return `<nav class="wtabs sub"><button class="${on === 'n' ? 'on' : ''}" data-go="board">공지</button><button class="${on === 'f' ? 'on' : ''}" data-go="board/files">자료실</button></nav>`;
-  }
+  const bdTabs = (on) => tabs(on === 'n' ? 'board' : 'board/files', [['board', '공지'], ['board/files', '자료실']]);
   function ntList(s) {
     const list = notices(s);
     return frame('board', `${bdTabs('n')}
-      <div class="rowx"><span class="kt plain">공지 ${list.length}건</span><button class="btn inl" data-go="board/new">＋ 공지 쓰기</button></div>
+      <div class="rowx"><span class="kt plain">공지 ${list.length}건</span><button class="btn inl" data-go="board/new">${I('plus', 18)}공지 쓰기</button></div>
       <div class="tscroll"><table><tr><th>번호</th><th>받는 쪽</th><th>제목</th><th>쓴 날</th><th>쓴 사람</th></tr>
         ${list.map((n, k) => `<tr class="click" data-act="ntOpen" data-id="${n.id}"><td>${list.length - k}</td><td><span class="pill ${n.to === '모두' ? 'blue' : 'gray'}">${n.to}</span></td><td><b>${esc(n.title)}</b></td><td>${n.at}</td><td>${esc(n.by || ME)}</td></tr>
           ${UI.nt === n.id ? `<tr class="opbody"><td colspan="5">${esc(n.body).replace(/\n/g, '<br>')}</td></tr>` : ''}`).join('')}
@@ -931,32 +922,31 @@ const OPER = (() => {
   }
   function ntNew(s) {
     const d = UI.nn;
-    return frame('board', `${bdTabs('n')}
+    return frame('board', `
       <div class="kgrid"><div class="kcard"><div class="kt">새 공지</div>
         <div class="lbl">받는 쪽</div>${seg('nnTo', d.to, TO)}
         <div class="lbl">제목</div><input class="input" id="nnTitle" value="${esc(d.title || '')}" placeholder="예: 추석 연휴 점검 일정">
         <div class="lbl">내용</div><textarea class="input" id="nnBody" style="min-height:150px" placeholder="짧은 문장으로 나눠 쓰면 읽기 쉬워요">${esc(d.body || '')}</textarea>
         <div class="row opact"><button class="btn ghost inl" data-go="board">취소</button><button class="btn inl" data-act="nnPost">올리기</button></div></div>
-      <div class="kcard"><div class="kt">받는 사람</div><div class="kbody"><div class="kv opkv">${toCount(s, d.to)}</div></div>
-        <div class="small">올리면 바로 알림이 가요. 올린 공지는 <b class="ink">고칠 수 없어요</b>. 틀렸으면 새로 올려요.</div>
-        <div class="small">공장주가 근로자에게 쓰는 "안전 공지"와는 달라요.</div></div></div>`);
+      <div class="kcard"><div class="kt">받는 사람</div><div class="kbody"><div class="kv opkv">${toCount(s, d.to)}</div></div></div></div>`,
+      { title: '공지 쓰기', back: { go: 'board', t: '공지' } });
   }
   function fileList(s) {
     const list = files(s), u = UI.fu;
     return frame('board', `${bdTabs('f')}
-      <div class="rowx"><span class="kt plain">자료 ${list.length}건</span><button class="btn inl" data-act="fuOpen">${u ? '닫기' : '＋ 자료 올리기'}</button></div>
+      <div class="rowx"><span class="kt plain">자료 ${list.length}건</span><button class="btn inl${u ? ' ghost' : ''}" data-act="fuOpen">${u ? '닫기' : `${I('plus', 18)}자료 올리기`}</button></div>
       ${u ? `<div class="kcard"><div class="kt">자료 올리기</div>
-        <div class="row"><label class="btn ghost inl">파일 고르기<input type="file" hidden data-opfu></label><span class="small">${u.name ? `<b class="ink">${esc(u.name)}</b> · ${u.size}` : '고른 파일 없음'}</span></div>
+        <div class="row"><label class="btn ghost inl">파일 고르기<input type="file" hidden data-opfu></label><span class="small">${u.name ? `<b class="ink">${esc(u.name)}</b> ${u.size}` : '고른 파일 없음'}</span></div>
         <div class="lbl">받는 쪽</div>${seg('fuTo', u.to, TO)}
         <div class="row opact"><button class="btn inl" data-act="fuSave">올리기</button></div></div>` : ''}
       <div class="tscroll"><table><tr><th>자료</th><th>받는 쪽</th><th>크기</th><th>올린 날</th><th></th></tr>
-        ${list.map((f) => `<tr><td><b>📄 ${esc(f.name)}</b></td><td><span class="pill ${f.to === '모두' ? 'blue' : 'gray'}">${f.to}</span></td><td>${f.size}</td><td>${f.at}</td><td><button class="more sm" data-act="fileGet">내려받기</button></td></tr>`).join('')}
+        ${list.map((f) => `<tr><td><b>${esc(f.name)}</b></td><td><span class="pill ${f.to === '모두' ? 'blue' : 'gray'}">${f.to}</span></td><td>${f.size}</td><td>${f.at}</td><td><button class="more sm" data-act="fileGet">내려받기</button></td></tr>`).join('')}
       </table></div>`);
   }
   function me(s) {
     return frame('me', `<div class="kgrid"><div class="kcard"><div class="kt">계정</div>
       ${kv([['이름', esc(ME)], ['역할', '운영자'], ['소속', '산업안전지킴이 운영센터'], ['아이디', 'admin'], ['휴대폰', '010-0000-0100']])}
-      <div class="row"><button class="btn ghost inl" data-act="pw">비밀번호 바꾸기</button><button class="btn ghost inl" data-act="logout">로그아웃</button></div></div></div>`, { crumb: '내 정보' });
+      <div class="row"><button class="btn ghost inl" data-act="pw">비밀번호 바꾸기</button><button class="btn ghost inl" data-act="logout">로그아웃</button></div></div></div>`);
   }
 
   /* ---------- 창 ---------- */
@@ -965,13 +955,13 @@ const OPER = (() => {
     const live = s.alarms.filter((a) => a.key === k && SIM.live(a));
     const recent = s.alarms.filter((a) => a.key === k).slice(0, 3);
     return `<div class="ov" data-act="close"></div><div class="dlg wide">
-      <div class="mid" style="font-size:20px">${FACTORIES[SENSORS[k].fid].name} · ${SENSORS[k].title} 센서 고장 신고</div>
-      ${f ? `<div class="q" style="box-shadow:inset 0 0 0 1px var(--line)"><div class="t">${f.at} ${esc(f.by)} · "${esc(f.reason)}"</div><div class="small">${esc(f.memo || '메모 없음')}${f.photo ? ' · 📷 사진 1장' : ''}</div></div>` : ''}
-      <div class="small">최근 경보: ${recent.map((a) => `${a.day} ${hm(a.start)} ${SIM.endWord(a)}`).join(' · ') || '없음'}</div>
+      <div class="mid" style="font-size:20px">${FACTORIES[SENSORS[k].fid].name} ${SENSORS[k].title} 센서 고장 신고</div>
+      ${f ? `<div class="q" style="box-shadow:inset 0 0 0 1px var(--line)"><div class="t">${f.at} ${esc(f.by)}</div><div class="small ink">"${esc(f.reason)}"</div><div class="small">${esc(f.memo || '메모 없음')}${f.photo ? '<br>사진 1장' : ''}</div></div>` : ''}
+      ${kv([['최근 경보', recent.map((a) => `${a.day} ${hm(a.start)} ${SIM.endWord(a)}`).join('<br>') || '없음']])}
       ${SENSORS[k].kind === 'state' ? '<div class="warn"><b>켜짐·꺼짐 센서</b>라 값이 멈춰 있는 것만으로는 고장이라 할 수 없어요 — 물이 계속 닿아 있어도 똑같이 보여요. 공장주 사진과 함께 판단하세요.</div>' : ''}
       <div class="small ink">센서는 멀쩡하고 <b>작업 때문</b>이라면 수리 중으로 돌리지 말고 공장주에게 <b>작업 예정 알리기</b>를 안내하세요.</div>
       <div class="warn">수리 중으로 돌리면<br>· 열린 경보 ${live.length}건이 <b>닫혀요</b> (기록: "수리로 닫힘")<br>· <b>되돌릴 때까지 이 센서는 경보가 울리지 않아요</b><br>· 공장주와 근로자 ${(s.workers || []).filter((w) => (w.fid || 'daesung') === SENSORS[k].fid).length}명 화면에 "수리 중"이 떠요</div>
-      <input class="input" id="opNote" placeholder="수리 메모 (안 써도 돼요) · 예: 설치 담당 방문 9/18">
+      <input class="input" id="opNote" placeholder="수리 메모 (안 써도 돼요) 예: 설치 담당 방문 9/18">
       <div class="row" style="justify-content:flex-end;flex-wrap:wrap"><button class="btn ghost inl" data-act="opReject" data-k="${k}">센서 정상 · 신고 닫기</button><button class="btn inl" data-act="close">돌리지 않기</button><button class="btn ghost inl danger" data-act="opRepair" data-k="${k}">수리 중으로 돌리기</button></div>
     </div>`;
   }
@@ -992,13 +982,13 @@ const OPER = (() => {
       <div class="small">반려하면 ${esc(i.by)} 지킴이 앱 맨 위에 "반려됨"으로 돌아가요. 고쳐서 다시 내면 여기에 다시 올라와요.</div>
       <div class="lbl">사유 · 여럿 골라도 돼요</div>
       <div class="wseg">${WHY.map((w) => `<span class="${why.includes(w) ? 'on' : ''}" data-act="rjWhy" data-v="${w}">${w}</span>`).join('')}</div>
-      <textarea class="input" id="rjNote" placeholder="더 적을 말 (안 써도 돼요) · 예: 2번 항목은 어느 기계인지 적어 주세요"></textarea>
+      <textarea class="input" id="rjNote" placeholder="더 적을 말 (안 써도 돼요) 예: 2번 항목은 어느 기계인지 적어 주세요"></textarea>
       <div class="row" style="justify-content:flex-end"><button class="btn inl" data-act="close">취소</button><button class="btn ghost inl danger" data-act="doBack" data-id="${i.id}">반려</button></div></div>`;
   }
   function senDlg(s) {
     const d = UI.dlg, f = facOf(s, d.fid);
     return `<div class="ov" data-act="close"></div><div class="dlg wide">
-      <div class="mid" style="font-size:20px">${esc(f.name)} · 센서 더하기</div>
+      <div class="mid" style="font-size:20px">${esc(f.name)} 센서 더하기</div>
       <div class="small">구역 → 기계 → 센서 차례로 적어요. 값이 들어오기 시작하면 감시를 시작해요.</div>
       <label class="opfld"><span class="lbl">구역 *</span><input class="input" id="snZone" placeholder="예: A동 2라인"></label>
       <div class="lbl">붙이는 곳</div>${seg('senSet', d.on, ['기계', '공간'], ' data-k="on"')}
@@ -1012,8 +1002,8 @@ const OPER = (() => {
     const c = clCount(UI.cl), next = nextVer(s), cur = vers(s)[0];
     return `<div class="ov" data-act="close"></div><div class="dlg wide">
       <div class="mid" style="font-size:20px">${next}로 올릴까요?</div>
-      <div class="small">고침 ${c.fix} · 새 항목 ${c.add} · 뺌 ${c.del} · 모두 ${c.n}문항</div>
-      <div class="warn">올리면<br>· 다음 점검부터 지킴이가 이 판으로 점검해요<br>· 지난 점검은 옛 판(${cur.ver}) 그대로 남아요<br>· 지금 점검 중인 것은 옛 판으로 끝내요<br>· 올린 판은 <b>고칠 수 없어요</b> · 바꾸려면 다시 새 판을 만들어요</div>
+      <div class="opsubt"><span>고침 ${c.fix}</span><span>새 항목 ${c.add}</span><span>뺌 ${c.del}</span><span>모두 ${c.n}문항</span></div>
+      <div class="warn">올리면<br>· 다음 점검부터 지킴이가 이 판으로 점검해요<br>· 지난 점검은 옛 판(${cur.ver}) 그대로 남아요<br>· 지금 점검 중인 것은 옛 판으로 끝내요<br>· 올린 판은 <b>고칠 수 없어요</b>. 바꾸려면 다시 새 판을 만들어요</div>
       <div class="row" style="justify-content:flex-end"><button class="btn ghost inl" data-act="close">더 고치기</button><button class="btn inl" data-act="clConfirm">올리기</button></div></div>`;
   }
   function nnDlg(s) {
@@ -1043,14 +1033,14 @@ const OPER = (() => {
     else if (p[0] === 'board') html = p[1] === 'new' ? ntNew(s) : p[1] === 'files' ? fileList(s) : ntList(s);
     else if (p[0] === 'me') html = me(s);
     else html = home(s);
-    if (UI.dlg && DLG[UI.dlg.type]) html += DLG[UI.dlg.type](s);
+    if (UI.dlg && DLG[UI.dlg.type]) html = html.replace(/<\/div>$/, () => `${DLG[UI.dlg.type](s)}</div>`);  // 창도 .oph 안에 — 같은 단추 · 알약 모양을 받게 (2026-10-20)
     // 다시 그려도 쓰던 글자와 커서를 지킨다 (데이터가 1초마다 새로 올 수 있음)
     const ae = document.activeElement, keepId = ae && ae.id;
     let ss = null, se = null;
     try { ss = ae.selectionStart; se = ae.selectionEnd; } catch (e) {}
     const vals = {};
     document.querySelectorAll('#app input[id], #app textarea[id], #app select[id]').forEach((el) => { vals[el.id] = el.value; });
-    $('#app').innerHTML = html;
+    $('#app').innerHTML = fmtDates(html);  // 날짜 8/20 → 08.20 — 지킴이 앱과 같게 (2026-10-20)
     Object.entries(vals).forEach(([k, v]) => { const el = document.getElementById(k); if (el && !el.value && v) el.value = v; });
     if (keepId) { const el = document.getElementById(keepId); if (el) { el.focus(); try { if (ss != null) el.setSelectionRange(ss, se); } catch (e) {} } }
     if ($('#opNv')) { nvLoad(); nvMount(); }  // 네이버 지도 자리가 있으면 불러와 얹는다

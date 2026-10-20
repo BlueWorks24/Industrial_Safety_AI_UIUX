@@ -56,7 +56,7 @@ const B = 'http://127.0.0.1:8765/';
   const V = await dev(390, 844);
   await V.goto(B + 'worker.html#/join/DS-NGUYEN'); await ready(V); await V.click('[data-act="accept"]'); await V.click('[data-act="notifOn"]');
   await V.waitForTimeout(800); await shot(V, 'vi_home_newnotice');
-  await go(V, '#/notice'); await V.click('.q.now'); await shot(V, 'vi_notice_new'); await V.click('[data-act="readN"]');
+  await go(V, '#/notice'); await V.click('.wcard:has(.gtg.now)'); await shot(V, 'vi_notice_new'); await V.click('[data-act="readN"]');  // 안 읽은 공지 카드 (2026-10-20 모양 바뀜)
   await O.waitForTimeout(1500); await shot(O, 'owner_notice_read');
   await go(O, '#/notice'); await shot(O, 'owner_notice_list');
 

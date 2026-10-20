@@ -324,10 +324,6 @@ function sbar(state) {
   return `<div class="sbar" id="sbar"><span class="clock">${Math.floor(m / 60) % 24}:${String(m % 60).padStart(2, '0')}</span><span class="island"></span>
     <span class="icons">${vib ? ICON.vib : ''}${off ? ICON.nosignal : ICON.signal + ICON.wifi}${ICON.battery}</span></div>`;
 }
-// 앱 머리글 — 웹 머리글과 같은 결 (방패 표시 + 이름 + 오른쪽 내 이름)
-function appBar(title, sub, right = '') {
-  return `<div class="appbar"><i class="mark" title="시연 조작판: 세 번 누르기"></i><div class="ttl"><b>${title}</b><small>${sub}</small></div><span class="ar">${right}</span></div>`;
-}
 // 위치 띠 — 웹의 남색 띠 (← ⌂ › 화면 이름)
 function band(title, back, end = '') {
   return `<div class="head">${back != null ? `<button class="back" data-go="${back}" aria-label="뒤로">${I('back', 22)}</button>` : ''}<button class="hm" data-go="" aria-label="홈">${I('home', 19)}</button><span class="crumb">${title}</span><span class="end">${end}</span></div>`;
@@ -341,6 +337,17 @@ function kcard({ t, v, unit = '', rows = [], go, more = '자세히보기', tone 
 }
 const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 + '' : '—');
 
+// 날짜 표기 — 앱 전체에서 "8/20" → "08.20" (2026-09-22 사용자 지시, 지킴이 앱. 2026-10-20부터 근로자 앱도). 저장된 값은 그대로 두고 그릴 때만 바꾼다.
+// 앞뒤가 숫자·글자·/·. 이면 날짜가 아니라고 본다 (주소 "records/..."나 "0 / 10장" 같은 것은 안 건드린다)
+const fmtDates = (h) => h.replace(/(?<![\w/.])(\d{1,2})\/(\d{1,2})(?![\w/])/g, (_, m, d) => `${m.padStart(2, '0')}.${d.padStart(2, '0')}`);
+// 큰 제목 (2026-10-19 사용자 지시 — 스크롤하면 줄어드는 머리). 처음엔 내용 위에 크게, 스크롤해서 머리 밑으로 들어가면
+// 머리 줄의 작은 제목(› 할 일)이 나타난다. 지킴이 앱 할 일 · 점검 결과 · 공장 창, 근로자 앱 안쪽 화면(2026-10-20)
+const ltitle = (t) => `<h1 class="ltitle">${t}</h1>`;
+function ltCheck() {
+  const t = $('.ltitle'), top = $('.apptop'); if (!t || !top) return;
+  top.classList.toggle('shrunk', t.getBoundingClientRect().bottom <= top.getBoundingClientRect().bottom + 2);
+}
+document.addEventListener('scroll', ltCheck, { capture: true, passive: true });
 // 큰 제목 + 한 줄 설명 — 웹의 제목 칸
 function pageIntro(h, p) {
   return `<div class="pintro"><h1>${h}</h1>${p ? `<p>${p}</p>` : ''}</div>`;
@@ -348,7 +355,7 @@ function pageIntro(h, p) {
 let taps = [];
 document.addEventListener('click', (e) => {
   // 지킴이 앱은 머리글 방패를 걷어서(2026-10-15) 띠의 화면 이름을 세 번 누른다. 홈은 머리 띠가 없어 맨 위 HIPA 표시를 (2026-10-19)
-  if (!e.target.closest('#sbar, .appbar .mark, .apptop .head .crumb, .htop .hlogo, .alarm .icon')) return;
+  if (!e.target.closest('#sbar, .apptop .head .crumb, .htop .hlogo, .alarm .icon')) return;
   const now = Date.now();
   taps = taps.filter((t) => now - t < 700); taps.push(now);
   if (taps.length >= 3) { taps = []; toggleCtl(); }

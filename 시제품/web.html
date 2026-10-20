@@ -178,7 +178,6 @@ tr.click:hover td{background:#f5f7fb}
 .opfi .input{padding:9px 12px}
 .opfld{display:flex;flex-direction:column;gap:6px}
 .opsm{width:auto;padding:6px 10px;min-height:38px}
-.opfacts{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .opttl{font-size:24px;font-weight:850;letter-spacing:-.02em}
 .opno{color:var(--amber)}
 .opact{justify-content:flex-end;flex-wrap:wrap}
@@ -201,38 +200,57 @@ tr.click:hover td{background:#f5f7fb}
 .opbar span{font-size:13px;color:var(--mid);font-weight:700}
 
 /* 운영자 홈 (2026-10-01 사용자 요청 — 짜임새는 레퍼런스(어두운 지도 + 아래 칸 세 줄), 색과 아이콘은 지킴이 앱을 따름) */
-.oph{--navy:#16284d;--safety:#f2b707;--card:#d9e0ea;--blue2:#2b4c7e;min-height:100dvh;background:#f3f5f9;color:var(--ink)}
-.opband{position:relative;background:linear-gradient(90deg,#16284d,#1f3a73);color:#fff}
-.opband::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;background:repeating-linear-gradient(-45deg,var(--safety) 0 7px,var(--navy) 7px 14px);z-index:1}
-.opbi{max-width:1280px;margin:0 auto;padding:0 20px;min-height:44px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
-.opbi .hm{display:inline-flex;align-items:center;justify-content:center;min-width:36px;min-height:40px;padding:0;border:none;background:none;color:#fff;cursor:pointer}
-.opbi .sep{opacity:.6}
-.opbi .end{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;font-weight:600;color:#dbe4f7}
-.opbi .end span+span{padding-left:12px;border-left:1px solid rgba(255,255,255,.3)}
-.optop{position:sticky;top:0;z-index:15;background:#fff;border-bottom:1px solid var(--ring,#e6ebf3)}
-.optop .opin{position:relative;max-width:1280px;margin:0 auto;padding:6px 20px;display:flex;align-items:center;gap:16px;min-height:72px}
-.opbrand{flex:none}
-.opbrand .mark{width:38px;height:38px}
-/* 메뉴 — 보통 웹처럼 아이콘 옆에 이름, 가로로 펼침 (2026-10-01 사용자 지시. 왼쪽 사이드바로 옮겼다가 같은 날 다시 위로). 고른 칸은 지킴이 앱처럼 회색 바탕 */
+/* 2026-10-20 지킴이 앱 모양으로 (사용자 지시) — 남색 #1f3a73(지킴이 앱 --brand) · 옅은 회색 바탕 #f2f4f7 · 그림자만 있는 둥근 흰 카드.
+   데이터(지도 · 그래프)의 파랑(--brand #2458d6)은 지킴이 앱 지도처럼 그대로 둔다 */
+.oph{--navy:#16284d;--safety:#f2b707;--card:#d9e0ea;--blue2:#2b4c7e;--gn:#1f3a73;--gn-d:#16284d;--gn-l:#e9edf5;--gsh:0 2px 12px rgba(20,24,31,.05);--fsh:0 2px 12px rgba(20,24,31,.12);
+  min-height:100dvh;background:#f2f4f7;color:var(--ink);overflow-x:clip}
+/* 머리글 — 지킴이 앱처럼 한 줄: HIPA 표시 · 가로 메뉴 · 종 · 조작판 · 내 이름 알약. 홈에서는 남색 (전에는 위에 남색 띠 줄이 하나 더 있었다) */
+.optop{position:sticky;top:0;z-index:15;background:#fff;box-shadow:0 1px 0 #e6eaf0}
+.optop .opin{position:relative;max-width:1280px;margin:0 auto;padding:6px 20px;display:flex;align-items:center;gap:16px;min-height:68px}
+.opbrand{flex:none;display:flex;align-items:center;gap:10px;min-height:44px;padding:0 4px 0 0;border:none;background:none;cursor:pointer}
+.opbrand img{display:block;height:24px;width:auto}
+.opbrand span{padding-left:10px;border-left:1px solid #dfe3e9;font-size:15px;font-weight:800;letter-spacing:-.02em;color:var(--gn);white-space:nowrap}
+/* 메뉴 — 보통 웹처럼 아이콘 옆에 이름, 가로로 펼침 (2026-10-01 사용자 지시. 왼쪽 사이드바로 옮겼다가 같은 날 다시 위로). 고른 칸은 옅은 남색 알약
+   (안쪽 화면의 알약 탭이 남색 채움이라 메뉴는 옅게 — 둘이 같으면 어느 쪽이 큰 갈래인지 헷갈린다) */
 .opnav{flex:1;display:flex;justify-content:center;gap:4px;min-width:0}
-.opnav button{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;min-height:46px;padding:0 14px;border:none;border-radius:12px;background:none;font:inherit;font-size:15px;font-weight:700;color:#6b7280;cursor:pointer;white-space:nowrap}
-.opnav button:hover{color:var(--ink);background:#f6f7f9}
-.opnav button.on{background:#f1f2f4;color:var(--ink);font-weight:800}
+.opnav button{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;min-height:44px;padding:0 14px;border:none;border-radius:999px;background:none;font:inherit;font-size:15px;font-weight:700;color:#6b7280;cursor:pointer;white-space:nowrap}
+.opnav button:hover{color:var(--ink);background:#f1f3f6}
+.opnav button.on{background:var(--gn-l);color:var(--gn);font-weight:800}
 .opnav button svg{flex:none}
-.opright{display:flex;align-items:center;gap:8px;flex:none}
-.opic{position:relative;flex:none;width:44px;height:44px;border:1.5px solid var(--line2);border-radius:12px;background:#fff;color:var(--navy);display:grid;place-items:center;cursor:pointer;text-decoration:none}
-.opic:hover,.opic.on{border-color:var(--navy)}
-.opic em{position:absolute;top:-7px;right:-7px;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--brand);color:#fff;font-style:normal;font-size:12px;font-weight:800;display:grid;place-items:center;box-shadow:0 0 0 2px #fff}
+.opright{display:flex;align-items:center;gap:2px;flex:none}
+.opic{position:relative;flex:none;width:44px;height:44px;border:none;border-radius:12px;background:none;color:var(--gn);display:grid;place-items:center;cursor:pointer;text-decoration:none}
+.opic:hover,.opic.on{background:#f1f3f6}
+.opic em{position:absolute;top:3px;right:2px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--gn);color:#fff;font-style:normal;font-size:11px;font-weight:800;line-height:18px;text-align:center;box-shadow:0 0 0 2px #fff}
 .opic em.hot{background:var(--red)}
-.opme{display:inline-flex;align-items:center;gap:2px;min-height:44px;padding:0 4px 0 8px;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer;white-space:nowrap}
-.opme:hover{color:var(--ink)}
-.opbell{position:absolute;right:20px;top:calc(100% + 8px);z-index:20;width:min(400px,calc(100vw - 24px));max-height:70vh;overflow:auto;padding:16px;border:1px solid var(--card);border-radius:16px;background:#fff;box-shadow:0 12px 36px rgba(23,32,51,.16)}
+.opme{display:inline-flex;align-items:center;gap:6px;min-height:42px;margin-left:6px;padding:0 14px 0 11px;border:none;border-radius:999px;background:#f1f3f6;font:inherit;font-size:14.5px;font-weight:700;color:var(--ink);cursor:pointer;white-space:nowrap}
+.opme svg{flex:none;color:var(--gn)}
+.opme:hover,.opme.on{background:var(--gn-l)}
+/* 홈 — 머리글과 그 아래 띠가 남색, 로고 · 글자는 흰색 (지킴이 앱 홈과 같다) */
+.ophome .optop{background:var(--gn);box-shadow:none}
+.ophome .opbrand img{filter:brightness(0) invert(1)}
+.ophome .opbrand span{color:#fff;border-left-color:rgba(255,255,255,.3)}
+.ophome .opnav button{color:rgba(255,255,255,.72)}
+.ophome .opnav button:hover{color:#fff;background:rgba(255,255,255,.1)}
+.ophome .opnav button.on{background:rgba(255,255,255,.16);color:#fff}
+.ophome .opic{color:#fff}
+.ophome .opic:hover,.ophome .opic.on{background:rgba(255,255,255,.12)}
+.ophome .opic em{background:#fff;color:var(--gn);box-shadow:0 0 0 2px var(--gn)}
+.ophome .opic em.hot{background:var(--red);color:#fff}
+.ophome .opme{background:rgba(255,255,255,.14);color:#fff}
+.ophome .opme svg{color:#fff}
+.ophome .opme:hover{background:rgba(255,255,255,.22)}
+.ophero{position:relative;z-index:0;display:flex;flex-direction:column;gap:18px}
+.ophero::before{content:"";position:absolute;z-index:-1;left:50%;width:100vw;transform:translateX(-50%);top:-16px;bottom:calc(var(--mh,400px) - 120px);background:var(--gn);pointer-events:none}  /* 지도 칸 위 120px까지 */
+.ophi{padding:8px 2px 0}
+.ophi small{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:17px;font-weight:600;color:rgba(255,255,255,.75)}
+.ophi b{display:block;font-size:30px;font-weight:800;letter-spacing:-.04em;color:#fff}
+.opbell{position:absolute;right:20px;top:calc(100% + 8px);z-index:20;width:min(400px,calc(100vw - 24px));max-height:70vh;overflow:auto;padding:16px;border:none;border-radius:20px;background:#fff;box-shadow:0 12px 36px rgba(23,32,51,.18)}
 .opmut{font-size:13px;font-weight:600;color:var(--soft)}
 .opmut.r{margin-left:auto}
 .opcnt{font-style:normal;font-size:15px;font-weight:800;color:var(--brand)}
 .oplist{display:flex;flex-direction:column;gap:8px}
-.oprow{display:flex;align-items:center;gap:12px;width:100%;min-height:62px;padding:10px 12px;border:1px solid var(--card);border-radius:14px;background:#fff;text-align:left;font:inherit;color:inherit;cursor:pointer}
-.oprow:hover{border-color:var(--navy)}
+.oprow{display:flex;align-items:center;gap:12px;width:100%;min-height:62px;padding:10px 12px;border:1px solid #e9edf2;border-radius:16px;background:#fff;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.oprow:hover{border-color:var(--gn)}
 /* 오늘 할 일 줄 — 아이콘은 바탕 칸 없이 색만, 종류는 알약 대신 맨 위 작은 글자, 자세한 것은 조각마다 띄어 쓴다 (2026-10-01 사용자: AI스러운 것 걷기) */
 .opth{flex:none;align-self:flex-start;margin-top:2px;display:grid;place-items:center;color:var(--navy)}
 .k-alarm.opth{color:var(--red-d)}
@@ -249,7 +267,7 @@ tr.click:hover td{background:#f5f7fb}
 .opnone{color:var(--soft);font-size:14px;padding:12px 4px}
 
 .ophm{max-width:1280px;margin:0 auto;padding:16px 20px 40px;display:flex;flex-direction:column;gap:14px}
-.opmapw{position:relative;overflow:hidden;border:1px solid var(--card);border-radius:16px;background:#e8eef6}
+.opmapw{position:relative;overflow:hidden;border:none;border-radius:24px;background:#e8eef6;box-shadow:0 8px 24px rgba(20,24,31,.10)}
 .opmap{position:absolute;inset:0;width:100%;height:100%}
 /* 키운 뒤에는 끌어서 옮긴다 (2026-10-01) — 손 모양 커서, 끄는 동안은 쥔 손 */
 .opmap{user-select:none;-webkit-user-select:none}
@@ -284,8 +302,8 @@ tr.click:hover td{background:#f5f7fb}
 @media (prefers-reduced-motion:reduce){.oppin .pulse{animation:none;opacity:.25}}
 .opmtl{position:absolute;top:14px;left:14px;z-index:1;display:flex;flex-wrap:wrap;gap:8px}
 .opmtr{position:absolute;top:14px;right:14px;z-index:1;display:flex;gap:8px;align-items:flex-start}
-.opsearch{display:flex;align-items:center;gap:8px;width:260px;height:46px;padding:0 14px;border:1.5px solid var(--line2);border-radius:12px;background:#fff;color:var(--mid)}
-.opsearch:focus-within{border-color:var(--brand);box-shadow:0 0 0 4px var(--brand-l)}
+.opsearch{display:flex;align-items:center;gap:8px;width:280px;height:46px;padding:0 16px;border:none;border-radius:999px;background:#fff;color:var(--mid);box-shadow:var(--fsh)}  /* 지킴이 앱 홈 찾기 알약 (2026-10-20) */
+.opsearch:focus-within{box-shadow:0 0 0 2px var(--gn),var(--fsh)}
 .opsearch input{flex:1;min-width:0;border:none;outline:none;background:none;font:inherit;font-size:16px;color:var(--ink)}
 /* 찾기 — 연관 검색어 목록은 찾기 칸 바로 아래, 지도 위에 뜬다. 찾은 뒤에는 칸 안에 n곳 · 지우기 (2026-10-01 사용자 요청) */
 .opsbox{position:relative;z-index:2}  /* 휴대폰에서 아랫줄로 내려간 보기 고르기 위로 */
@@ -303,20 +321,20 @@ tr.click:hover td{background:#f5f7fb}
 .opsit small{font-size:12.5px;color:var(--mid)}
 .opsnone{padding:12px;font-size:14px;color:var(--mid)}
 .opsnone b{color:var(--ink)}
-.opsort{position:relative;display:flex;align-items:center;gap:6px;height:46px;padding:0 12px 0 14px;border:1.5px solid var(--line2);border-radius:12px;background:#fff;font-size:13px;font-weight:600;color:var(--mid);cursor:pointer}
+.opsort{position:relative;display:flex;align-items:center;gap:6px;height:46px;padding:0 12px 0 16px;border:none;border-radius:999px;background:#fff;box-shadow:var(--fsh);font-size:13px;font-weight:600;color:var(--mid);cursor:pointer}
 .opsort select{appearance:none;-webkit-appearance:none;padding:0 22px 0 0;border:none;background:none;outline:none;font:inherit;font-size:16px;font-weight:800;color:var(--ink);cursor:pointer}
 .opsort svg{position:absolute;right:12px;pointer-events:none;color:var(--ink)}
-.opgu{display:flex;gap:3px;padding:4px;border-radius:14px;background:rgba(238,241,245,.95);box-shadow:inset 0 0 0 1px var(--card)}
-.opgu button{display:flex;align-items:center;gap:5px;min-height:38px;padding:0 10px;border:none;border-radius:10px;background:transparent;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer;white-space:nowrap}
+.opgu{display:flex;gap:2px;padding:4px;border-radius:999px;background:#fff;box-shadow:var(--fsh)}
+.opgu button{display:flex;align-items:center;gap:5px;min-height:38px;padding:0 12px;border:none;border-radius:999px;background:transparent;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer;white-space:nowrap}
 .opgu i{flex:none;width:9px;height:9px;border-radius:50%;background:var(--gc)}
-.opgu button.on{background:#fff;color:var(--ink);font-weight:800;box-shadow:0 1px 3px rgba(23,32,51,.14),inset 0 0 0 1.5px var(--gc)}
-.opmb{width:46px;height:46px;border:1px solid var(--line2);border-radius:12px;background:#fff;color:var(--ink);display:grid;place-items:center;cursor:pointer}
-.opmb:hover{border-color:var(--navy)}
+.opgu button.on{background:#f1f3f6;color:var(--ink);font-weight:800;box-shadow:inset 0 0 0 1.5px var(--gc)}
+.opmb{width:46px;height:46px;border:none;border-radius:999px;background:#fff;color:var(--gn);display:grid;place-items:center;cursor:pointer;box-shadow:var(--fsh)}
+.opmb:hover{background:#f1f3f6}
 .opmb[disabled]{color:#c3c9d3;cursor:default}
 /* +/− 단추는 넓은 화면에서 뺐다(2026-10-01 사용자 — 휠 · 끌기로 충분). 손가락으로 쓰는 화면에는 휠이 없어 남긴다 */
 .opzoom{position:absolute;right:14px;top:50%;transform:translateY(-30%);display:none;flex-direction:column;gap:8px}
 @media (hover:none),(max-width:760px){.opzoom{display:flex}}
-.oplegend{position:absolute;left:14px;bottom:12px;display:flex;flex-wrap:wrap;gap:12px;padding:7px 12px;border:1px solid var(--card);border-radius:10px;background:rgba(255,255,255,.95);font-size:12.5px;font-weight:700;color:var(--mid)}
+.oplegend{position:absolute;left:14px;bottom:12px;display:flex;flex-wrap:wrap;gap:12px;padding:7px 14px;border:none;border-radius:999px;box-shadow:var(--fsh);background:rgba(255,255,255,.95);font-size:12.5px;font-weight:700;color:var(--mid)}
 .oplegend i{display:inline-block;margin-right:5px;vertical-align:-1px}
 /* 범례 핀 — 지도 핀과 같은 모양 (2026-10-01 사용자: 돌린 네모가 어색하다) */
 .oplegend .lgpin{display:inline-block;margin-right:5px;vertical-align:-3px;color:var(--brand)}
@@ -356,13 +374,14 @@ tr.click:hover td{background:#f5f7fb}
 
 .opgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .opcol{display:flex;flex-direction:column;gap:14px;min-width:0}
-.opc{padding:18px;border:1px solid var(--card);border-radius:16px;background:#fff;text-align:left;font:inherit;color:var(--ink)}
-button.opc{width:100%;cursor:pointer}
-button.opc:hover{border-color:var(--navy)}
+/* 카드 — 지킴이 앱 홈 카드처럼 테두리 없이 옅은 그림자, 모서리 24 (2026-10-20) */
+.opc{padding:18px 20px;border:none;border-radius:24px;background:#fff;text-align:left;font:inherit;color:var(--ink);box-shadow:var(--gsh)}
+button.opc{width:100%;cursor:pointer;transition:box-shadow .15s}
+button.opc:hover{box-shadow:0 4px 18px rgba(20,24,31,.1)}
 .opch{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.opch b{font-size:17px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
-.oplink{margin-left:auto;display:inline-flex;align-items:center;gap:2px;min-height:36px;padding:0;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--mid);cursor:pointer}
-.oplink:hover{color:var(--ink)}
+.opch b{font-size:19px;font-weight:800;letter-spacing:-.04em;white-space:nowrap}
+.oplink{margin-left:auto;display:inline-flex;align-items:center;gap:2px;min-height:36px;padding:0;border:none;background:none;font:inherit;font-size:14px;font-weight:700;color:var(--gn);cursor:pointer}
+.oplink:hover{text-decoration:underline}
 /* 점검 건수 그래프 (2026-10-01 사용자 "좀 더 꾸며줘") — 왼쪽 눈금 숫자 · 그림 칸 · 아래 날짜. 8월 옅게, 9월 파랑 + 채움, 9/1 점선 칸막이 */
 .opchart{display:flex;gap:6px;margin-top:4px}
 .opyax{position:relative;flex:none;width:16px;font-size:11px;font-weight:600;color:var(--soft);text-align:right}
@@ -403,14 +422,15 @@ button.opc:hover{border-color:var(--navy)}
 /* 가운데 · 오른쪽 줄이 더 길면 남은 높이는 점검 건수 칸이 가져가 그래프가 세로로 길어진다 (2026-10-01 사용자: 작은 칸은 줄이고 점검 건수는 늘리기) */
 .opvol{flex:1;display:flex;flex-direction:column}
 .opvol .opchart{flex:1}
-.optile{display:flex;flex-direction:column;gap:8px;min-height:136px;padding:14px 16px}  /* 2026-10-01 사용자: 97px → 더 길게, 그만큼 점검 건수 그래프가 짧아진다 */
-.optt{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--ink)}
-.opti{flex:none;width:32px;height:32px;border-radius:9px;display:grid;place-items:center}
-.k-alarm.opti{background:var(--red-l);color:var(--red-d)}
-.k-fault.opti{background:var(--amber-l);color:var(--amber)}
-.k-wait.opti{background:#eef2fb;color:var(--brand)}
-.k-apply.opti,.k-visit.opti,.k-ok.opti{background:#eef2fb;color:var(--navy)}
-.opv{margin-top:auto;font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.optile{display:flex;flex-direction:column;gap:8px;min-height:136px;padding:16px 16px 14px 18px}  /* 2026-10-01 사용자: 97px → 더 길게, 그만큼 점검 건수 그래프가 짧아진다 */
+/* 이름 앞 선 아이콘 · 아래 줄 숫자와 "보기 >" — 지킴이 앱 홈 카드 (2026-10-20. 전에는 옅은 바탕 아이콘 네모) */
+.optt{display:flex;align-items:center;gap:7px;font-size:18px;font-weight:800;letter-spacing:-.04em;color:var(--ink)}
+.opti{flex:none;display:grid;place-items:center;color:var(--gn)}
+.k-alarm.opti{color:var(--red-d)}
+.k-fault.opti{color:var(--amber)}
+.opvb{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-between;gap:8px}
+.opsee{display:inline-flex;align-items:center;gap:1px;padding-bottom:5px;font-size:14px;font-weight:700;color:var(--gn);white-space:nowrap}
+.opv{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
 .optile.hot .opv{color:var(--red-d)}
 .opsq{display:flex;flex-direction:column}
 /* 비율 미터 — 같은 파랑의 옅은 칸 위에 채운 막대 (2026-10-01 사용자: 숫자를 그래프로) */
@@ -461,8 +481,8 @@ button.opc:hover{border-color:var(--navy)}
 .opcar .side{position:absolute;top:50%;width:48%;transform:translateY(-50%);opacity:.35;filter:grayscale(1)}
 .opcar .side.l{left:-32%}
 .opcar .side.r{right:-32%}
-.opnavb{position:absolute;top:50%;z-index:2;width:36px;height:36px;transform:translateY(-50%);border:1.5px solid var(--line2);border-radius:50%;background:#fff;color:var(--ink);display:grid;place-items:center;cursor:pointer}
-.opnavb:hover{border-color:var(--navy)}
+.opnavb{position:absolute;top:50%;z-index:2;width:36px;height:36px;transform:translateY(-50%);border:none;border-radius:50%;background:#fff;color:var(--gn);box-shadow:var(--fsh);display:grid;place-items:center;cursor:pointer}
+.opnavb:hover{background:#f1f3f6}
 .opnavb.l{left:14px}
 .opnavb.r{right:14px}
 .opcap{display:flex;flex-direction:column;align-items:center;gap:2px;margin:8px 0 14px;font-size:13px;font-weight:600;color:var(--mid);text-align:center}
@@ -475,11 +495,11 @@ button.opc:hover{border-color:var(--navy)}
 .oplacts{display:flex;gap:6px;margin-left:auto}
 .oplead b{font-size:15px;white-space:nowrap}
 .oplead small{font-size:13px;color:var(--mid);white-space:nowrap}
-.opsq2{flex:none;display:inline-flex;align-items:center;gap:4px;height:40px;padding:0 10px;border:1.5px solid var(--line2);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
-.opsq2 svg{color:var(--navy)}
-.opsq2:hover{border-color:var(--navy)}
+.opsq2{flex:none;display:inline-flex;align-items:center;gap:4px;height:40px;padding:0 12px;border:1px solid var(--line2);border-radius:12px;background:#fff;color:var(--gn);font:inherit;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
+.opsq2 svg{color:var(--gn)}
+.opsq2:hover{border-color:var(--gn)}
 /* 다음 검사 — 지킴이 앱 "최근 점검한 곳" 파란 칸 */
-.opnext{padding:16px 16px 18px;border-radius:16px;background:var(--blue2);color:#fff}
+.opnext{padding:18px 18px 18px 20px;border-radius:24px;background:var(--gn);color:#fff}
 .opnt{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;font-size:18px;font-weight:800;letter-spacing:-.02em}
 .opdate{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.14);font-size:13px;font-weight:700;letter-spacing:0}
 .opnxr{display:flex;gap:14px;align-items:flex-start}
@@ -489,8 +509,9 @@ button.opc:hover{border-color:var(--navy)}
 .opnkv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:6px 0 0;font-size:13.5px;line-height:1.45}
 .opnkv dt{color:#c5d1e8;font-weight:600;white-space:nowrap}
 .opnkv dd{margin:0;min-width:0;font-weight:700;color:#fff}
-.opgo{align-self:flex-start;display:inline-flex;align-items:center;gap:2px;min-height:44px;margin-top:12px;padding:0 14px 0 16px;border:none;border-radius:8px;background:var(--navy);color:#fff;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
-.opgo:hover{background:#0f1d3a}
+/* 남색 칸 위의 주 단추는 뒤집어서 흰 바탕 — 지킴이 앱 .gvbtn과 같다 (2026-10-20) */
+.opgo{align-self:flex-start;display:inline-flex;align-items:center;gap:2px;min-height:44px;margin-top:12px;padding:0 14px 0 16px;border:none;border-radius:12px;background:#fff;color:var(--gn);font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.opgo:hover{background:#eef1f6}
 .opmw{flex:none;width:132px;height:96px;padding:0;border:none;border-radius:12px;overflow:hidden;background:none;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 .opmini{display:block;width:100%;height:100%}
 .opmini .bg{fill:#f1f3f6}
@@ -499,7 +520,7 @@ button.opc:hover{border-color:var(--navy)}
 .opmini .halo{fill:rgba(36,88,214,.18)}
 .opmini .dot{fill:var(--brand);stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}
 .opacts{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.18)}
-.opact2{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 10px;border:none;border-radius:8px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:none}
+.opact2{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:42px;padding:0 10px;border:none;border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;text-decoration:none}
 .opact2:hover{background:rgba(255,255,255,.24)}
 .opfix{flex:1;display:flex;flex-direction:column}
 .opwb{flex:1;min-height:120px;display:flex;align-items:flex-end;gap:5px;margin-top:12px}
@@ -515,53 +536,105 @@ button.opc:hover{border-color:var(--navy)}
 .opleg .a{background:#cddbfa}
 .opleg .b{background:var(--brand)}
 
-/* 운영자 웹 다른 탭 — 홈과 같은 틀 · 같은 결 (2026-10-01 사용자 지시). 공장주 웹은 옛 모양 그대로라 .oph 안에서만 바꾼다 */
-.oppage{display:flex;align-items:baseline;gap:4px 14px;flex-wrap:wrap;padding:2px 2px 0}
-.oppage h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.03em}
-.oppage p{margin:0;font-size:14px;line-height:1.5;color:var(--mid)}
+/* 운영자 웹 다른 탭 — 홈과 같은 틀 · 같은 결 (2026-10-01 사용자 지시). 공장주 웹은 옛 모양 그대로라 .oph 안에서만 바꾼다.
+   2026-10-20 지킴이 앱 모양으로: 큰 제목(설명 줄 없음) · 알약 탭 · 그림자만 있는 둥근 흰 카드 · 남색 단추 두 등급 · 이름표 · 값 표 */
+.oppage{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:10px 2px 2px}
+.oppage h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.25}
+.opback{display:inline-flex;align-items:center;gap:2px;min-height:36px;margin:-6px 0 0 -8px;padding:0 10px 0 4px;border:none;border-radius:10px;background:none;font:inherit;font-size:15px;font-weight:700;color:var(--gn);cursor:pointer}
+.opback:hover{background:#e7ebf1}
+/* 사실 조각 — `·`로 잇지 않고 가는 세로줄로 나눈다 (지킴이 앱 할 일 줄과 같은 결) */
+.opsubt{display:flex;flex-wrap:wrap;align-items:center;row-gap:2px;font-size:14.5px;font-weight:600;color:var(--mid)}
+.opsubt>span+span{margin-left:10px;padding-left:10px;border-left:1px solid #d5dbe3}
+.opsubt b{color:var(--ink)}
+.opsubt .link{min-height:0;padding:0;font-weight:800;color:var(--gn)}
+.q .opsubt,.stx small.opsubt,.rrow .opsubt{font-size:13.5px}
+.q .opsubt{margin-top:3px}
+.oph .kt .opsubt{font-size:13.5px}
+.opcount{padding:0 4px}
+/* 위 탭 — 지킴이 앱 할 일 화면의 알약 탭 */
+.optabs{display:flex;flex-wrap:wrap;gap:6px}
+.optabs button{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:0 16px;border:none;border-radius:999px;background:#fff;box-shadow:var(--gsh);font:inherit;font-size:15px;font-weight:800;color:var(--mid);cursor:pointer;white-space:nowrap}
+.optabs button:hover{color:var(--ink)}
+.optabs button.on{background:var(--gn);color:#fff;box-shadow:none}
+.optabs em{font-style:normal;opacity:.75}
+/* 한 상자를 나눈 고르기 칸 — 고른 칸은 옅은 남색 (지킴이 앱 거리순|일정순) */
+.opseg{align-self:flex-start;display:flex;flex-wrap:wrap;gap:2px;padding:4px;border-radius:999px;background:#fff;box-shadow:var(--gsh)}
+.opseg button{display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:0 14px;border:none;border-radius:999px;background:none;font:inherit;font-size:14.5px;font-weight:700;color:var(--mid);cursor:pointer;white-space:nowrap}
+.opseg button em{font-style:normal;font-weight:800}
+.opseg button.on{background:var(--gn-l);color:var(--gn);font-weight:800}
+/* 이름표 · 값 표 */
+.opkv2{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px 28px;margin:0;font-size:14.5px;line-height:1.45}
+.opkv2 div{display:grid;grid-template-columns:minmax(96px,max-content) minmax(0,1fr);gap:12px}
+.opkv2 dt{color:var(--mid);font-weight:600;white-space:nowrap}
+.opkv2 dd{margin:0;font-weight:700;color:var(--ink);overflow-wrap:anywhere}
+.opnote{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:var(--soft)}
+.opnote svg{flex:none;align-self:flex-start;margin-top:1px}
+.opln{display:flex;flex-wrap:wrap;gap:2px 12px;padding:9px 2px;border-bottom:1px solid #eef1f4;font-size:14px}
+.opln span{flex:1;min-width:0}
+.opln b{font-weight:700;color:var(--mid)}
+.opln small{width:100%;color:var(--soft)}
+.oph .opfold{justify-content:space-between;gap:10px;padding:0 16px;border:1px solid var(--line2);border-style:solid;border-radius:14px;background:#fff;color:var(--gn)}
+.oph .opfold .opsubt{color:var(--ink)}
 .oph .kgrid{gap:14px}
-.oph .kcard{gap:10px;padding:18px;border:1px solid var(--card);border-radius:16px;box-shadow:none}
-.oph .kt{padding-bottom:0;border-bottom:none;font-size:17px;font-weight:800;letter-spacing:-.02em}
-.oph .kt.plain{margin-top:6px;font-size:19px}
+.oph .kcard{gap:12px;padding:20px;border:none;border-radius:24px;box-shadow:var(--gsh)}
+.oph .kt{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding-bottom:0;border-bottom:none;font-size:19px;font-weight:800;letter-spacing:-.04em}
+.oph .kt.plain{margin-top:10px;font-size:21px}
 .oph .kbody{padding:6px 0 12px}
 .oph .kv{font-size:40px}
-.oph .kcard.todo,.oph .kcard.bookreq{border-color:#b9cbf3;box-shadow:inset 4px 0 0 var(--brand)}
-.oph .kcard.kalarm{background:var(--red-l);border-color:#f3b6b0;box-shadow:none}
-.oph .more{min-height:44px;border:1.5px solid var(--line2);border-radius:10px;background:#fff;color:var(--ink);font-size:14px}
-.oph .more:hover{border-color:var(--navy);background:#fff}
-.oph .more.sm{min-height:36px;padding:0 12px;font-size:13px}
+.oph .kside em{color:var(--gn)}
+.oph .kcard.todo,.oph .kcard.bookreq{box-shadow:var(--gsh)}  /* 왼쪽 파란 줄은 뺐다 — 지킴이 앱 카드에는 없다 */
+.oph .kcard.kalarm{background:var(--red-l);box-shadow:inset 0 0 0 1.5px #f3b6b0}
+.oph .kcard.opempty{align-items:flex-start}
+.oph .kcard.opempty .more{width:auto}
+/* 단추 두 등급 — 주 = 남색 채움, 보조 = 흰 바탕 + 회색 얇은 테두리 + 남색 글자 (지킴이 앱 2026-10-15) */
+.oph .more{gap:4px;min-height:44px;border:1px solid var(--line2);border-radius:12px;background:#fff;color:var(--gn);font-size:15px;font-weight:700}
+.oph .more:hover{border-color:var(--gn);background:#fff}
+.oph .more.sm{min-height:36px;padding:0 12px;border-radius:10px;font-size:13.5px}
 .oph .more.danger{color:var(--red-d);border-color:#f3b6b0}
-.oph .btn.inl{min-height:44px;padding:0 18px;border-radius:10px;background:var(--navy);color:#fff;font-size:15px;box-shadow:none}
-.oph .btn.inl:active{background:#0f1d3a}
-.oph .btn.inl.ghost{background:#fff;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line2)}
-.oph .btn.inl.ghost:hover{box-shadow:inset 0 0 0 1.5px var(--navy)}
-.oph .btn.inl.ghost.danger{color:var(--red-d);box-shadow:inset 0 0 0 1.5px #f3b6b0}
-.oph .wtabs.sub{gap:0;border-bottom:1px solid var(--line)}
-.oph .wtabs.sub button{min-height:50px;padding:0 18px;font-size:15.5px;font-weight:700;color:var(--soft)}
-.oph .wtabs.sub button:hover{color:var(--ink)}
-.oph .wtabs.sub button.on{color:var(--ink);font-weight:800}
-.oph .tscroll{border:1px solid var(--card);border-radius:14px}
-.oph th{padding:12px 14px;background:#f6f8fb;font-size:13px;color:var(--mid)}
-.oph td{padding:13px 14px;font-size:14.5px}
-.oph tr.click:hover td{background:#f8fafc}
-.oph td.go,.oph .wrow .go{font-size:14px}
+.oph .btn.inl{gap:4px;min-height:44px;padding:0 18px;border-radius:12px;background:var(--gn);color:#fff;font-size:15px;font-weight:800;box-shadow:none}
+.oph .btn.inl:hover{background:var(--gn-d)}
+.oph .btn.inl.ghost{background:#fff;color:var(--gn);box-shadow:inset 0 0 0 1px var(--line2)}
+.oph .btn.inl.ghost:hover{box-shadow:inset 0 0 0 1px var(--gn)}
+.oph .btn.inl.ghost.danger{color:var(--red-d);box-shadow:inset 0 0 0 1px #f3b6b0}
+.oph .add{gap:4px;border-radius:14px;color:var(--gn)}
+/* 거르기 칸 — 테두리 대신 그림자, 흰 바탕 둥근 칸 */
+.oph .opfi .lbl{margin-left:4px}
+.oph .opfi .input{min-height:44px;padding:9px 14px;border:none;border-radius:12px;background:#fff;box-shadow:var(--gsh);font-size:15px;font-weight:600}
+.oph .opfi .input:focus{box-shadow:0 0 0 2px var(--gn)}
+/* 표 — 흰 판 위 가는 줄, 머리 줄은 회색 작은 글자 */
+.oph .tscroll{border:none;border-radius:20px;background:#fff;box-shadow:var(--gsh)}
+.oph th{padding:13px 16px;background:#fff;border-bottom:1px solid #e9edf2;font-size:13px;font-weight:700;color:var(--soft)}
+.oph td{padding:14px 16px;font-size:14.5px;border-bottom-color:#eef1f4;word-break:keep-all}  /* 이름이 글자 사이에서 꺾이지 않게 */
+.oph tr.click:hover td{background:#f7f9fc}
+.oph td.go,.oph .wrow .go{font-size:14px;color:var(--gn)}
 .oph .pill{padding:1px 7px;border-radius:6px;font-size:12px;font-weight:700;line-height:1.5}
 .oph .pill.green{background:var(--green-l);color:var(--green)}
 .oph .pill.amber{background:var(--amber-l);color:var(--amber)}
-.oph .pill.blue{background:var(--brand-l);color:var(--brand)}
+.oph .pill.blue{background:var(--gn-l);color:var(--gn)}
 .oph .pill.gray{background:#eef1f5;color:var(--mid)}
-.oph .list .q{box-shadow:0 0 0 1px var(--card)}
-.oph .list .q.now{box-shadow:inset 0 0 0 2px var(--brand)}
-.oph .item2{border-radius:14px;box-shadow:0 0 0 1px var(--card)}
-.oph .item2.strong{box-shadow:0 0 0 1px var(--card),inset 4px 0 0 var(--amber)}
+/* 왼쪽 목록 + 오른쪽 자세히 */
+.oph .split{gap:20px}
+.oph .list .q{border-radius:18px;box-shadow:var(--gsh)}
+.oph .list .q.now{box-shadow:inset 0 0 0 2px var(--gn)}
+.oph .detail{padding:22px;border-radius:24px;background:#fff;box-shadow:var(--gsh)}
+.oph .detail .kcard{padding:16px 18px;border:1px solid #e9edf2;border-radius:18px;box-shadow:none}
+.oph .detail.opone{max-width:880px}
+.oph .opttl{font-size:24px;letter-spacing:-.04em}
+.oph .item2{padding:14px 16px;border-radius:16px;box-shadow:0 0 0 1px #e9edf2}
+.oph .item2 b{font-size:16px}
+.oph .item2.strong{box-shadow:0 0 0 1px #e9edf2,inset 4px 0 0 var(--amber)}
 .oph .h1{font-size:22px}
-.oph .link{color:var(--brand)}
-.oph .srow2{border-bottom-color:var(--line)}
-.oph .sic{background:#eef2fb;color:var(--navy)}
-.oph .add{border-radius:12px}
-.oph .wseg span{border:1.5px solid var(--line2);border-radius:10px}
-.oph .wseg span.on{background:var(--navy);border-color:var(--navy)}
-.oph .warn{border-radius:12px}
+.oph .link{color:var(--gn)}
+.oph .srow2{border-bottom-color:#eef1f4}
+.oph .sic{border-radius:12px;background:#eef1f6;color:var(--gn)}
+/* 고르기 알약 — 고른 것은 남색 채움, ✓는 없다 (지킴이 앱: 고르는 모양 체크는 AI 장비 고르기에만) */
+.oph .wseg span{border:1px solid var(--line2);border-radius:999px;color:var(--mid)}
+.oph .wseg span.on{background:var(--gn);border-color:var(--gn);color:#fff}
+.oph .wseg span.on::before{content:none}
+.oph .dlg{border-radius:24px}
+.oph .dlg .q{border-radius:16px}
+.oph .warn{border-radius:14px;box-shadow:inset 0 0 0 1px #f2cf9f;line-height:1.55}
+.oph .rrow.oprr{padding:10px 4px;border-radius:0}
 
 .opbigw{position:fixed;left:40px;right:40px;top:28px;bottom:28px;z-index:21;display:flex;flex-direction:column;gap:12px;padding:16px;border-radius:20px;background:#fff;box-shadow:var(--sh-l)}
 .opbigh{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -582,7 +655,6 @@ button.opc:hover{border-color:var(--navy)}
 
 @media (max-width:1240px){
   .opnav button{padding:0 10px;gap:6px;font-size:14px}
-  .opbrand small{display:none}
 }
 @media (max-width:1100px){
   .opnav{gap:2px}
@@ -594,15 +666,20 @@ button.opc:hover{border-color:var(--navy)}
 }
 /* 휴대폰 — 메뉴는 지킴이 앱처럼 화면 아래에 뜬 막대 */
 @media (max-width:760px){
-  .opbi{padding:0 12px}
-  .opbi .end{font-size:12px}
-  .optop .opin{padding:6px 12px;gap:8px;min-height:60px}
-  .opbrand b{font-size:17px}
+  .optop .opin{padding:6px 8px 6px 14px;gap:8px;min-height:56px}
+  .opbrand img{height:21px}
+  .opbrand span{font-size:14px}
   .opme{display:none}
   .opright{margin-left:auto}
   .opnav{position:fixed;left:12px;right:12px;bottom:10px;z-index:16;margin:0;padding:6px;gap:2px;background:#fff;border-radius:26px;box-shadow:0 4px 22px rgba(17,24,39,.14)}
   .opnav button{flex:1;flex-direction:column;gap:2px;min-width:0;min-height:56px;padding:0;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:-.03em}
   .opnav button svg{display:block;width:20px;height:20px}
+  .opnav button.on,.ophome .opnav button.on{background:#f1f2f4;color:var(--ink)}  /* 아래 막대는 지킴이 앱 하단바와 같다 */
+  .ophome .opnav button{color:#6b7280}
+  .ophome .opnav button:hover{background:none;color:#6b7280}
+  .ophi small{font-size:15.5px}
+  .ophi b{font-size:26px}
+  .ophero{gap:14px}
   .ophm{padding:12px 12px 100px}
   .opmapw{border-radius:14px}
   .opmtl{top:10px;left:10px;right:66px}
@@ -621,9 +698,12 @@ button.opc:hover{border-color:var(--navy)}
   .opnxr{flex-direction:column-reverse}
   .opmw{width:100%;height:120px}
   .opbigw{left:8px;right:8px;top:12px;bottom:12px;padding:12px}
-  .oppage h1{font-size:22px}
-  .oph .wtabs.sub{overflow-x:auto;flex-wrap:nowrap}
-  .oph .wtabs.sub button{flex:none;padding:0 14px}
+  .oppage h1{font-size:26px}
+  .optabs{flex-wrap:nowrap;overflow-x:auto;margin:0 -12px;padding:2px 12px 6px;scrollbar-width:none}
+  .optabs::-webkit-scrollbar{display:none}
+  .optabs button{flex:none;padding:0 14px}
+  .oph .detail{padding:16px}
+  .oph th,.oph td{padding:12px;white-space:nowrap}  /* 좁은 화면에서 칸이 글자 하나 폭으로 꺾이던 것 — 표는 옆으로 밀어 본다 */
   .opbigh .opmut{display:none}
   .oplacts{flex:1 1 100%}
   .oplacts .opsq2{flex:1;justify-content:center}
