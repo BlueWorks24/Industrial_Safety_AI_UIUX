@@ -43,6 +43,8 @@ const ICONS = {
   // 홈 카드용 (2026-10-19) — 시정 현황 렌치, 센서 경보 맥박 선
   wrench: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
   pulse: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5"/><path d="M10.2 11v5M13.8 11v5"/>',
+  image: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17.5l5-4.5 3.5 3 3-2.5 4.5 4"/>',
   list: '<path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r=".6" fill="currentColor"/><circle cx="4.8" cy="12" r=".6" fill="currentColor"/><circle cx="4.8" cy="17.5" r=".6" fill="currentColor"/>',
 };
 function I(name, size = 20, cls = '') {

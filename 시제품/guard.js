@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 주간 보고. 운영자 제출 검사(승인·반려)는 2026-10-14 사용자 지시로 뺐다 — 아직 정해진 게 아니다.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { hq: '', sheet: null, aiT: {}, ptsOpen: {}, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, preBack: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
+const UI = { hq: '', sheet: null, aiT: {}, fT: {}, fact: null, fv: null, ptsOpen: {}, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, preBack: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -1060,6 +1060,7 @@ document.addEventListener('pointerup', (e) => {
   if (swX == null) return; const dx = e.clientX - swX; swX = null;
   if (Math.abs(dx) < 40) return; const v = dx < 0 ? 1 : -1;  // 왼쪽으로 밀면 다음 사진
   if (UI.rck && UI.rck.view) ACTS.phStep({ v });
+  else if (UI.fv) ACTS.fvStep({ v });
 });
 document.addEventListener('keydown', (e) => { if (e.target.id === 'eqIn' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); ACTS.eqAdd(); } });
 // 장비 AI 기다리기 — 사진 AI 기다리기와 같은 모양에 고른 장비 이름을 훑는다
@@ -1098,6 +1099,7 @@ function pickScreen(s) {
   const answered = d.items.some((x) => x.answer);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
     ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid)}
+    ${insTabs(d, 'ck')}
     ${nPrev ? `<div class="grp">지난번 미흡 항목<span class="must">${nPrev}개</span></div>
     ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
     <div class="grp">기본 체크리스트<span class="must">${CHECKLIST.ver}</span><span class="must">${nBase}문항</span></div>
@@ -1137,6 +1139,172 @@ function selfSheet() {
     <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveSelf">더하기</button></div>
   </div>`;
 }
+
+/* ---------- G5-가 현장점검 개선사항 — 점검 첫 화면 (2026-10-22 사용자 지시, 써 보고 정하는 시험판) ----------
+   점검의 중심은 지적사항(종이 10번 현장점검 개선사항)이다. 체크리스트(종이 9번)는 지적사항을 바탕으로 채우는 두 번째 탭으로 내려간다.
+   한 건씩 줄을 더하고(+), 그 줄에서 찍은 사진은 그 건에 바로 들어간다(5장까지, 첫 장이 대표 사진). 지난 줄을 눌러 다시 찍거나 사진첩에서 더할 수도 있다.
+   지적사항이면 AI가 대표 사진을 보고 위험요인 셋을 추천하고, 지킴이가 빼거나 더한다. 잘된 사항도 같은 줄로 남긴다(위험요인 없음).
+   같은 날 처음엔 사진을 몰아 찍고 점검 뒤에 건으로 묶는 판이었다 — 사용자 지시로 한 건씩 찍는 판으로 바꿈.
+   공장에 보내기와 재점검은 아직 잇지 않았다 — 점검 결과는 지금처럼 체크리스트 마무리에서 낸다 */
+const FIND_MAX = 5;
+const FIND_WORD = { bad: '지적사항', good: '잘된 사항' };
+// AI가 추천하는 위험요인 — 시제품은 대표 사진의 그림(SHOT_ART 차례: 분전반, 적재 선반, 연삭기, 약품, 지게차 통로)마다 정해 둔 셋
+const FIND_RECS = [['전류 접촉', '화재', '폭발'], ['무너짐', '떨어짐(낙하)', '부딪힘'], ['끼임', '절단', '떨어짐(낙하)'], ['유해위험물질 노출', '화재', '폭발'], ['부딪힘', '넘어짐', '끼임']];
+const findsOf = (d) => d.finds || [];
+const findOf = (d, id) => findsOf(d).find((x) => x.id === id);
+const findNo = (d, f) => findsOf(d).filter((x) => x.kind === f.kind).indexOf(f) + 1;
+const findWord = (d, f) => `${FIND_WORD[f.kind]} ${findNo(d, f)}`;
+// 지금 펼친 줄 — 카메라와 사진첩이 이 줄에 넣는다. 고른 적이 없으면 맨 아래 줄
+const factOf = (d) => findOf(d, UI.fact) || findsOf(d)[findsOf(d).length - 1] || null;
+// 대표 사진(첫 장)이 바뀌면 AI가 다시 본다. 잘된 사항은 보지 않는다. 지킴이가 손댄 위험요인은 그대로 둔다
+function repCheck(f) {
+  const rep = f.kind === 'bad' ? f.pics[0] : undefined;
+  if ((f.ai && f.ai.rep) === rep) return;
+  f.ai = rep ? { st: 'wait', rep } : null;
+  if (!f.own) f.risks = null;
+}
+// 점검 안의 두 탭 — 현장점검 개선사항이 먼저, 체크리스트는 그다음
+const insTabs = (d, on) => { const n = findsOf(d).filter((x) => x.kind === 'bad').length;
+  return `<div class="gtabs" role="tablist">${[['fix', '현장점검 개선사항', n], ['ck', '체크리스트', 0]].map(([k, w, c]) =>
+    `<button class="gtab${on === k ? ' on' : ''}" role="tab" aria-selected="${on === k}" data-act="insTab" data-v="${k}">${w}${c ? `<em class="warn">${c}</em>` : ''}</button>`).join('')}</div>`; };
+// AI 추천 기다리기 — 사진 AI(aiPump)와 같은 방식. 시제품은 2~4초 흉내, 전파가 없으면 잡힐 때까지 기다린다
+function findPump() {
+  const d = DB.s.draft;
+  if (!d || d.kind !== 'first' || !DB.s.net.guard) return;
+  findsOf(d).filter((f) => f.ai && f.ai.st === 'wait' && !UI.fT[f.id]).forEach((f) => {
+    UI.fT[f.id] = setTimeout(() => { delete UI.fT[f.id]; findDone(f.id); }, 2500 + (f.ai.rep % 3) * 700);
+  });
+}
+function findDone(id) {
+  const f0 = DB.s.draft && findOf(DB.s.draft, id);
+  if (!f0 || !f0.ai || f0.ai.st !== 'wait' || !DB.s.net.guard) return;
+  const recs = FIND_RECS[(f0.ai.rep - 1) % FIND_RECS.length], sh = UI.sheet;
+  // 그 건의 위험요인 창이 열려 있고 아직 안 만졌으면 창에도 넣는다
+  if (!DB.s.aiDown && sh && sh.type === 'frisk' && sh.id === id && !sh.touched && !f0.own) sh.risks = [...recs];
+  DB.act((s) => {
+    const f = findOf(s.draft, id);
+    if (s.aiDown) { f.ai.st = 'fail'; return; }
+    f.ai.st = 'done'; f.ai.recs = recs;
+    if (!f.own) f.risks = [...recs];
+  });
+}
+// 접힌 줄의 둘째 줄 — 지적사항은 위험요인(없으면 내용), 잘된 사항은 내용
+const findSub = (x) => (x.kind === 'bad' && x.ai && x.ai.st === 'wait' && !x.own ? '<span class="gfai"><i class="gspin"></i>AI 분석 중</span>'
+  : x.kind === 'bad' && (x.risks || []).length ? x.risks.map((r) => `<span class="gfmini"><i>${RISKS.indexOf(r) + 1}</i>${r}</span>`).join('') : x.text ? `<span class="gfrtx">${esc(x.text)}</span>` : '');
+// 펼친 줄 — 사진(대표는 크게), 위험요인(지적사항만), 내용. 찍기와 사진첩은 아래 단추로 이 줄에 넣는다
+// (같은 날 사용자 지시로 걷은 것 — 줄 안의 찍기 · 사진첩 칸, 지적사항 | 잘된 사항 바꾸기, 왼쪽 색 띠와 아이콘 동그라미, 알약 칩. 종류는 더할 때 고른다)
+function findOpen(d, x) {
+  const n = x.pics.length, ai = x.ai, word = findWord(d, x), recs = ai && ai.st === 'done' ? ai.recs : [];
+  // 사진 — 대표 사진만 크게, 나머지 장수는 오른쪽 아래 "+4"로. 누르면 크게 보며 넘긴다
+  // (같은 날 사용자 지시로 걷은 것 — 대표 옆 · 아래에 늘어놓기, 대표 뒤에 겹쳐 쌓기)
+  const pics = n ? `<button class="gfrep" data-act="fvOpen" data-id="${x.id}" data-i="0" aria-label="${word} 사진 ${n}장 크게 보기">${shotArt(x.pics[0])}<em>대표</em>${n > 1 ? `<b>${I('image', 15)}+${n - 1}</b>` : ''}</button>`
+    : `<div class="gfp0">${I('camera', 28)}<span>사진 없음</span></div>`;
+  const aiTag = ai && ai.st === 'wait' && !x.own ? '<span class="gfai"><i class="gspin"></i>AI가 대표 사진을 보는 중</span>'
+    : ai && ai.st === 'fail' ? `<button class="gfai fail" data-act="fRetry" data-id="${x.id}">${I('alert', 15)}AI 다시</button>`
+    : recs.length && !x.own ? tg('AI 추천') : '';
+  const risk = x.kind !== 'bad' ? '' : `<div class="gfrk"><div class="gfrkh"><b>위험요인</b>${aiTag}</div>
+    <div class="gfchips">${(x.risks || []).map((r) => `<span class="gfchip"><i>${RISKS.indexOf(r) + 1}</i>${r}<button data-act="fRiskDel" data-id="${x.id}" data-v="${r}" aria-label="${r} 빼기">${I('close', 15)}</button></span>`).join('')}
+      <button class="gfchip gfplus" data-act="fRiskOpen" data-id="${x.id}">${I('plus', 15)}추가</button></div></div>`;
+  return `<section class="gfr on" id="fr-${x.id}">
+    <div class="gfrh"><b>${word}</b><span class="gfrn">사진 ${n} / ${FIND_MAX}</span><button class="gfrx" data-act="fDelAsk" data-id="${x.id}" aria-label="${word} 지우기">${I('trash', 20)}</button></div>
+    ${pics}
+    ${risk}
+    ${x.text ? `<button class="gftx has" data-act="fTextOpen" data-id="${x.id}"><b>내용</b><span>${esc(x.text)}</span></button>`
+      : `<button class="gftx" data-act="fTextOpen" data-id="${x.id}">${I('plus', 15)}내용</button>`}
+  </section>`;
+}
+function fixScreen(s) {
+  const d = s.draft, f = FACTORIES[d.fid], fs = findsOf(d), on = factOf(d);
+  const bad = fs.filter((x) => x.kind === 'bad'), nRisk = bad.reduce((a, x) => a + (x.risks || []).length, 0);
+  const sum = `<div class="gfsum">${[['지적사항', bad.length], ['잘된 사항', fs.length - bad.length], ['위험요인', nRisk]].map(([w, n]) => `<div><span>${w}</span><b>${n}</b></div>`).join('')}</div>`;
+  const row = (x) => (x === on ? findOpen(d, x) : `<button class="gfr" id="fr-${x.id}" data-act="fOn" data-id="${x.id}">
+      <span class="gfrt">${x.pics.length ? shotArt(x.pics[0]) : I('camera', 22)}</span>
+      <span class="gfrb"><b>${findWord(d, x)}</b><span class="gfrs">${findSub(x)}</span></span>
+      <span class="gfrc">${I('camera', 14)}${x.pics.length}</span></button>`);
+  const addRow = `<div class="gfnew"><button class="add" data-act="fNew" data-v="bad">${I('plus', 18)}지적사항</button><button class="add" data-act="fNew" data-v="good">${I('plus', 18)}잘된 사항</button></div>`;
+  // 아래 — 사진첩, 가운데 큰 카메라(펼친 줄에 넣는다, 줄이 없으면 새 지적사항), 지적사항 추가 — 한 손 엄지로 닿게 (같은 날 사용자 지시).
+  // 그 줄이 5장이면 사진첩과 카메라를 회색으로 두고 누르면 까닭을 알린다
+  const full = on && on.pics.length >= FIND_MAX;
+  const dock = `<div class="gfdock"><button class="gfdk${full ? ' full' : ''}" data-act="${full ? 'fFull' : 'fgal'}"><i>${I('image', 28)}</i><span>사진첩</span></button>
+    <button class="gfshot${full ? ' full' : ''}" data-act="${full ? 'fFull' : 'fcam'}"><i>${I('camera', 34)}</i><span>${on ? `${findWord(d, on)}에 찍기` : '사진 찍기'}</span></button>
+    <button class="gfdk" data-act="fNew" data-v="bad"><i>${I('plus', 28)}</i><span>지적사항 추가</span></button></div>`;
+  return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:10px">
+    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid)}
+    ${insTabs(d, 'fix')}
+    ${fs.length ? `${sum}<div class="gfrs0">${fs.map(row).join('')}</div>`
+      : `<div class="gfempty"><span class="gfei">${I('camera', 36)}</span><b>지적할 곳을 찾으면<br>한 건씩 더해 주세요</b></div>`}
+    ${addRow}
+  </div><div class="ft">${dock}</div></div>${UI.sheet && UI.sheet.type === 'frisk' ? fRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'ftext' ? fTextSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fdel' ? fDelSheet(s) : ''}${UI.fv ? findViewer(s) : ''}`;
+}
+// 위험요인 고르기 — AI가 추천한 것과 고른 것을 먼저, 나머지는 접어 둔다 (불량 창과 같은 모양)
+function fRiskSheet(s) {
+  const d = s.draft, sh = UI.sheet, f = findOf(d, sh.id);
+  if (!f) return '';
+  const recs = f.ai && f.ai.st === 'done' ? f.ai.recs : [], sel = sh.risks;
+  const rbtn = (r) => { const on = sel.includes(r);
+    return `<button class="geq${on ? ' on' : ''}" data-act="riskTg" data-v="${r}" aria-pressed="${on}"><span class="geqc">${on ? I('check', 16) : ''}</span><span class="geqn">${r}</span>${recs.includes(r) ? '<em class="gfrec">AI 추천</em>' : ''}</button>`; };
+  const top = RISKS.filter((r) => recs.includes(r) || sel.includes(r)), more = RISKS.filter((r) => !top.includes(r));
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="srh"><b>${findWord(d, f)} 위험요인</b></div>
+    ${top.length ? `<div class="geqs srisk">${top.map(rbtn).join('')}</div>` : ''}
+    <div class="geqs srisk srmore"${top.length ? ' hidden' : ''}>${more.map(rbtn).join('')}</div>
+    ${top.length ? `<button class="srmbtn" data-act="riskMore" aria-expanded="false"><span>나머지 ${more.length}개 더 보기</span>${I('chevron', 16)}</button>` : ''}
+    <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="fRiskSave">저장</button></div>
+  </div>`;
+}
+function fTextSheet(s) {
+  const d = s.draft, f = findOf(d, UI.sheet.id);
+  if (!f) return '';
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="mid">${findWord(d, f)} 내용</div>
+    <textarea class="input" id="ftIn" placeholder="${f.kind === 'bad' ? '예: 지게차 통로에 적재물이 쌓여 있음' : '예: 비상구 앞을 비워 두고 표시를 잘 해 둠'}">${esc(f.text || '')}</textarea>
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="fTextSave">저장</button></div>
+  </div>`;
+}
+function fDelSheet(s) {
+  const d = s.draft, f = findOf(d, UI.sheet.id);
+  if (!f) return '';
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="mid">${findWord(d, f)} 지우기</div>
+    ${f.pics.length ? `<div class="small">사진 ${f.pics.length}장도 같이 지워져요</div>` : ''}
+    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn red" data-act="fDel">지우기</button></div>
+  </div>`;
+}
+// 한 건의 사진 크게 보기 — 넘겨 보며 대표 사진을 바꾸거나 뺀다
+function findViewer(s) {
+  const d = s.draft, f = findOf(d, UI.fv.id);
+  if (!f || !f.pics.length) return '';
+  const n = f.pics.length, i = Math.min(UI.fv.i, n - 1);
+  return `<div class="rphv" role="dialog" aria-label="${FIND_WORD[f.kind]} 사진 크게 보기">
+    <div class="rphvh"><b class="gshvt">${findWord(d, f)}</b><button class="rphvx" data-act="fvClose" aria-label="닫기">${I('close', 22)}</button></div>
+    <div class="rphvb" data-swipe="${f.id}">${picNav(i, n, 'fvStep')}<div class="gshvb">${shotArt(f.pics[i])}</div></div>
+    <div class="rphvf">${picDots(i, n)}<span>${i ? `사진 ${i + 1}` : '대표 사진'}${n > 1 ? ` (${i + 1} / ${n})` : ''}</span>
+      <div class="gft2 gfva"><button class="btn ghost" data-act="fvRep"${i ? '' : ' disabled'}>${I('check', 18)}대표 사진으로</button><button class="btn ghost" data-act="fvDrop">${I('trash', 18)}사진 빼기</button></div></div></div>`;
+}
+// 새 줄 — 펼치고 그 줄로 화면을 옮긴다
+// 켜 둔 서버에서는 바꾸기가 부딪히면(빠르게 연달아 누르면 요청 차례가 뒤바뀐다) 같은 바꾸기를 한 번 더 적용한다(DB.push).
+// 그래서 줄 번호 · 사진 번호를 먼저 정해 두고, 이미 있으면 다시 넣지 않는다 — 한 건에 사진 6장이 들어간 일이 있었다 (2026-10-22 사용자 화면)
+function newFind(kind) {
+  const num = (DB.s.draft.findN || 0) + 1, id = 'f' + num;
+  UI.fact = id;
+  DB.act((s) => { const d = s.draft; if (findOf(d, id)) return;
+    d.findN = Math.max(d.findN || 0, num); d.finds = [...findsOf(d), { id, kind, pics: [], risks: null, text: '', ai: null }]; });
+  scrollFind(id);
+  return id;
+}
+const nextShots = (d, n) => { const top = Math.max(d.shotN || 0, ...shotsOf(d), 0); return Array.from({ length: n }, (_, i) => top + i + 1); };
+function putShots(fid, ks) {
+  DB.act((s) => {
+    const d = s.draft, g = findOf(d, fid); if (!g) return;
+    ks.forEach((k) => {
+      if (!shotsOf(d).includes(k)) { d.shots = [...shotsOf(d), k]; d.photos = d.shots.length; }
+      d.shotN = Math.max(d.shotN || 0, k);
+      if (!g.pics.includes(k) && g.pics.length < FIND_MAX) g.pics.push(k);
+    });
+    repCheck(g);
+  });
+}
+const scrollFind = (id) => { const el = document.getElementById('fr-' + id); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
 
 /* ---------- G5 점검 — 목록 한 장에서 줄마다 바로 답하기 (2026-09-18 사용자 결정). 답 순서는 2026-10-07부터 양호 | 보통 | 불량 | 해당 없음 ---------- */
 // 답은 넷 — 양호 | 보통 | 불량 | 해당 없음 (2026-10-07 사용자 지시. 전에는 이상 없음 · 문제 있음 · 해당 없음 셋).
@@ -1227,6 +1395,7 @@ function checkList(s) {
       <button class="btn" data-act="submitFirst">점검 결과 내기</button></div>`;
   }
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
+    ${insTabs(d, 'ck')}
     ${chips}
     ${body}
   </div><div class="ft">${aiBand(s)}${foot}</div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'eval' ? evalSheet(s) : ''}${UI.sheet && UI.sheet.type === 'ai' ? aiSheet(s) : ''}${UI.shot ? shotViewer(s) : ''}`;
@@ -1694,10 +1863,10 @@ const bandObs = new ResizeObserver(homeBand);
 function render() {
   if (!ACC) { paintLogin(); return; }
   const s = DB.s, p = R.path();
-  if (location.hash !== lastHash) { UI.mapFull = false; UI.sheet = null; UI.shot = null; }  // 다른 화면으로 가면(폰의 뒤로 가기 등) 지도 전체화면과 열린 창을 닫는다
+  if (location.hash !== lastHash) { UI.mapFull = false; UI.sheet = null; UI.shot = null; UI.fv = null; }  // 다른 화면으로 가면(폰의 뒤로 가기 등) 지도 전체화면과 열린 창을 닫는다
   const d = s.draft;
   let html;
-  const needFirst = ['equip', 'eqai', 'photo', 'ai', 'pick', 'list', 'ans', 'sum'].includes(p[0]);
+  const needFirst = ['fix', 'equip', 'eqai', 'photo', 'ai', 'pick', 'list', 'ans', 'sum'].includes(p[0]);
   if (needFirst && !(d && d.kind === 'first')) { R.go(''); return; }
   if (p[0] === 'todo') html = todoScreen(s);  // 할 일 화면 (2026-10-19 — 홈 카드로 들어온다. 전에는 옛 주소라 홈으로 돌렸다)
   else if (p[0] === 'facs') html = facsScreen(s);  // 전체 공장 (2026-10-19 — 홈 카드)
@@ -1713,6 +1882,7 @@ function render() {
   }
   else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
   else if (p[0] === 'photo' || p[0] === 'ai') { R.go(d.items.length ? 'list' : 'pick'); return; }  // 옛 주소 — 사진 몰아 찍기 화면은 2026-10-14에 걷었다
+  else if (p[0] === 'fix') html = fixScreen(s);
   else if (p[0] === 'equip') html = equipScreen(s);
   else if (p[0] === 'eqai') html = eqWait(s);
   else if (p[0] === 'pick') html = pickScreen(s);
@@ -1754,6 +1924,7 @@ function render() {
     $('.sheet').scrollTop = shOld.y;
   }
   aiPump();
+  findPump();
   syncWheels();
   if (NV.st === 'ready') { nvMount(); nvFacMount(); }
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
@@ -1768,7 +1939,7 @@ function sheet(v) { UI.sheet = v; render(); }
 function startDraft(fid) {
   DB.act((s) => {
     if (s.draft && s.draft.kind === 'first' && s.draft.fid === fid) return;
-    UI.cpage = 0;  // 새 점검은 첫 쪽부터 (하던 점검을 이어 할 때는 보던 쪽 그대로)
+    UI.cpage = 0; UI.fact = null;  // 새 점검은 첫 쪽부터 (하던 점검을 이어 할 때는 보던 쪽 그대로)
     s.draft = { kind: 'first', fid, photos: 0, self: [], items: [], aiq: [] };
   });
 }
@@ -1833,7 +2004,8 @@ const ACTS = {
     UI.sheet = null; toast('방문일을 지웠어요'); render();
   },
   // 점검 시작을 누른 화면을 적어 두고 점검 첫 화면의 ← 로 그리 돌아간다 (2026-10-20 사용자 제보 — 홈 → 점검하기 → 점검 시작에서 ← 를 누르면 공장 창 정보 탭이 나왔다)
-  newDraft({ fid }) { UI.startBack = R.path().join('/'); startDraft(fid); R.go('pick'); },
+  // 점검 첫 화면은 현장점검 개선사항 (2026-10-22 — 전에는 체크리스트 고르기)
+  newDraft({ fid }) { UI.startBack = R.path().join('/'); startDraft(fid); R.go('fix'); },
   openMap() { toast('실제 앱은 여기서 지도 앱으로 넘어가요'); },
   // 장비 고르기 (2026-10-07) — 누르면 고르고, 다시 누르면 풀린다
   goEquip() { R.go('equip'); },
@@ -1867,6 +2039,59 @@ const ACTS = {
       });
       if (R.path()[0] === 'eqai') R.go('pick');  // 기다리다 다른 화면으로 갔으면 끌고 오지 않는다
     }, 2500);
+  },
+  // 현장점검 개선사항 (2026-10-22) — 탭, 줄 더하기, 펼치기, 찍기, 사진첩, 종류, 위험요인, 내용, 지우기, 크게 보기
+  insTab({ v }) { R.go(v === 'fix' ? 'fix' : DB.s.draft.items.length ? 'list' : 'pick'); },
+  fNew({ v }) { newFind(v); },
+  fOn({ id }) { UI.fact = id; render(); scrollFind(id); },
+  // 찍기 — 줄의 카메라는 그 줄에, 아래 큰 카메라는 펼친 줄에(줄이 없으면 새 지적사항)
+  fcam({ id }) {
+    const d = DB.s.draft, f = id ? findOf(d, id) : factOf(d);
+    if (f && f.pics.length >= FIND_MAX) { ACTS.fFull(); return; }
+    const fid = f ? f.id : newFind('bad');
+    UI.fact = fid;
+    putShots(fid, nextShots(DB.s.draft, 1));
+  },
+  fgal({ id }) {  // 시제품은 사진첩 대신 사진 두 장을 넣는다
+    const d = DB.s.draft, f = id ? findOf(d, id) : factOf(d);
+    if (f && f.pics.length >= FIND_MAX) { ACTS.fFull(); return; }
+    const fid = f ? f.id : newFind('bad'), n = Math.min(2, FIND_MAX - (f ? f.pics.length : 0));
+    UI.fact = fid;
+    putShots(fid, nextShots(DB.s.draft, n));
+    toast(`시제품은 사진첩 대신 사진 ${n}장을 넣어요`);
+  },
+  fFull() { toast(`한 건에 사진은 ${FIND_MAX}장까지예요`); },
+  fRiskDel({ id, v }) { DB.act((s) => { const f = findOf(s.draft, id); f.risks = (f.risks || []).filter((r) => r !== v); f.own = true; }); },
+  fRiskOpen({ id }) { sheet({ type: 'frisk', id, risks: [...(findOf(DB.s.draft, id).risks || [])], touched: false }); },
+  fRiskSave() {
+    const sh = UI.sheet; UI.sheet = null;
+    DB.act((s) => { const f = findOf(s.draft, sh.id); f.risks = RISKS.filter((r) => sh.risks.includes(r)); f.own = true; });
+  },
+  fRetry({ id }) { DB.act((s) => { const f = findOf(s.draft, id); if (f.ai) f.ai.st = 'wait'; }); },
+  fTextOpen({ id }) { sheet({ type: 'ftext', id }); setTimeout(() => $('#ftIn') && $('#ftIn').focus(), 50); },
+  fTextSave() {
+    const id = UI.sheet.id, v = $('#ftIn').value.trim(); UI.sheet = null;
+    DB.act((s) => { findOf(s.draft, id).text = v; });
+  },
+  // 사진이나 내용이 있으면 묻고 지운다. 빈 줄은 바로
+  fDelAsk({ id }) { const f = findOf(DB.s.draft, id); if (f.pics.length || f.text) sheet({ type: 'fdel', id }); else { UI.sheet = { id }; ACTS.fDel(); } },
+  fDel() {
+    const id = UI.sheet.id; UI.sheet = null;
+    if (UI.fact === id) UI.fact = null;
+    DB.act((s) => { s.draft.finds = findsOf(s.draft).filter((x) => x.id !== id); });
+  },
+  fvOpen({ id, i }) { UI.fv = { id, i: +i || 0 }; render(); },
+  fvStep({ v }) { const f = findOf(DB.s.draft, UI.fv.id); UI.fv.i = Math.max(0, Math.min(f.pics.length - 1, UI.fv.i + +v)); render(); },
+  fvClose() { UI.fv = null; render(); },
+  fvRep() {
+    const { id, i } = UI.fv; UI.fv.i = 0;
+    DB.act((s) => { const f = findOf(s.draft, id), k = f.pics[i]; f.pics = [k, ...f.pics.filter((x) => x !== k)]; repCheck(f); });
+    toast('대표 사진으로 바꿨어요');
+  },
+  fvDrop() {
+    const { id, i } = UI.fv, n = findOf(DB.s.draft, id).pics.length;
+    UI.fv = n > 1 ? { id, i: Math.min(i, n - 2) } : null;
+    DB.act((s) => { const f = findOf(s.draft, id); f.pics.splice(i, 1); repCheck(f); });
   },
   // 사진 AI (2026-10-14) — 찍으면 바로 점검을 이어 간다. 시제품은 카메라 대신 바로 "찍은" 것으로 한다
   camShot() {
@@ -1913,8 +2138,8 @@ const ACTS = {
   ansBad({ n }) { const it = DB.s.draft.items[+n]; sheet({ type: 'bad', n: +n, reason: it.reason || null, risks: [...(it.risks || [])] }); },
   // 위험요인 고르기 (2026-10-07) — 창을 다시 그리면 위로 튀고 올라오는 움직임이 다시 나와서, 누른 칸의 표시만 바꾼다
   riskTg({ v }, el) {
-    const l = UI.sheet.risks, on = !l.includes(v);
-    UI.sheet.risks = on ? [...l, v] : l.filter((x) => x !== v);
+    const l = UI.sheet.risks || [], on = !l.includes(v);  // 지적사항 창은 AI 추천 전이면 비어 있다
+    UI.sheet.risks = on ? [...l, v] : l.filter((x) => x !== v); UI.sheet.touched = true;
     el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
     el.querySelector('.geqc').innerHTML = on ? I('check', 16) : '';
   },
