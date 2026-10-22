@@ -1202,6 +1202,17 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .gshbox.on{border:3px solid #fff;background:rgba(110,68,216,.22);z-index:1}
 .gshbox.on em{background:var(--violet)}
 .rphvf b.dim{color:#aab3c2;font-weight:600}
+/* 지적 사진 여러 장 (2026-10-22 사용자 지시 — 한 건에 5장까지). 작은 칸에는 대표 사진과 장수만, 크게 보기에서 양옆 단추 · 점 · 옆으로 밀기로 넘긴다 */
+.rphvb{position:relative}
+.gpvb{position:absolute;top:50%;z-index:1;display:grid;place-items:center;width:44px;height:44px;margin-top:-22px;border:none;border-radius:50%;background:rgba(15,21,34,.55);color:#fff;cursor:pointer}
+.gpvb.prev{left:8px}
+.gpvb.prev svg{transform:rotate(180deg)}
+.gpvb.next{right:8px}
+.gpvb:disabled{visibility:hidden}
+.gpvd{display:flex;justify-content:center;gap:7px;padding-bottom:8px}
+.gpvd i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
+.gpvd i.on{background:#fff}
+.rphn{position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:999px;background:rgba(15,21,34,.7);color:#fff;font-size:12px;font-style:normal;font-weight:800}
 
 /* 지킴이 홈 — 카드가 입구 (2026-10-19 사용자 지시). 한 화면 안: HIPA 표시 + 알림, 인사, 찾기, 오늘 방문(AI 요약), 큰 카드 넷.
    옅은 회색 바탕 위 흰 카드 (레퍼런스 앱 배치). 카드를 누르면 할 일 화면(#/todo) */

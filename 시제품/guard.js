@@ -917,7 +917,7 @@ function pre(s, fid) {
    전에는 공장을 한 바퀴 돌며 사진을 몰아 찍어 AI 제안을 받은 뒤, 체크리스트를 들고 다시 한 바퀴 돌았다(두 바퀴).
    기존 업무는 한 바퀴 — 점검하다가 지적할 것이 보이면 그 자리에서 사진을 찍는다. 그래서 체크리스트 화면 아래에 카메라를 늘 두고,
    찍으면 기다리지 않고 점검을 이어 가며 AI는 뒤에서 본다. 다 보면 아래 띠로만 알리고(창을 띄우지 않는다), 지킴이가 누를 때 그 자리에서 답한다.
-   불량 창에서 찍은 사진도 AI에 같이 보낸다 — 사진 한 번으로 증거와 점검 포인트를 다 얻는다.
+   불량 창의 사진 칸은 2026-10-22 사용자 지시로 뺐다(점검표는 종이 체크리스트를 대신한다) — 전에는 그 사진도 AI에 같이 보냈다.
    걸리는 시간은 사진 한 장에 몇 초~20초쯤으로 본다(가설). 시제품은 3~5초 흉내. 전파가 없으면 사진을 들고 있다가 잡히면 보낸다.
    AI가 내는 것은 체크리스트 항목이 아니라 설비의 점검 포인트(주관점) 설명이다 (2026-10-20 사용자 지시, seed.js AI_POINTS) */
 // 사진은 번호로 기억한다 — 점검 포인트가 "사진 3의 분전반"처럼 사진을 가리키므로
@@ -970,6 +970,10 @@ const SHOT_ART = [
   '<rect x="12" y="20" width="14" height="26" rx="3" fill="#3f7fd0"/><rect x="28" y="22" width="14" height="24" rx="3" fill="#e08a2c"/><rect x="44" y="18" width="14" height="28" rx="3" fill="#3f7fd0"/><path d="M12 26h14M28 28h14M44 24h14" stroke="#ffffff55" stroke-width="2"/><rect x="62" y="30" width="8" height="16" rx="4" fill="#5f8f5a"/>',
   '<path d="M0 50L30 30h20l30 20" fill="#c3cad4"/><path d="M22 46l14-12M58 46L44 34" stroke="#e8c33a" stroke-width="2" stroke-dasharray="4 3"/><rect x="34" y="38" width="14" height="6" fill="#a87b4c"/><rect x="36" y="32" width="10" height="6" fill="#c7a77a"/>',
 ];
+// 지적 사진은 한 건에 여러 장일 수 있다 (2026-10-22 사용자 지시 — 5장까지). pics = 사진마다 붙인 번호, 첫 장이 대표 사진. 예전 기록은 shot: true만 있어 한 장으로 본다.
+// 시제품은 진짜 사진이 없어 같은 그림을 다르게 잘라(viewBox) 여러 장처럼 보인다 — 0번이 처음 그림 그대로
+const PIC_VIEW = ['0 0 80 60', '16 10 48 36', '0 0 56 42', '24 18 56 42', '10 4 60 45'];
+const picsOf = (it) => it.pics || (it.shot ? [0] : []);
 const shotArt = (k) => `<svg class="gshart" viewBox="0 0 80 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="80" height="60" fill="#dfe4ea"/><rect y="46" width="80" height="14" fill="#c9cfd8"/>${SHOT_ART[(k - 1) % SHOT_ART.length]}</svg>`;
 // 작은 사진 칸 — 누르면 크게 본다
 const shotThumb = (k) => `<button class="gsth" data-act="shotView" data-k="${k}" aria-label="사진 ${k} 크게 보기">${shotArt(k)}<em>사진 ${k}</em></button>`;
@@ -983,6 +987,9 @@ function shotViewer(s) {
     <div class="rphvf">${e ? `<span>${esc(e.equip)} 점검 포인트</span>${e.points.map((p) => `<b>${esc(p.t)}</b>`).join('')}`
       : `<span>${q && q.st === 'wait' ? 'AI가 아직 보고 있어요' : 'AI가 보지 못한 사진이에요'}</span>`}</div></div>`;
 }
+// 크게 보기에서 여러 장 넘기기 — 양옆 단추와 아래 점. 옆으로 밀어도 넘어간다 (아래 pointerup)
+const picNav = (i, n, act) => (n < 2 ? '' : `<button class="gpvb prev" data-act="${act}" data-v="-1"${i ? '' : ' disabled'} aria-label="앞 사진">${I('chevron', 22)}</button><button class="gpvb next" data-act="${act}" data-v="1"${i < n - 1 ? '' : ' disabled'} aria-label="다음 사진">${I('chevron', 22)}</button>`);
+const picDots = (i, n) => (n < 2 ? '' : `<div class="gpvd" aria-label="${n}장 중 ${i + 1}번째">${Array.from({ length: n }, (_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</div>`);
 // AI가 보는 중 띠 (2026-10-14 사용자: 더 AI답게) — AI 기다리기 화면(전에 있던)의 도는 빛 고리 · 훑는 빛줄기 · 바뀌는 한 줄을 띠 크기로.
 // 답을 누를 때마다 다시 그려지므로, 움직임이 처음으로 튀지 않게 지금 시각만큼 앞당겨 시작한다
 const AI_STEPS = ['사진을 살펴보고 있어요', '어떤 설비인지 알아보고 있어요', '점검 포인트를 고르고 있어요'];
@@ -1050,9 +1057,9 @@ document.addEventListener('input', (e) => { const k = e.target.dataset && e.targ
 let swX = null;
 document.addEventListener('pointerdown', (e) => { swX = e.target.closest('[data-swipe]') ? e.clientX : null; });
 document.addEventListener('pointerup', (e) => {
-  if (swX == null || !UI.rck || !UI.rck.view) return; const dx = e.clientX - swX; swX = null;
-  if (Math.abs(dx) < 40) return; const v = dx < 0 ? 'after' : 'before', b = $(`.rphvt [data-v="${v}"]`);
-  if (b && !b.disabled) { UI.rck.view.v = v; render(); }
+  if (swX == null) return; const dx = e.clientX - swX; swX = null;
+  if (Math.abs(dx) < 40) return; const v = dx < 0 ? 1 : -1;  // 왼쪽으로 밀면 다음 사진
+  if (UI.rck && UI.rck.view) ACTS.phStep({ v });
 });
 document.addEventListener('keydown', (e) => { if (e.target.id === 'eqIn' && e.key === 'Enter' && !e.isComposing) { e.preventDefault(); ACTS.eqAdd(); } });
 // 장비 AI 기다리기 — 사진 AI 기다리기와 같은 모양에 고른 장비 이름을 훑는다
@@ -1183,7 +1190,7 @@ function checkList(s) {
   const row = ([x, i]) => {
     const st = x.answer || '';
     const rk = st === 'bad' && (x.risks || []).length ? `<div class="crisk">${x.risks.map((r) => tg(r, 'warn')).join('')}</div>` : '';
-    const mark = st === 'bad' ? [x.memo ? '위험요인 내용: ' + esc(x.memo) : '', x.shot && !x.photo ? '사진 1장' : ''].filter(Boolean).join('<br>') : '';
+    const mark = st === 'bad' ? [x.memo ? '위험요인 내용: ' + esc(x.memo) : '', x.shot && !x.photo ? `사진 ${picsOf(x).length}장` : ''].filter(Boolean).join('<br>') : '';
     return `<div class="crow ${ansCls(st)}">
       <div class="ctop"><span class="cnum">${i + 1}</span><div class="t">${esc(x.text)}</div>${x.photo ? shotThumb(x.photo) : ''}</div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
       ${ptsRow(d, x)}
@@ -1252,8 +1259,6 @@ function badSheet(s) {
     <div class="ans">${it.ref ? '불량 (아직 안 고쳐짐)' : '불량'}</div>
     ${it.ref ? `<div class="lbl">공장주에게 들은 사정 (안 골라도 돼요)</div>
       ${['큰 공사가 필요해요', '부품이나 업체를 기다려요', '이유를 몰라요'].map((r) => `<button class="pick${UI.sheet.reason === r ? ' on' : ''}" data-act="pickReason" data-v="${r}">${r}</button>`).join('')}` : ''}
-    <div class="lbl">지금 모습 (안 찍어도 돼요)</div>
-    <div class="row"><div class="thumb">${UI.sheet.photo ? '📷 1장' : '없음'}</div><button class="btn ghost sm" data-act="sheetPhoto">＋ 사진 찍기</button></div>
     <div class="srh"><b>위험요인</b><span>여러 개 고를 수 있어요</span></div>
     ${top.length ? `<div class="geqs srisk">${top.map(rbtn).join('')}</div>
     <div class="geqs srisk srmore" hidden>${more.map(rbtn).join('')}</div>
@@ -1294,7 +1299,8 @@ function rckScreen(s, id) {
   const row = (it, k) => {
     const fx = rckFix(it), v = J[it.id] || '';
     const sub = [(it.risks || []).length ? `위험요인: ${it.risks.map(esc).join(', ')}` : '', it.memo ? `위험요인 내용: ${esc(it.memo)}` : ''].filter(Boolean).join('<br>');
-    const before = it.shot ? `<button class="rph" data-act="phOpen" data-id="${it.id}" data-v="before" aria-label="고치기 전 사진 크게 보기">${phArt('before')}<span class="rphc"><b>고치기 전</b>${ins.date} ${esc(ins.by)}</span></button>`
+    const pics = picsOf(it);  // 고치기 전 사진은 여러 장일 수 있다 (2026-10-22) — 칸에는 대표 사진과 장수만
+    const before = it.shot ? `<button class="rph" data-act="phOpen" data-id="${it.id}" data-v="before" aria-label="고치기 전 사진 ${pics.length}장 크게 보기">${phArt('before', pics[0])}<span class="rphc"><b>고치기 전</b>${ins.date} ${esc(ins.by)}</span>${pics.length > 1 ? `<em class="rphn">${pics.length}장</em>` : ''}</button>`
       : `<div class="rph none"><span class="rphe">사진 없음</span><span class="rphc"><b>고치기 전</b>${ins.date}</span></div>`;
     const after = fx && fx.photo ? `<button class="rph" data-act="phOpen" data-id="${it.id}" data-v="after" aria-label="고친 뒤 사진 크게 보기">${phArt('after')}<span class="rphc"><b>고친 뒤</b>${fx.at} ${fx.proxy ? '지킴이가 올림' : '공장주'}</span></button>`
       : fx ? `<div class="rph none"><span class="rphe">사진 없이<br>고쳤다고 알림</span><span class="rphc"><b>고친 뒤</b>${fx.at} 공장주</span></div>`
@@ -1321,26 +1327,30 @@ function rckScreen(s, id) {
   </div><div class="ft">
     ${ready ? `<button class="btn" data-act="rckSend">재점검 결과 내기</button>`
       : `<button class="btn glocked" data-act="rckLocked">${I('lock', 17)} 재점검 결과 내기</button>`}
-  </div></div>${UI.rck.view ? phViewer(ins, bad.find((it) => it.id === UI.rck.view.id), UI.rck.view.v) : ''}`;
+  </div></div>${UI.rck.view ? phViewer(ins, bad.find((it) => it.id === UI.rck.view.id), UI.rck.view.i) : ''}`;
 }
 // 시제품에는 진짜 사진이 없어 자리 그림으로 대신한다 — 고치기 전은 분전반 앞에 상자가 쌓인 모양, 고친 뒤는 치운 모양(같은 자리)
-function phArt(v) {
+function phArt(v, p = 0) {  // p: 몇 번째 사진인지 — 같은 그림을 다르게 잘라 보인다(PIC_VIEW)
   const box = v === 'before' ? '<rect x="22" y="44" width="18" height="14" rx="1.5" fill="#c7a77a"/><rect x="38" y="48" width="16" height="10" rx="1.5" fill="#b8956a"/><rect x="28" y="34" width="14" height="11" rx="1.5" fill="#d4b68b"/>'
     : '<path d="M14 58h52" stroke="#e8c33a" stroke-width="2" stroke-dasharray="4 3"/>';
-  return `<svg class="rphart" viewBox="0 0 80 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="80" height="60" fill="#dfe4ea"/><rect y="46" width="80" height="14" fill="#c9cfd8"/>
+  return `<svg class="rphart" viewBox="${PIC_VIEW[p]}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="80" height="60" fill="#dfe4ea"/><rect y="46" width="80" height="14" fill="#c9cfd8"/>
     <rect x="30" y="10" width="22" height="30" rx="2" fill="#9aa6b6"/><rect x="33" y="13" width="16" height="12" rx="1" fill="#b7c0cc"/><circle cx="41" cy="31" r="2" fill="#e05a4a"/>${box}</svg>`;
 }
-// 사진 크게 보기 — 고치기 전 · 고친 뒤를 위 단추로 바꿔 본다. 옆으로 밀어도 바뀐다
-function phViewer(ins, it, v) {
-  if (!it) return '';
-  const fx = rckFix(it), has = { before: !!it.shot, after: !!(fx && fx.photo) };
-  const cap = v === 'before' ? `${ins.date} ${esc(ins.by)} 찍음` : fx ? `${fx.at} ${fx.proxy ? '지킴이가 올림' : '공장주가 보냄'}` : '';
+// 사진 크게 보기 — 고치기 전 사진들(여러 장일 수 있다) 다음에 고친 뒤 사진이 한 줄로 이어진다. 위 단추는 그 묶음의 첫 장으로 가고,
+// 양옆 단추나 옆으로 밀기로 한 장씩 넘긴다 (2026-10-22 — 전에는 고치기 전 · 고친 뒤 한 장씩이라 밀면 둘이 바뀌었다)
+const phList = (it) => { const fx = rckFix(it); return [...picsOf(it).map((p) => ['before', p]), ...(fx && fx.photo ? [['after', 0]] : [])]; };
+function phViewer(ins, it, i) {
+  const list = it ? phList(it) : [];
+  if (!list.length) return '';
+  i = Math.min(i, list.length - 1);
+  const fx = rckFix(it), nb = picsOf(it).length, [v, p] = list[i], has = { before: nb > 0, after: !!(fx && fx.photo) };
+  const cap = v === 'before' ? `${ins.date} ${esc(ins.by)} 찍음${nb > 1 ? ` (${i + 1} / ${nb})` : ''}` : `${fx.at} ${fx.proxy ? '지킴이가 올림' : '공장주가 보냄'}`;
   return `<div class="rphv" role="dialog" aria-label="사진 크게 보기">
     <div class="rphvh"><div class="rphvt">${[['before', '고치기 전'], ['after', '고친 뒤']].map(([k, w]) =>
       `<button class="${v === k ? 'on' : ''}" data-act="phOpen" data-id="${it.id}" data-v="${k}"${has[k] ? '' : ' disabled'}>${w}</button>`).join('')}</div>
       <button class="rphvx" data-act="phClose" aria-label="닫기">${I('close', 22)}</button></div>
-    <div class="rphvb" data-swipe="${it.id}">${has[v] ? phArt(v) : ''}</div>
-    <div class="rphvf"><b>${esc(it.text)}</b><span>${cap}</span></div></div>`;
+    <div class="rphvb" data-swipe="${it.id}">${picNav(i, list.length, 'phStep')}${phArt(v, p)}</div>
+    <div class="rphvf">${picDots(i, list.length)}<b>${esc(it.text)}</b><span>${cap}</span></div></div>`;
 }
 /* ---------- 낸 뒤 ---------- */
 // 낸 뒤 — AI 기다리기처럼 머리글을 달고 가운데로 모은다 (2026-09-28 사용자 지시). 막 냈을 때만 표시가 튀어나오고 체크가 그려진다
@@ -1391,7 +1401,7 @@ function inspView(s, id, from) {
   const rows = groups.map(({ g, l }) => `<div class="grp">${gname(g) || '점검 항목'}<span class="must">${l.length}개</span></div>
     <div class="rlist">${l.map(([x, k]) => {
       const a = x.answer || '';
-      const sub = [x.ref && x.reason ? `안 고쳐진 사정: ${esc(x.reason)}` : '', (x.risks || []).length ? `위험요인: ${x.risks.map(esc).join(', ')}` : '', x.memo ? `위험요인 내용: ${esc(x.memo)}` : '', x.shot ? '사진 1장' : '', x.eval ? `평가 내용: ${esc(x.eval)}` : '', rckWord(x)].filter(Boolean).join('<br>');
+      const sub = [x.ref && x.reason ? `안 고쳐진 사정: ${esc(x.reason)}` : '', (x.risks || []).length ? `위험요인: ${x.risks.map(esc).join(', ')}` : '', x.memo ? `위험요인 내용: ${esc(x.memo)}` : '', x.shot ? `사진 ${picsOf(x).length}장` : '', x.eval ? `평가 내용: ${esc(x.eval)}` : '', rckWord(x)].filter(Boolean).join('<br>');
       return `<div class="vrow"><span class="rno">${k + 1}</span><div class="rtx"><div class="t">${esc(x.text)}</div>${sub ? `<small>${sub}</small>` : ''}</div><span class="rans ${ansCls(a)}">${ICO[a] || ''}${ANS[a] || '답 없음'}</span></div>`;
     }).join('')}</div>`).join('');
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
@@ -1894,13 +1904,13 @@ const ACTS = {
       // 지난번 미흡 항목 — 맨 앞 묶음. 원래 항목을 ref로 가리키고, 승인되면 답이 원래 항목에 적힌다 (common.js settlePrev)
       const prev = openIssues(s, d.fid).map((e) => ({ id: `p-${e.ins.id}-${e.it.id}`, text: e.it.text, src: 'prev', ref: { ins: e.ins.id, id: e.it.id }, note: prevNote(e) }));
       const old = Object.fromEntries(d.items.map((x) => [x.id, x]));
-      d.items = [...prev, ...base, ...ai, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot, eval: old[x.id].eval, risks: old[x.id].risks, ...(old[x.id].photo ? { photo: old[x.id].photo } : {}) } : { answer: null }));
+      d.items = [...prev, ...base, ...ai, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot, eval: old[x.id].eval, risks: old[x.id].risks, ...(old[x.id].photo ? { photo: old[x.id].photo } : {}), ...(old[x.id].pics ? { pics: old[x.id].pics } : {}) } : { answer: null }));
     });
     R.go('list');
   },
   // 불량이 아닌 답으로 바꾸면 위험요인·사진은 지운다 (불량에만 붙는 것). 평가 내용은 어느 답이든 남는다
-  ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; it.risks = []; if (it.src !== 'ai') delete it.photo; }); },
-  ansBad({ n }) { const it = DB.s.draft.items[+n]; sheet({ type: 'bad', n: +n, photo: !!it.shot, reason: it.reason || null, risks: [...(it.risks || [])] }); },
+  ans({ n, v }) { n = +n; DB.act((s) => { const it = s.draft.items[n]; it.answer = v; it.memo = ''; it.shot = false; delete it.pics; it.risks = []; if (it.src !== 'ai') delete it.photo; }); },
+  ansBad({ n }) { const it = DB.s.draft.items[+n]; sheet({ type: 'bad', n: +n, reason: it.reason || null, risks: [...(it.risks || [])] }); },
   // 위험요인 고르기 (2026-10-07) — 창을 다시 그리면 위로 튀고 올라오는 움직임이 다시 나와서, 누른 칸의 표시만 바꾼다
   riskTg({ v }, el) {
     const l = UI.sheet.risks, on = !l.includes(v);
@@ -1993,21 +2003,19 @@ const ACTS = {
     delete UI.wk.focus[area];
     toast(`${area} 주간 보고를 냈어요`);
   },
-  sheetPhoto() { keepSheetText(); UI.sheet.photo = true; render(); },
+  // 불량 창에는 사진 칸이 없다 (2026-10-22 사용자 지시 — 점검표는 종이 체크리스트를 대신한다). 예전 초안에 찍어 둔 사진은 그대로 둔다
   saveBad() {
-    const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ev = $('#evalIn').value.trim(), ph = UI.sheet.photo, reason = UI.sheet.reason || '';
+    const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ev = $('#evalIn').value.trim(), reason = UI.sheet.reason || '';
     const risks = RISKS.filter((r) => UI.sheet.risks.includes(r));  // 목록 차례대로
-    const fromAI = !!UI.sheet.fromAI;
     UI.sheet = null;
-    DB.act((s) => { const it = s.draft.items[n], fresh = ph && !it.shot && !fromAI; it.answer = 'bad'; it.memo = memo; it.eval = ev; it.shot = ph; it.reason = reason; it.risks = risks;
-      if (fresh) it.photo = shootAI(s.draft, 'bad'); if (!ph && !fromAI) delete it.photo; });  // 불량 사진도 AI가 본다 (2026-10-14) — 사진 한 번으로 증거와 제안
+    DB.act((s) => { const it = s.draft.items[n]; it.answer = 'bad'; it.memo = memo; it.eval = ev; it.reason = reason; it.risks = risks; });
   },
   submitFirst() {
     const d = DB.s.draft;
     const data = { kind: 'first', fid: d.fid, by: ME, team: TEAM.name, ver: CHECKLIST.ver, result: autoResult(d.items),
       items: d.items.map((x) => ({ id: x.id, text: x.text, src: x.src, area: x.area, answer: x.answer, memo: x.memo || '', eval: x.eval || '', log: [],
-        ...(x.eq ? { eq: x.eq } : {}), ...(x.shot && !x.ref ? { shot: true } : {}), ...((x.risks || []).length ? { risks: x.risks } : {}),
-        ...(x.ref ? { ref: x.ref, note: x.note, reason: x.reason || '', shot: !!x.shot } : {}) })) };
+        ...(x.eq ? { eq: x.eq } : {}), ...(x.shot && !x.ref ? { shot: true, pics: picsOf(x) } : {}), ...((x.risks || []).length ? { risks: x.risks } : {}),
+        ...(x.ref ? { ref: x.ref, note: x.note, reason: x.reason || '', shot: !!x.shot, ...(x.shot ? { pics: picsOf(x) } : {}) } : {}) })) };
     DB.act((s) => {
       if (s.net.guard) applyInspection(s, data); else s.outbox.guard.push({ type: 'inspection', data });
       s.visits[d.fid] = null;  // 다녀왔으니 방문일을 비운다
@@ -2019,7 +2027,15 @@ const ACTS = {
   },
   // 재점검 (2026-10-13) — 같은 답을 다시 누르면 푼다
   rckJ({ id, v }) { UI.rck.j[id] = UI.rck.j[id] === v ? null : v; render(); },
-  phOpen({ id, v }) { UI.rck.view = { id, v }; render(); },
+  // 사진 크게 보기 — 고치기 전이면 첫 장, 고친 뒤면 고치기 전 사진들 다음 칸 (phList 차례)
+  phOpen({ id, v }) {
+    const it = DB.s.inspections.find((i) => i.id === UI.rck.id).items.find((x) => x.id === id);
+    UI.rck.view = { id, i: v === 'after' ? picsOf(it).length : 0 }; render();
+  },
+  phStep({ v }) {
+    const it = DB.s.inspections.find((i) => i.id === UI.rck.id).items.find((x) => x.id === UI.rck.view.id);
+    UI.rck.view.i = Math.max(0, Math.min(phList(it).length - 1, UI.rck.view.i + +v)); render();
+  },
   phClose() { UI.rck.view = null; render(); },
   rckRes({ v }) { UI.rck.res = UI.rck.res === v ? null : v; render(); },
   rckLocked() {

@@ -470,9 +470,9 @@ const SEED = {
         return { id: `${fid}-${k}`, text: t, src: 'base', area: a.key, answer: bad.includes(k) ? 'bad' : 'ok',
           ...(bad.includes(k) ? { shot: true, log: [...(claim.includes(k) ? [{ t: 'fix', at: date, tm: '17:30', note: '', photo: true }] : []),
             ...(fin ? [{ t: 'recheck', at: fin, by, result: fixed.includes(k) ? 'fixed' : 'not', photo: claim.includes(k) }] : [])] } : {}) }; })) })),
-    // 동방산업 — 재점검 기한(9/03)이 지났는데 공장주 사진은 와 있다 (2026-10-13)
+    // 동방산업 — 재점검 기한(9/03)이 지났는데 공장주 사진은 와 있다 (2026-10-13). 고치기 전 사진은 세 장 (2026-10-22 여러 장 보기)
     { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '재점검', items: [
-      { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블', shot: true,
+      { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블', shot: true, pics: [0, 1, 2],
         log: [ { t: 'fix', at: '8/30', tm: '14:20', note: '케이블 걸이 설치', photo: true } ] },
       ...BASE_ITEMS['금속가공'].map((t, i) => ({ id: 'b' + (i + 2), text: t, src: 'base', answer: 'ok' })),
     ] },
