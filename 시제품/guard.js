@@ -1310,24 +1310,24 @@ function kindMove(id, fn) {
 const scrollFind = (id) => { const el = document.getElementById('fr-' + id); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
 
 /* ---------- 앱 안 카메라 (2026-10-23 사용자 지시) ----------
-   [사진 추가] · 새 개선사항 카메라를 누르면 앱 안에서 찍는다. 셔터를 누를 때마다 바로 들어가고(확인 단계 없음 — 같은 날 사용자 "1번"), [완료]로 닫는다(5장이면 저절로).
-   잘못 찍었으면 왼쪽 아래 방금 사진을 눌러 크게 보고 [사진 빼기].
-   새 개선사항은 첫 장이 들어갈 때 생기고, 다 빼고 닫으면 지운다 — 빈 줄이 남지 않게.
+   [사진 추가] · 새 개선사항 카메라를 누르면 앱 안에서 한 장 찍는다. 셔터를 누르면 찍은 사진이 멈춰 보이고 [다시 찍기] / [사진 사용] — 사용하면 들어가고 앱으로 돌아온다
+   (기본 카메라 앱과 같은 차례, 2026-10-23 사용자 지시. 그 전에는 이어 찍다 [완료]였다).
+   새 개선사항은 사진을 사용할 때 생긴다 — 그냥 닫으면 빈 줄이 남지 않게.
    브라우저 규칙상 https · localhost에서만 켜진다. http 주소(같은 와이파이)면 폰의 기본 카메라 앱으로 찍고, 돌아오면 바로 들어간다(카메라 앱에 확인이 있다).
    카메라를 못 켜면(권한 거절 · 카메라 없음) 그 자리에서 기본 카메라 앱이나 시험 사진(photos/)을 고른다.
    화면은 #app 밖에 따로 둔다 — 다시 그릴 때마다 카메라 영상이 끊기지 않게.
    모양은 C안(같은 날 사용자 지시): 영상은 머리 바로 아래 3:4 칸을 채우고, 찍을 때 그 칸 비율대로 가운데를 잘라 보이는 범위 그대로 남긴다.
-   영상 위에 안내("사진 n · 더 찍거나 완료" — 첫 장도 같은 말, 같은 날 사용자 지시) · 플래시 · 확대(1× 2×), 아래 칸에 장수 점과 셔터. 플래시 · 확대는 폰이 되는 것만 보인다.
+   영상 위에 안내("사진 n") · 플래시 · 확대(1× 2×), 아래 칸에 장수 점과 셔터. 플래시 · 확대는 폰이 되는 것만 보인다.
    사진은 줄여(JPEG) 서버에 올리고(api/photo) 점검에는 주소만 둔다(d.real). 서버 없이 열면 그림째 둔다.
    진짜 사진은 AI 흉내 답이 없어 "AI가 찾은 위험요인 없음"이 된다 — 지킴이가 직접 더한다 */
-const CAM = { open: false, st: '', fid: null, made: false, title: '', base: 0, n: 0, recs: [], stream: null, torch: false, flash: false, zoom: null, zm: 1, q: Promise.resolve() };
+const CAM = { open: false, st: '', fid: null, made: false, title: '', base: 0, shot: null, stream: null, torch: false, flash: false, zoom: null, zm: 1, q: Promise.resolve() };
 const camIn = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*', hidden: true });
 camIn.setAttribute('capture', 'environment');  // 폰에서는 고르기 창 없이 카메라 앱이 바로 열린다
 camIn.addEventListener('change', () => { const f = camIn.files[0]; camIn.value = ''; if (f) camLoad(f); });
 document.body.appendChild(camIn);
 function camOpen(fid) {
   const d = DB.s.draft, f = fid && findOf(d, fid);
-  Object.assign(CAM, { fid, made: false, title: f ? findWord(d, f) : `${FIND_WORD.bad} ${findsOf(d).filter((x) => kindOf(x) === 'bad').length + 1}`, base: f ? f.pics.length : 0, n: 0, recs: [] });
+  Object.assign(CAM, { fid, made: false, title: f ? findWord(d, f) : `${FIND_WORD.bad} ${findsOf(d).filter((x) => kindOf(x) === 'bad').length + 1}`, base: f ? f.pics.length : 0, shot: null });
   if (!window.isSecureContext || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { camIn.click(); return; }  // 누른 그 순간에 열어야 폰이 막지 않는다
   CAM.open = true; camStart();
 }
@@ -1346,9 +1346,9 @@ function camStart() {
 function camStop() { if (CAM.stream) { CAM.stream.getTracks().forEach((t) => t.stop()); CAM.stream = null; } }
 function camClose() {
   camStop(); CAM.open = false; CAM.st = '';
-  CAM.recs.forEach((r) => URL.revokeObjectURL(r.url)); CAM.recs = [];
+  if (CAM.shot) { URL.revokeObjectURL(CAM.shot.url); CAM.shot = null; }
   const fid = CAM.fid;
-  if (CAM.made) CAM.q = CAM.q.then(() => {  // 이번에 만든 개선사항을 다 빼고 닫았으면 지운다
+  if (CAM.made) CAM.q = CAM.q.then(() => {  // 이번에 만든 개선사항에 사진이 못 들어갔으면(올리기 실패) 지운다
     const d = DB.s.draft, f = d && findOf(d, fid);
     if (f && !f.pics.length) { if (UI.fact === fid) UI.fact = null; DB.act((s) => { s.draft.finds = findsOf(s.draft).filter((x) => x.id !== fid); }); }
   });
@@ -1361,19 +1361,18 @@ const camShrink = (src, w, h, x = 0, y = 0) => new Promise((ok) => {
   c.getContext('2d').drawImage(src, x, y, w, h, 0, 0, c.width, c.height);
   c.toBlob((b) => ok({ b, url: URL.createObjectURL(b), w: c.width, h: c.height }), 'image/jpeg', 0.8);
 });
-// 한 장 넣기 — 올리기는 차례대로, 사진 번호는 올린 뒤에 정한다(둘이 겹치지 않게). 그사이 뺀 사진은 올리지 않는다
+// 한 장 넣기 — 올리기는 차례대로, 사진 번호는 올린 뒤에 정한다(둘이 겹치지 않게)
 function camPut(sh) {
   if (!CAM.fid) { CAM.fid = newFind('bad'); CAM.made = true; }
-  const fid = CAM.fid, rec = { url: sh.url, k: 0, gone: false };
-  CAM.recs.push(rec);
-  CAM.q = CAM.q.then(() => (rec.gone ? null : photoSave(sh))).then((p) => {
-    const d = DB.s.draft; if (!p || rec.gone || !d || !findOf(d, fid)) return;
-    rec.k = nextShots(d, 1)[0]; putShots(fid, [rec.k], { [rec.k]: p });
+  const fid = CAM.fid;
+  CAM.q = CAM.q.then(() => photoSave(sh)).then((p) => {
+    const d = DB.s.draft; if (!d || !findOf(d, fid)) return;
+    const k = nextShots(d, 1)[0]; putShots(fid, [k], { [k]: p });
   }).catch(() => toast('사진을 올리지 못했어요'));
 }
 function camLoad(file) {
   const img = new Image(), url = URL.createObjectURL(file);
-  img.onload = () => { URL.revokeObjectURL(url); camShrink(img, img.naturalWidth, img.naturalHeight).then((sh) => { CAM.n++; camPut(sh); camClose(); }); };
+  img.onload = () => { URL.revokeObjectURL(url); camShrink(img, img.naturalWidth, img.naturalHeight).then((sh) => { camPut(sh); camClose(); }); };
   img.onerror = () => { URL.revokeObjectURL(url); toast('사진을 열지 못했어요'); };
   img.src = url;
 }
@@ -1391,18 +1390,18 @@ function camPaint() {
     el.innerHTML = '<div class="gcvh"></div><div class="gcvb"><video playsinline muted autoplay></video><img alt=""><p></p><div class="gcvo"></div><div class="gcvz"></div></div><div class="gcvl"><div class="gcvd"></div><div class="gcvf"></div></div>';
     document.body.appendChild(el);
   }
-  const st = CAM.st, last = CAM.recs[CAM.recs.length - 1], n = CAM.base + CAM.n;
+  const st = CAM.st, n = CAM.base;
   el.dataset.st = st;
-  el.querySelector('.gcvh').innerHTML = `<button class="gcvx" data-act="camClose" aria-label="닫기">${I('close', 24)}</button><b>${CAM.title}</b><span>${st === 'last' ? '방금 찍은 사진' : `사진 ${CAM.base + CAM.n} / ${FIND_MAX}`}</span>`;
-  if (st === 'last') el.querySelector('.gcvb img').src = last.url;
-  el.querySelector('.gcvo').innerHTML = `<span class="gcvhint">${I('camera', 15)}사진 ${n + 1} · 더 찍거나 완료</span>`
+  el.querySelector('.gcvh').innerHTML = `<button class="gcvx" data-act="camClose" aria-label="닫기">${I('close', 24)}</button><b>${CAM.title}</b><span>${st === 'last' ? '방금 찍은 사진' : `사진 ${n} / ${FIND_MAX}`}</span>`;
+  if (st === 'last') el.querySelector('.gcvb img').src = CAM.shot.url;
+  el.querySelector('.gcvo').innerHTML = `<span class="gcvhint">${I('camera', 15)}사진 ${n + 1}</span>`
     + (CAM.torch ? `<button class="gcvlt${CAM.flash ? ' on' : ''}" data-act="camFlash" aria-label="플래시" aria-pressed="${CAM.flash}">${I('bolt', 22)}</button>` : '');
   el.querySelector('.gcvz').innerHTML = CAM.zoom ? `<span class="gcvzm">${[1, 2].map((z) => `<button class="${CAM.zm === z ? 'on' : ''}" data-act="camZoom" data-v="${z}" aria-pressed="${CAM.zm === z}">${z}×</button>`).join('')}</span>` : '';
   el.querySelector('.gcvd').innerHTML = Array.from({ length: FIND_MAX }, (_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
   el.querySelector('.gcvb p').innerHTML = st === 'start' ? '카메라 켜는 중' : st === 'off' ? '카메라를 켤 수 없어요<small>카메라 권한을 확인하거나 아래에서 골라 주세요</small>' : '';
-  el.querySelector('.gcvf').innerHTML = st === 'last' ? `<button class="gcvbt" data-act="camDrop">${I('trash', 20)}사진 빼기</button><button class="gcvbt ok" data-act="camBack">계속 찍기</button>`
+  el.querySelector('.gcvf').innerHTML = st === 'last' ? '<button class="gcvbt" data-act="camRetake">다시 찍기</button><button class="gcvbt ok" data-act="camUse">사진 사용</button>'
     : st === 'off' ? `<button class="gcvbt" data-act="camFile">${I('camera', 20)}카메라 앱으로</button><button class="gcvbt" data-act="camTest">${I('image', 20)}시험 사진</button>`
-    : `${last ? `<button class="gcvth" data-act="camLast" aria-label="방금 찍은 사진 보기"><img src="${last.url}" alt=""></button>` : '<span class="gcvth"></span>'}<button class="gcvsh" data-act="camSnap" aria-label="찍기"${st === 'live' ? '' : ' disabled'}></button>${CAM.n ? '<button class="gcvdone" data-act="camClose">완료</button>' : '<span></span>'}`;
+    : `<span></span><button class="gcvsh" data-act="camSnap" aria-label="찍기"${st === 'live' ? '' : ' disabled'}></button><span></span>`;
 }
 addEventListener('hashchange', () => { if (CAM.open) camClose(); });  // 폰의 뒤로 가기
 // 다른 앱에 다녀오면 카메라가 꺼져 있을 수 있다 — 다시 켠다
@@ -2178,19 +2177,18 @@ const ACTS = {
     if (id && findOf(DB.s.draft, id).pics.length >= FIND_MAX) { toast(`한 건에 사진은 ${FIND_MAX}장까지예요`); return; }
     camOpen(id || null);
   },
-  // 셔터 — 누를 때마다 바로 넣는다. 반짝임으로 찍힌 것을 알린다
+  // 셔터 — 찍은 사진을 멈춰 보이고 [다시 찍기] / [사진 사용]을 묻는다. 반짝임으로 찍힌 것을 알린다
   camSnap() {
     const v = $('#camv video');
-    if (CAM.st !== 'live' || !v || !v.videoWidth || CAM.base + CAM.n >= FIND_MAX) return;
-    CAM.n++;
-    const full = CAM.base + CAM.n >= FIND_MAX, b = $('#camv .gcvb');
+    if (CAM.st !== 'live' || !v || !v.videoWidth || CAM.base >= FIND_MAX) return;
+    CAM.st = 'snap';
+    const b = $('#camv .gcvb');
     b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
     // 영상은 칸을 채우게(가운데 기준) 보이므로, 칸 비율대로 가운데를 잘라 보이는 범위만 남긴다
     const r = b.clientWidth / b.clientHeight, vw = v.videoWidth, vh = v.videoHeight, sw = Math.min(vw, vh * r), sh = sw / r;
-    camShrink(v, sw, sh, (vw - sw) / 2, (vh - sh) / 2).then((p) => { camPut(p); if (full) camClose(); else camPaint(); });
+    camShrink(v, sw, sh, (vw - sw) / 2, (vh - sh) / 2).then((p) => { if (!CAM.open) { URL.revokeObjectURL(p.url); return; } CAM.shot = p; CAM.st = 'last'; camPaint(); });
     camPaint();
   },
-  camLast() { if (CAM.recs.length) { CAM.st = 'last'; camPaint(); } },
   // 플래시(손전등) · 확대 — 폰이 되는 것만 단추가 보인다. 안 먹으면 단추를 거둔다
   camFlash() {
     const tr = CAM.stream && CAM.stream.getVideoTracks()[0]; if (!tr) return;
@@ -2204,13 +2202,11 @@ const ACTS = {
     tr.applyConstraints({ advanced: [{ zoom: Math.min(z.max, Math.max(z.min, CAM.zm)) }] }).catch(() => { CAM.zoom = null; CAM.zm = 1; camPaint(); });
     camPaint();
   },
-  camBack() { CAM.st = 'live'; camPaint(); },
-  camDrop() {
-    const rec = CAM.recs.pop(), fid = CAM.fid;
-    rec.gone = true; CAM.n--; URL.revokeObjectURL(rec.url);
-    CAM.q = CAM.q.then(() => { if (rec.k) DB.act((s) => { const f = findOf(s.draft, fid); if (!f) return; f.pics = f.pics.filter((x) => x !== rec.k); repCheck(f); }); });
-    CAM.st = 'live'; camPaint();
+  camRetake() {
+    URL.revokeObjectURL(CAM.shot.url); CAM.shot = null;
+    if (CAM.stream) { CAM.st = 'live'; camPaint(); } else camStart();  // 보는 사이 다른 앱에 다녀와 카메라가 꺼졌으면 다시 켠다
   },
+  camUse() { camPut(CAM.shot); camClose(); },
   camClose() { camClose(); },
   camFile() { camIn.click(); },
   camTest() { if (!CAM.fid) CAM.fid = newFind('bad'); putShots(CAM.fid, nextShots(DB.s.draft, 1)); camClose(); },  // 시험 사진 한 장 (PC · 카메라 없는 기기)

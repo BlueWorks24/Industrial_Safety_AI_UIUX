@@ -1584,10 +1584,6 @@ button.gfai{min-height:32px;padding:0 4px;border:none;background:none;font:inher
 .gcvsh{width:78px;height:78px;padding:0;border:4px solid #fff;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 4px #000;cursor:pointer;transition:transform .1s}
 .gcvsh:active{transform:scale(.92)}
 .gcvsh:disabled{opacity:.35;cursor:default}
-.gcvth{justify-self:start;width:54px;height:54px;padding:0;border:none;border-radius:10px;overflow:hidden;background:none;cursor:pointer}
-.gcvth img{display:block;width:100%;height:100%;object-fit:cover}
-button.gcvth{outline:2px solid #fff;outline-offset:-2px}
-.gcvdone{justify-self:end;min-height:46px;padding:0 18px;border:none;border-radius:999px;background:rgba(255,255,255,.18);color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}
 .gcvbt{display:flex;align-items:center;justify-content:center;gap:6px;min-height:56px;border:none;border-radius:14px;background:rgba(255,255,255,.16);color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer}
 .gcvbt.ok{background:var(--navy)}
 .gcvbt:active{filter:brightness(.88)}
