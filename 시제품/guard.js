@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 주간 보고. 운영자 제출 검사(승인·반려)는 2026-10-14 사용자 지시로 뺐다 — 아직 정해진 게 아니다.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { hq: '', sheet: null, aiT: {}, fT: {}, fact: null, fv: null, meet: 1, cell: null, ftx: null, ftxWait: false, ptsOpen: {}, only: false, cpage: 0, gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, preBack: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
+const UI = { hq: '', sheet: null, fT: {}, fact: null, fv: null, meet: 1, cell: null, ftx: null, ftxWait: false, ptsOpen: {}, only: false, ckTab: 'prev', gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, preBack: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가' };
 
 function tasks(s) {
@@ -956,66 +956,22 @@ function pre(s, fid) {
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'firm' ? firmSheet(s) : ''}`;
 }
 
-/* ---------- G4 사진 AI — 점검하다가 그때그때 (2026-10-14 사용자 지시) ----------
-   전에는 공장을 한 바퀴 돌며 사진을 몰아 찍어 AI 제안을 받은 뒤, 체크리스트를 들고 다시 한 바퀴 돌았다(두 바퀴).
-   기존 업무는 한 바퀴 — 점검하다가 지적할 것이 보이면 그 자리에서 사진을 찍는다. 그래서 체크리스트 화면 아래에 카메라를 늘 두고,
-   찍으면 기다리지 않고 점검을 이어 가며 AI는 뒤에서 본다. 다 보면 아래 띠로만 알리고(창을 띄우지 않는다), 지킴이가 누를 때 그 자리에서 답한다.
-   불량 창의 사진 칸은 2026-10-22 사용자 지시로 뺐다(점검표는 종이 체크리스트를 대신한다) — 전에는 그 사진도 AI에 같이 보냈다.
-   걸리는 시간은 사진 한 장에 몇 초~20초쯤으로 본다(가설). 시제품은 3~5초 흉내. 전파가 없으면 사진을 들고 있다가 잡히면 보낸다.
-   AI가 내는 것은 체크리스트 항목이 아니라 설비의 점검 포인트(주관점) 설명이다 (2026-10-20 사용자 지시, seed.js AI_POINTS) */
-// 사진은 번호로 기억한다 — 점검 포인트가 "사진 3의 분전반"처럼 사진을 가리키므로
-const SHOT_MAX = 30;
+/* ---------- 사진 번호 ----------
+   체크리스트 화면 아래 카메라로 찍으면 사진 속 설비의 점검 포인트(주관점)를 내던 사진 AI(G4, 2026-10-14~)는 2026-10-23 사용자 지시로 걷었다 —
+   카메라 단추 · AI 띠 · 점검 포인트 창 · 문항 아래 사진 점검 포인트. 지난번 미흡을 바탕으로 한 주관점은 분야별 안전점검 맨 위(focusPts). */
+// 사진은 번호로 기억한다 — 현장점검 개선사항 사진(pics)이 이 번호를 쓴다
 const shotsOf = (d) => d.shots || Array.from({ length: d.photos || 0 }, (_, i) => i + 1);  // 예전 초안은 장수만 있다
-const aiqOf = (d) => d.aiq || [];
-// 사진 한 장을 찍어 AI에 맡긴다. from: cam(카메라 단추) · bad(불량 창)
-function shootAI(d, from) {
-  d.shotN = Math.max(d.shotN || 0, ...shotsOf(d), 0) + 1;
-  d.shots = [...shotsOf(d), d.shotN]; d.photos = d.shots.length;
-  d.aiq = [...aiqOf(d), { k: d.shotN, from, st: 'wait' }];
-  return d.shotN;
-}
-// 기다리는 사진마다 시계를 건다 — 그릴 때마다 불러도 한 번만 걸린다. 전파가 없으면 걸지 않고 기다린다
-function aiPump() {
-  const d = DB.s.draft;
-  if (!d || d.kind !== 'first' || !DB.s.net.guard) return;
-  aiqOf(d).filter((q) => q.st === 'wait' && !UI.aiT[q.k]).forEach((q) => {
-    UI.aiT[q.k] = setTimeout(() => { delete UI.aiT[q.k]; aiDone(q.k); }, 3000 + (q.k % 3) * 1000);
-  });
-}
-function aiDone(k) {
-  const d0 = DB.s.draft;
-  if (!d0 || !aiqOf(d0).some((q) => q.k === k && q.st === 'wait') || !DB.s.net.guard) return;  // 그사이 전파가 끊겼으면 잡힐 때 다시 건다
-  DB.act((s) => {
-    const q = s.draft.aiq.find((x) => x.k === k);
-    if (s.aiDown) { q.st = 'fail'; return; }
-    // 사진마다 설비 하나를 알아보고 점검 포인트를 낸다. 시제품은 사진마다 정해 둔 것 (PHOTOS pts)
-    q.st = 'done'; q.eq = photoOf(k).pts;
-  });
-}
-const ptsOf = (q) => AI_POINTS[q.eq ?? (q.k - 1) % AI_POINTS.length];  // 10-20 전에 본 사진은 eq가 없어 사진 번호로
-// 체크리스트 아래 줄 — 왼쪽은 AI 소식 띠(새 점검 포인트 > 보는 중 > 실패 > 본 것 다시 보기), 오른쪽은 늘 있는 카메라
-function aiBand(s) {
-  const d = s.draft, q = aiqOf(d), wait = q.filter((x) => x.st === 'wait').length, fail = q.filter((x) => x.st === 'fail').length;
-  const done = q.filter((x) => x.st === 'done'), fresh = done.filter((x) => !x.seen);
-  const nPts = fresh.reduce((n, x) => n + ptsOf(x).points.length, 0);
-  const band = fresh.length ? `<button class="gaibd new" data-act="aiOpen">${I('sparkle', 18)}<span>${fresh.length === 1 ? ptsOf(fresh[0]).equip : `사진 ${fresh.length}장의`} 점검 포인트 ${nPts}개</span><b>보기</b></button>`
-    : wait && s.net.guard ? aiBusy(wait)
-    : wait ? `<div class="gaibd" role="status"><i class="gspin"></i><span>전파가 없어 사진 ${wait}장을 들고 있어요</span></div>`
-    : fail ? `<button class="gaibd fail" data-act="aiRetry">${I('alert', 18)}<span>AI가 지금 답하지 않아요</span><b>다시</b></button>`
-    : done.length ? `<button class="gaibd seen" data-act="aiOpen">${I('sparkle', 18)}<span>점검 포인트 다시 보기</span><b>사진 ${done.length}장</b></button>` : '<span class="gaibd none"></span>';
-  return `<div class="gcamrow">${band}<button class="gcam" data-act="camShot" aria-label="사진 찍어 AI에 보내기">${I('camera', 24)}<span>사진</span></button></div>`;
-}
 // 찍은 사진 (2026-10-14 사용자: AI 제안 옆에 무슨 사진에서 나온 것인지 보이게) — 시제품은 카메라 대신 시험용 AI 생성 사진 다섯 장(photos/)을
 // 찍은 차례대로 돌려 쓴다 (2026-10-22 사용자 지시 — 전에는 번호마다 그린 현장 그림이었다).
-// w · h: 사진 크기(크게 보기에서 점검 포인트 상자 자리를 맞춘다), pts: 사진 AI의 점검 포인트(seed.js AI_POINTS 차례),
+// w · h: 사진 크기(크게 보기 칸을 사진 비율대로),
 // risks: 현장점검 개선사항에서 AI가 추천하는 위험요인 — 사진에 보이는 만큼만, 없으면 빈 칸 (같은 날 사용자 지시 — 셋을 맞추지 않는다).
 // 진짜 AI를 부르지 않는다. 사진을 보고 정해 둔 흉내다
 const PHOTOS = [
-  { src: 'photos/1_exit_door.png', w: 416, h: 486, pts: 5, risks: ['화재', '무너짐'] },
-  { src: 'photos/2_extinguisher.png', w: 423, h: 489, pts: 6, risks: [] },
-  { src: 'photos/3_wet_floor.png', w: 419, h: 489, pts: 7, risks: ['넘어짐'] },
-  { src: 'photos/4_panel_open.png', w: 626, h: 431, pts: 0, risks: ['전류 접촉', '화재'] },
-  { src: 'photos/5_rack.png', w: 646, h: 432, pts: 1, risks: ['떨어짐(낙하)', '무너짐'] },
+  { src: 'photos/1_exit_door.png', w: 416, h: 486, risks: ['화재', '무너짐'] },
+  { src: 'photos/2_extinguisher.png', w: 423, h: 489, risks: [] },
+  { src: 'photos/3_wet_floor.png', w: 419, h: 489, risks: ['넘어짐'] },
+  { src: 'photos/4_panel_open.png', w: 626, h: 431, risks: ['전류 접촉', '화재'] },
+  { src: 'photos/5_rack.png', w: 646, h: 432, risks: ['떨어짐(낙하)', '무너짐'] },
 ];
 const photoOf = (k) => PHOTOS[(k - 1) % PHOTOS.length];
 const photoBox = (k) => `aspect-ratio:${photoOf(k).w}/${photoOf(k).h}`;  // 크게 보기 칸을 사진 비율대로
@@ -1030,47 +986,16 @@ const findArt = (d, k) => (realOf(d, k) ? `<img class="gshart" src="${realOf(d, 
 const findBox = (d, k) => (realOf(d, k) ? `aspect-ratio:${realOf(d, k).w}/${realOf(d, k).h}` : photoBox(k));
 // 작은 사진 칸 — 누르면 크게 본다
 const shotThumb = (k) => `<button class="gsth" data-act="shotView" data-k="${k}" aria-label="사진 ${k} 크게 보기">${shotArt(k)}<em>사진 ${k}</em></button>`;
-// 사진 크게 보기 — AI가 알아본 설비의 점검 포인트를 상자로. 칸을 사진 비율대로 두어 상자 자리(%)가 사진에 맞는다
-function shotViewer(s) {
-  const v = UI.shot, d = s.draft, q = d && aiqOf(d).find((y) => y.k === v.k), e = q && q.st === 'done' ? ptsOf(q) : null;
+// 사진 크게 보기 — 예전 초안의 AI 제안 문항에 붙은 사진 (2026-10-23 사진 AI를 걷으며 점검 포인트 상자는 뺐다)
+function shotViewer() {
+  const v = UI.shot;
   return `<div class="rphv" role="dialog" aria-label="사진 ${v.k} 크게 보기">
-    <div class="rphvh"><b class="gshvt">사진 ${v.k}${q && q.from === 'bad' ? ' (불량 사진)' : ''}</b><button class="rphvx" data-act="shotClose" aria-label="닫기">${I('close', 22)}</button></div>
-    <div class="rphvb"><div class="gshvb" style="${photoBox(v.k)}">${shotArt(v.k)}${e ? e.points.map((p) => { const sp = p.spot;
-      return `<span class="gshbox" style="left:${sp.l}%;top:${sp.t}%;width:${sp.w}%;height:${sp.h}%"><em>${esc(p.t)}</em></span>`; }).join('') : ''}</div></div>
-    <div class="rphvf">${e ? `<span>${esc(e.equip)} 점검 포인트</span>${e.points.map((p) => `<b>${esc(p.t)}</b>`).join('')}`
-      : `<span>${q && q.st === 'wait' ? 'AI가 아직 보고 있어요' : 'AI가 보지 못한 사진이에요'}</span>`}</div></div>`;
+    <div class="rphvh"><b class="gshvt">사진 ${v.k}</b><button class="rphvx" data-act="shotClose" aria-label="닫기">${I('close', 22)}</button></div>
+    <div class="rphvb"><div class="gshvb" style="${photoBox(v.k)}">${shotArt(v.k)}</div></div></div>`;
 }
 // 크게 보기에서 여러 장 넘기기 — 양옆 단추와 아래 점. 옆으로 밀어도 넘어간다 (아래 pointerup)
 const picNav = (i, n, act) => (n < 2 ? '' : `<button class="gpvb prev" data-act="${act}" data-v="-1"${i ? '' : ' disabled'} aria-label="앞 사진">${I('chevron', 22)}</button><button class="gpvb next" data-act="${act}" data-v="1"${i < n - 1 ? '' : ' disabled'} aria-label="다음 사진">${I('chevron', 22)}</button>`);
 const picDots = (i, n) => (n < 2 ? '' : `<div class="gpvd" aria-label="${n}장 중 ${i + 1}번째">${Array.from({ length: n }, (_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</div>`);
-// AI가 보는 중 띠 (2026-10-14 사용자: 더 AI답게) — AI 기다리기 화면(전에 있던)의 도는 빛 고리 · 훑는 빛줄기 · 바뀌는 한 줄을 띠 크기로.
-// 답을 누를 때마다 다시 그려지므로, 움직임이 처음으로 튀지 않게 지금 시각만큼 앞당겨 시작한다
-const AI_STEPS = ['사진을 살펴보고 있어요', '어떤 설비인지 알아보고 있어요', '점검 포인트를 고르고 있어요'];
-function aiBusy(n) {
-  const t = (ms) => `animation-delay:-${(Date.now() % ms) / 1000}s`;
-  return `<div class="gaibd busy" role="status"><span class="gaiorb"><i style="${t(2400)}"></i>${I('sparkle', 15)}</span>
-    <span class="gaitx"><b style="${t(2400)}">AI가 사진 ${n}장을 보고 있어요</b>
-      <em class="gaistep" aria-hidden="true">${AI_STEPS.map((w, i) => `<span style="animation-delay:${i * 2 - (Date.now() % 6000) / 1000}s">${w}</span>`).join('')}</em></span>
-    <i class="gaibeam" style="${t(2200)}"></i></div>`;
-}
-// 점검 포인트 창 (2026-10-20 사용자 지시) — 사진마다 AI가 알아본 설비와 그 설비의 점검 포인트(주관점)를 설명으로 보인다. 새로 찍은 사진부터.
-// 체크리스트 항목은 만들지 않는다 — 전에는 사진마다 질문 3개를 만들어 답을 골라 넣었는데(2026-10-14), 설비에 따라 항목이 너무 많아지거나
-// 필요 없는 것이 생기고 정작 필요한 것은 빠졌다. 본 결과는 지킴이가 그 설비에 맞는 기본 체크리스트 항목을 찾아 답한다.
-// 그 항목으로 가는 "…번에 답하기" 단추를 두었다가 같은 날 사용자 지시로 뺐다(번호만으로는 무슨 항목인지 알 수 없었다). 점검 포인트는 그 항목 아래에도 붙는다(ptsRow)
-// 점검 포인트의 근거(지난 점검 기록 · 동종 업계 사례 · 사고 사례)는 아직 넣지 않았다
-function aiSheet(s) {
-  const d = s.draft, done = aiqOf(d).filter((q) => q.st === 'done').reverse();
-  const grp = (q) => { const e = ptsOf(q);
-    return `<div class="gpg"><div class="gaiph">${shotThumb(q.k)}<div><b>${esc(e.equip)}</b><span>사진 ${q.k}${q.from === 'bad' ? ' (불량 사진)' : ''}</span></div></div>
-      <ol class="gpts">${e.points.map((p) => `<li><b>${esc(p.t)}</b><span>${esc(p.d)}</span></li>`).join('')}</ol></div>`; };
-  return `<div class="ov${UI.sheet.keep ? ' keep' : ''}" data-act="closeSheet"></div><div class="sheet gaish${UI.sheet.keep ? ' keep' : ''}"><div class="grip"></div>
-    <div class="gaip"><span class="gaic">${I('sparkle', 20)}</span><div><b>점검 포인트</b><small>사진 속 설비만 봐요. 틀릴 수 있어요.</small></div></div>
-    ${done.map(grp).join('')}
-    ${aiqOf(d).some((q) => q.st === 'fail') ? `<button class="gaibd fail" data-act="aiRetry">${I('alert', 18)}<span>AI가 못 본 사진이 있어요</span><b>다시</b></button>` : ''}
-    <div class="row sstick"><button class="btn ghost" data-act="closeSheet">닫기</button></div>
-  </div>`;
-}
-
 /* ---------- G5-0 사전 확인 — 점검 시작을 누르면 먼저 (2026-10-23 사용자 지시) ----------
    기업 정보 → 유해위험기구 보유현황 → 위험물질/유해화학물질 취급여부 → 01 산업안전 일반 4문항을 차례로 보고 지적사항으로 넘어간다.
    전에는 기업 정보가 공장 창의 탭에만 있어 놓칠 수 있었다. 등록된 값이 있으면 그대로 띄우고, 비어 있어도 넘어갈 수 있다
@@ -1128,7 +1053,7 @@ function meetScreen(s, st) {
     ${body}
   </div><div class="ft"><div class="gft2">${st > 1 ? `<button class="btn ghost" data-act="meetGo" data-v="${st - 1}">${I('back', 18)} 이전</button>` : ''}
     <button class="btn cnext" data-act="${last ? 'meetEnd' : 'meetGo'}" data-v="${st + 1}"><span class="cnl">다음: ${last ? '현장점검' : MEET[st][1]}</span>${I('chevron', 18)}</button></div></div></div>
-  ${UI.sheet && UI.sheet.type === 'kitEtc' ? kitEtcSheet(x) : ''}${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'eval' ? evalSheet(s) : ''}`;
+  ${UI.sheet && UI.sheet.type === 'kitEtc' ? kitEtcSheet(x) : ''}${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}`;
 }
 // 사전 확인 표 바로 고치기 — 값이 그대로면 적지 않는다(누가 고쳤는지 줄이 괜히 붙지 않게). 바꿀 값을 먼저 정해 두고 넣는다(DB.push가 다시 적용해도 같게)
 function cellPut(k, val) {
@@ -1164,12 +1089,12 @@ function pickScreen(s) {
   const nAi = d.items.filter((x) => x.src === 'ai').length;  // AI는 항목을 만들지 않는다 (2026-10-20) — 그 전 초안에 넣어 둔 것만
   // 보유현황에 없는 기구 문항은 체크리스트에서 감추므로 세지 않는다
   const kit = firmOf(s, d.fid).kit, nOff = kit ? KIT.filter((k) => !kit.includes(k.name)).flatMap((k) => k.ids).length : 0;
-  const nPrev = openIssues(s, d.fid).length, total = nPrev + nBase - nOff + nAi + d.self.length;
+  const nPrev = openIssues(s, d.fid).length, total = nBase - nOff + nAi + d.self.length;  // 지난번 미흡은 문항이 아니라 주관점 (2026-10-23)
   const answered = d.items.some((x) => x.answer && !x.auto);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
     ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid)}
     ${insTabs(d, 'ck')}
-    ${nPrev ? `<div class="grp">지난번 미흡 항목<span class="must">${nPrev}개</span></div>
+    ${nPrev ? `<div class="grp">지난번 미흡 항목 — 이번 주관점으로<span class="must">${nPrev}개</span></div>
     ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
     <div class="grp">기본 체크리스트<span class="must">${CHECKLIST.ver}</span><span class="must">${nBase}문항</span></div>
     ${CHECKLIST.areas.map(ckArea).join('')}
@@ -1209,8 +1134,11 @@ const FIND_WORD = { bad: '개선사항', good: '잘된 사항' };  // 2026-10-23
 const FIND_TEXT = { bad: '개선 전 내용', good: '내용' };  // 같은 날 사용자 지시 — 지적한 줄의 내용은 종이 10번 개선 전 내용
 const findsOf = (d) => d.finds || [];
 const findOf = (d, id) => findsOf(d).find((x) => x.id === id);
-const findNo = (d, f) => findsOf(d).filter((x) => x.kind === f.kind).indexOf(f) + 1;
-const findWord = (d, f) => `${FIND_WORD[f.kind]} ${findNo(d, f)}`;
+// 갈래 — 지킴이가 위험요인을 다 지운 개선사항은 잘된 사항으로 본다(위험요인을 다시 더하면 개선사항으로) (2026-10-23 사용자 지시).
+// AI가 찾은 것이 없을 뿐인 줄(지킴이가 손대지 않음)은 개선사항 그대로 — 진짜 사진은 AI 흉내 답이 늘 없어서
+const kindOf = (f) => (f.kind === 'good' || (f.own && f.risks && !f.risks.length) ? 'good' : 'bad');
+const findNo = (d, f) => findsOf(d).filter((x) => kindOf(x) === kindOf(f)).indexOf(f) + 1;
+const findWord = (d, f) => `${FIND_WORD[kindOf(f)]} ${findNo(d, f)}`;
 // 지금 펼친 줄 — 고른 적이 없으면 맨 아래 줄
 const factOf = (d) => findOf(d, UI.fact) || findsOf(d)[findsOf(d).length - 1] || null;
 // 대표 사진(첫 장)이 바뀌면 AI가 다시 본다. 잘된 사항은 보지 않는다. 지킴이가 손댄 위험요인은 그대로 둔다
@@ -1222,10 +1150,10 @@ function repCheck(f) {
 }
 // 점검 안의 탭 — 사전점검 → 현장점검(종이 10번 현장점검 개선사항) → 분야별 안전점검(종이 9번 체크리스트) 차례
 // (2026-10-23 사전 확인을 앞에 더함. 같은 날 사용자 지시로 이름을 사전 확인 · 지적사항 · 체크리스트에서 바꿈)
-const insTabs = (d, on) => { const n = findsOf(d).filter((x) => x.kind === 'bad').length;
-  return `<div class="gtabs gins" role="tablist">${[['meet', '사전점검', 0], ['fix', '현장점검', n], ['ck', '분야별 안전점검', 0]].map(([k, w, c]) =>
-    `<button class="gtab${on === k ? ' on' : ''}" role="tab" aria-selected="${on === k}" data-act="insTab" data-v="${k}">${w}${c ? `<em class="warn">${c}</em>` : ''}</button>`).join('')}</div>`; };
-// AI 추천 기다리기 — 사진 AI(aiPump)와 같은 방식. 시제품은 2~4초 흉내, 전파가 없으면 잡힐 때까지 기다린다
+// 현장점검 옆 개선사항 수는 같은 날 사용자 지시로 뺐다
+const insTabs = (d, on) => `<div class="gtabs gins" role="tablist">${[['meet', '사전점검'], ['fix', '현장점검'], ['ck', '분야별 안전점검']].map(([k, w]) =>
+  `<button class="gtab${on === k ? ' on' : ''}" role="tab" aria-selected="${on === k}" data-act="insTab" data-v="${k}">${w}</button>`).join('')}</div>`;
+// AI 추천 기다리기 — 시제품은 2~4초 흉내, 전파가 없으면 잡힐 때까지 기다린다
 function findPump() {
   const d = DB.s.draft;
   if (!d || d.kind !== 'first' || !DB.s.net.guard) return;
@@ -1247,9 +1175,9 @@ function findDone(id) {
   });
 }
 // 접힌 줄의 둘째 줄 — 지적사항은 위험요인(없으면 내용), 잘된 사항은 내용
-const findSub = (x) => (x.kind === 'bad' && x.ai && x.ai.st === 'wait' && !x.own ? '<span class="gfai"><i class="gspin"></i>AI 분석 중</span>'
-  : x.kind === 'bad' && (x.risks || []).length ? x.risks.map((r) => `<span class="gfmini"><i>${RISKS.indexOf(r) + 1}</i>${r}</span>`).join('')
-  : x.text ? `<span class="gfrtx">${esc(x.text)}</span>` : x.kind === 'bad' && x.risks ? '<span class="gfrtx">위험요인 없음</span>' : '');
+const findSub = (x) => (kindOf(x) === 'bad' && x.ai && x.ai.st === 'wait' && !x.own ? '<span class="gfai"><i class="gspin"></i>AI 분석 중</span>'
+  : kindOf(x) === 'bad' && (x.risks || []).length ? x.risks.map((r) => `<span class="gfmini"><i>${RISKS.indexOf(r) + 1}</i>${r}</span>`).join('')
+  : x.text ? `<span class="gfrtx">${esc(x.text)}</span>` : kindOf(x) === 'bad' && x.risks ? '<span class="gfrtx">위험요인 없음</span>' : '');
 // 펼친 줄 — 사진(대표는 크게), 위험요인(지적사항만), 내용. 찍기와 사진첩은 아래 단추로 이 줄에 넣는다
 // (같은 날 사용자 지시로 걷은 것 — 줄 안의 찍기 · 사진첩 칸, 지적사항 | 잘된 사항 바꾸기, 왼쪽 색 띠와 아이콘 동그라미, 알약 칩. 종류는 더할 때 고른다)
 function findOpen(d, x) {
@@ -1272,36 +1200,44 @@ function findOpen(d, x) {
     ${pics}
     ${more}
     ${risk}
-    <div class="gfrk"><div class="gfrkh"><b>${FIND_TEXT[x.kind]}</b></div>
-      <textarea class="gftxa" id="fxIn" data-id="${x.id}" placeholder="여기에 ${FIND_TEXT[x.kind]} 입력">${esc(UI.ftx && UI.ftx.id === x.id ? UI.ftx.v : x.text || '')}</textarea></div>
+    <div class="gfrk"><div class="gfrkh"><b>${FIND_TEXT[kindOf(x)]}</b></div>
+      <textarea class="gftxa" id="fxIn" data-tx="find:${x.id}" placeholder="여기에 ${FIND_TEXT[kindOf(x)]} 입력">${esc(txVal('find:' + x.id, x.text))}</textarea></div>
   </section>`;
 }
-// 개선 전 내용 칸 (2026-10-23 사용자 지시 — + 단추 → 아래 창 대신 바로 적는 칸). 적는 대로 UI.ftx에 담고, 칸 밖을 누르거나 다른 화면으로 가면 저장한다.
+// 바로 적는 칸 — 현장점검 개선 전 내용(find:줄 id) · 분야별 안전점검 평가 내용(item:문항 id) (2026-10-23 사용자 지시 — + 단추 → 아래 창 대신).
+// 적는 대로 UI.ftx에 담고, 칸 밖을 누르거나 다른 칸으로 옮기거나 다른 화면으로 가면 저장한다.
 // 적는 동안에는 다시 그리지 않는다 — AI 결과가 그사이 오면 한글 조합이 깨진다. 미룬 것은 칸 밖을 누를 때 그린다
+const txVal = (k, v0) => (UI.ftx && UI.ftx.k === k ? UI.ftx.v : v0 || '');
 function ftxSave() {
-  const t = UI.ftx, f = t && findOf(DB.s.draft, t.id), id = t && t.id, v = t ? t.v.trim() : '';
-  UI.ftx = null; UI.ftxWait = false;
-  if (f && v !== (f.text || '')) DB.act((s) => { const g = findOf(s.draft, id); if (g) g.text = v; });
-  else render();
+  const t = UI.ftx; UI.ftx = null; UI.ftxWait = false;
+  if (!t) { render(); return; }
+  const [type, id] = t.k.split(':'), v = t.v.trim(), key = type === 'find' ? 'text' : 'eval';
+  const pick = (d) => (type === 'find' ? findOf(d, id) : d.items.find((x) => x.id === id));
+  const o = DB.s.draft && pick(DB.s.draft);
+  if (!o || v === (o[key] || '')) { render(); return; }
+  DB.act((s) => { const g = pick(s.draft); if (g) g[key] = v; });
 }
-document.addEventListener('input', (e) => { if (e.target.id === 'fxIn') UI.ftx = { id: e.target.dataset.id, v: e.target.value }; });
-document.addEventListener('click', (e) => { if ((UI.ftx || UI.ftxWait) && !e.target.closest('#fxIn')) ftxSave(); }, true);  // 그 단추가 하는 일보다 먼저 (사전 확인 표 칸과 같은 방식)
+document.addEventListener('input', (e) => { const k = e.target.dataset && e.target.dataset.tx; if (!k) return; if (UI.ftx && UI.ftx.k !== k) ftxSave(); UI.ftx = { k, v: e.target.value }; });
+// 그 단추가 하는 일보다 먼저 저장한다 (사전 확인 표 칸과 같은 방식). 적던 칸 안을 누르면 그대로
+document.addEventListener('click', (e) => { if (!UI.ftx && !UI.ftxWait) return; const t = e.target.closest('.gftxa'); if (!t || !UI.ftx || t.dataset.tx !== UI.ftx.k) ftxSave(); }, true);
 addEventListener('hashchange', () => { if (UI.ftx) ftxSave(); });
 function fixScreen(s) {
   const d = s.draft, f = FACTORIES[d.fid], fs = findsOf(d), on = factOf(d);
-  const bad = fs.filter((x) => x.kind === 'bad'), nRisk = bad.reduce((a, x) => a + (x.risks || []).length, 0);
+  const bad = fs.filter((x) => kindOf(x) === 'bad'), good = fs.filter((x) => kindOf(x) === 'good'), nRisk = bad.reduce((a, x) => a + (x.risks || []).length, 0);
   const sum = `<div class="gfsum">${[['개선사항', bad.length], ['잘된 사항', fs.length - bad.length], ['위험요인', nRisk]].map(([w, n]) => `<div><span>${w}</span><b>${n}</b></div>`).join('')}</div>`;
   const row = (x) => (x === on ? findOpen(d, x) : `<button class="gfr" id="fr-${x.id}" data-act="fOn" data-id="${x.id}">
       <span class="gfrt">${x.pics.length ? findArt(d, x.pics[0]) : I('camera', 22)}</span>
       <span class="gfrb"><b>${findWord(d, x)}</b><span class="gfrs">${findSub(x)}</span></span>
       <span class="gfrc">${I('camera', 14)}${x.pics.length}</span></button>`);
+  // 잘된 사항(위험요인을 다 지운 줄)은 점선 칸 아래에 따로 모은다 (같은 날 사용자 지시)
   // 새 건 더하기 — 처음엔 흰 카드, 줄이 생기면 그 아래 점선 칸. 카메라는 단추 모양, 칸 전체를 눌러도 된다.
   // 점선 칸은 카메라 아래 "개선사항 n 찍기" 한 줄(같은 날 사용자 지시 — 위 [사진 추가]와 달리 새 건이 생긴다는 것을 번호로)
   const shot = (more) => `<button class="gfempty${more ? ' more' : ''}" data-act="fcam"><span class="gfei">${I('camera', 34)}</span><b>${more ? `${FIND_WORD.bad} ${bad.length + 1} 찍기` : '개선할 곳을 찾으면<br>한 건씩 더해 주세요'}</b></button>`;
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:10px">
     ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid)}
     ${insTabs(d, 'fix')}
-    ${fs.length ? `${sum}<div class="gfrs0">${fs.map(row).join('')}</div>${shot(true)}` : shot(false)}
+    ${fs.length ? `${sum}${bad.length ? `<div class="gfrs0">${bad.map(row).join('')}</div>` : ''}${shot(true)}
+      ${good.length ? `<div class="gfsec">잘된 사항</div><div class="gfrs0">${good.map(row).join('')}</div>` : ''}` : shot(false)}
   </div></div>${UI.sheet && UI.sheet.type === 'frisk' ? fRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fdel' ? fDelSheet(s) : ''}${UI.fv ? findViewer(s) : ''}`;
 }
 // 위험요인 고르기 — AI가 추천한 것과 고른 것을 먼저, 나머지는 접어 둔다 (불량 창과 같은 모양)
@@ -1334,7 +1270,7 @@ function findViewer(s) {
   const d = s.draft, f = findOf(d, UI.fv.id);
   if (!f || !f.pics.length) return '';
   const n = f.pics.length, i = Math.min(UI.fv.i, n - 1);
-  return `<div class="rphv" role="dialog" aria-label="${FIND_WORD[f.kind]} 사진 크게 보기">
+  return `<div class="rphv" role="dialog" aria-label="${FIND_WORD[kindOf(f)]} 사진 크게 보기">
     <div class="rphvh"><b class="gshvt">${findWord(d, f)}</b><button class="rphvx" data-act="fvClose" aria-label="닫기">${I('close', 22)}</button></div>
     <div class="rphvb" data-swipe="${f.id}">${picNav(i, n, 'fvStep')}<div class="gshvb" style="${findBox(d, f.pics[i])}">${findArt(d, f.pics[i])}</div></div>
     <div class="rphvf">${picDots(i, n)}<span>${i ? `사진 ${i + 1}` : '대표 사진'}${n > 1 ? ` (${i + 1} / ${n})` : ''}</span>
@@ -1364,6 +1300,13 @@ function putShots(fid, ks, real) {
     repCheck(g);
   });
 }
+// 위험요인을 다 지우면 잘된 사항으로, 다시 더하면 개선사항으로 — 옮겨 간 줄을 펼친 채 그리로 화면을 옮기고 알린다
+function kindMove(id, fn) {
+  const was = kindOf(findOf(DB.s.draft, id));
+  UI.fact = id; fn();
+  const f = findOf(DB.s.draft, id);
+  if (f && kindOf(f) !== was) { toast(kindOf(f) === 'good' ? '위험요인이 없어 잘된 사항으로 옮겼어요' : '개선사항으로 옮겼어요'); scrollFind(id); }
+}
 const scrollFind = (id) => { const el = document.getElementById('fr-' + id); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
 
 /* ---------- 앱 안 카메라 (2026-10-23 사용자 지시) ----------
@@ -1373,16 +1316,18 @@ const scrollFind = (id) => { const el = document.getElementById('fr-' + id); if 
    브라우저 규칙상 https · localhost에서만 켜진다. http 주소(같은 와이파이)면 폰의 기본 카메라 앱으로 찍고, 돌아오면 바로 들어간다(카메라 앱에 확인이 있다).
    카메라를 못 켜면(권한 거절 · 카메라 없음) 그 자리에서 기본 카메라 앱이나 시험 사진(photos/)을 고른다.
    화면은 #app 밖에 따로 둔다 — 다시 그릴 때마다 카메라 영상이 끊기지 않게.
+   모양은 C안(같은 날 사용자 지시): 영상은 머리 바로 아래 3:4 칸을 채우고, 찍을 때 그 칸 비율대로 가운데를 잘라 보이는 범위 그대로 남긴다.
+   영상 위에 안내("사진 n · 더 찍거나 완료" — 첫 장도 같은 말, 같은 날 사용자 지시) · 플래시 · 확대(1× 2×), 아래 칸에 장수 점과 셔터. 플래시 · 확대는 폰이 되는 것만 보인다.
    사진은 줄여(JPEG) 서버에 올리고(api/photo) 점검에는 주소만 둔다(d.real). 서버 없이 열면 그림째 둔다.
    진짜 사진은 AI 흉내 답이 없어 "AI가 찾은 위험요인 없음"이 된다 — 지킴이가 직접 더한다 */
-const CAM = { open: false, st: '', fid: null, made: false, title: '', base: 0, n: 0, recs: [], stream: null, q: Promise.resolve() };
+const CAM = { open: false, st: '', fid: null, made: false, title: '', base: 0, n: 0, recs: [], stream: null, torch: false, flash: false, zoom: null, zm: 1, q: Promise.resolve() };
 const camIn = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*', hidden: true });
 camIn.setAttribute('capture', 'environment');  // 폰에서는 고르기 창 없이 카메라 앱이 바로 열린다
 camIn.addEventListener('change', () => { const f = camIn.files[0]; camIn.value = ''; if (f) camLoad(f); });
 document.body.appendChild(camIn);
 function camOpen(fid) {
   const d = DB.s.draft, f = fid && findOf(d, fid);
-  Object.assign(CAM, { fid, made: false, title: f ? findWord(d, f) : `${FIND_WORD.bad} ${findsOf(d).filter((x) => x.kind === 'bad').length + 1}`, base: f ? f.pics.length : 0, n: 0, recs: [] });
+  Object.assign(CAM, { fid, made: false, title: f ? findWord(d, f) : `${FIND_WORD.bad} ${findsOf(d).filter((x) => kindOf(x) === 'bad').length + 1}`, base: f ? f.pics.length : 0, n: 0, recs: [] });
   if (!window.isSecureContext || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { camIn.click(); return; }  // 누른 그 순간에 열어야 폰이 막지 않는다
   CAM.open = true; camStart();
 }
@@ -1391,7 +1336,8 @@ function camStart() {
   navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false })
     .then((s) => {
       if (!CAM.open) { s.getTracks().forEach((t) => t.stop()); return; }
-      CAM.stream = s; const v = $('#camv video');
+      CAM.stream = s; const v = $('#camv video'), tr = s.getVideoTracks()[0], cap = tr && tr.getCapabilities ? tr.getCapabilities() : {};
+      Object.assign(CAM, { torch: !!cap.torch, flash: false, zoom: cap.zoom && cap.zoom.max >= 2 ? cap.zoom : null, zm: 1 });
       v.onloadedmetadata = () => { v.play().catch(() => {}); if (CAM.st === 'start') { CAM.st = 'live'; camPaint(); } };  // 영상 크기가 잡힌 뒤에 셔터를 켠다
       v.srcObject = s;
     })
@@ -1408,11 +1354,11 @@ function camClose() {
   });
   camPaint();
 }
-// 영상의 한 장면이나 카메라 앱에서 받은 사진을 줄인다 — 서버에 올릴 때는 긴 변 1600px, 서버 없이 그림째 둘 때는 800px
-const camShrink = (src, w, h) => new Promise((ok) => {
+// 영상의 한 장면이나 카메라 앱에서 받은 사진을 줄인다 — 서버에 올릴 때는 긴 변 1600px, 서버 없이 그림째 둘 때는 800px. x · y · w · h는 잘라 낼 범위
+const camShrink = (src, w, h, x = 0, y = 0) => new Promise((ok) => {
   const r = Math.min(1, (DB.remote ? 1600 : 800) / Math.max(w, h)), c = document.createElement('canvas');
   c.width = Math.round(w * r); c.height = Math.round(h * r);
-  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  c.getContext('2d').drawImage(src, x, y, w, h, 0, 0, c.width, c.height);
   c.toBlob((b) => ok({ b, url: URL.createObjectURL(b), w: c.width, h: c.height }), 'image/jpeg', 0.8);
 });
 // 한 장 넣기 — 올리기는 차례대로, 사진 번호는 올린 뒤에 정한다(둘이 겹치지 않게). 그사이 뺀 사진은 올리지 않는다
@@ -1442,13 +1388,17 @@ function camPaint() {
   if (!CAM.open) { if (el) el.remove(); return; }
   if (!el) {
     el = document.createElement('div'); el.id = 'camv'; el.className = 'gcv'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', '사진 찍기');
-    el.innerHTML = '<div class="gcvh"></div><div class="gcvb"><video playsinline muted autoplay></video><img alt=""><p></p></div><div class="gcvf"></div>';
+    el.innerHTML = '<div class="gcvh"></div><div class="gcvb"><video playsinline muted autoplay></video><img alt=""><p></p><div class="gcvo"></div><div class="gcvz"></div></div><div class="gcvl"><div class="gcvd"></div><div class="gcvf"></div></div>';
     document.body.appendChild(el);
   }
-  const st = CAM.st, last = CAM.recs[CAM.recs.length - 1];
+  const st = CAM.st, last = CAM.recs[CAM.recs.length - 1], n = CAM.base + CAM.n;
   el.dataset.st = st;
   el.querySelector('.gcvh').innerHTML = `<button class="gcvx" data-act="camClose" aria-label="닫기">${I('close', 24)}</button><b>${CAM.title}</b><span>${st === 'last' ? '방금 찍은 사진' : `사진 ${CAM.base + CAM.n} / ${FIND_MAX}`}</span>`;
   if (st === 'last') el.querySelector('.gcvb img').src = last.url;
+  el.querySelector('.gcvo').innerHTML = `<span class="gcvhint">${I('camera', 15)}사진 ${n + 1} · 더 찍거나 완료</span>`
+    + (CAM.torch ? `<button class="gcvlt${CAM.flash ? ' on' : ''}" data-act="camFlash" aria-label="플래시" aria-pressed="${CAM.flash}">${I('bolt', 22)}</button>` : '');
+  el.querySelector('.gcvz').innerHTML = CAM.zoom ? `<span class="gcvzm">${[1, 2].map((z) => `<button class="${CAM.zm === z ? 'on' : ''}" data-act="camZoom" data-v="${z}" aria-pressed="${CAM.zm === z}">${z}×</button>`).join('')}</span>` : '';
+  el.querySelector('.gcvd').innerHTML = Array.from({ length: FIND_MAX }, (_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
   el.querySelector('.gcvb p').innerHTML = st === 'start' ? '카메라 켜는 중' : st === 'off' ? '카메라를 켤 수 없어요<small>카메라 권한을 확인하거나 아래에서 골라 주세요</small>' : '';
   el.querySelector('.gcvf').innerHTML = st === 'last' ? `<button class="gcvbt" data-act="camDrop">${I('trash', 20)}사진 빼기</button><button class="gcvbt ok" data-act="camBack">계속 찍기</button>`
     : st === 'off' ? `<button class="gcvbt" data-act="camFile">${I('camera', 20)}카메라 앱으로</button><button class="gcvbt" data-act="camTest">${I('image', 20)}시험 사진</button>`
@@ -1471,93 +1421,129 @@ const GRP = { base: '기본 체크리스트', ai: 'AI 제안', self: '직접 추
 // 묶음 — 기본 체크리스트는 영역(01~05)마다, AI 장비 체크리스트는 장비마다(2026-10-07), 나머지는 출처마다 (2026-09-22)
 const AREA = Object.fromEntries(CHECKLIST.areas.map((a) => [a.key, a]));
 const gkey = (x) => (x.src === 'base' ? x.area || 'base' : x.src === 'ai' && x.eq ? 'eq:' + x.eq : x.src);
-const gname = (k) => (AREA[k] ? `${AREA[k].no} ${AREA[k].name}` : k.startsWith('eq:') ? k.slice(3) : GRP[k] || SRC[k]);
-// 항목에 붙은 점검 포인트 (2026-10-20) — 보유현황에서 고른 기구(2026-10-23, 전에는 장비 고르기)와 AI가 본 사진 가운데 이 기본 항목에 이어 둔 것. 접어 두고 누르면 펼친다.
-// 기타장비·시설은 무슨 기구인지 몰라 붙이지 않는다
-function ptsFor(d, id) {
-  const kit = firmOf(DB.s, d.fid).kit || [], k = KIT.find((x) => x.ids.includes(id));
-  const eq = k && kit.includes(k.name) && !k.name.startsWith('기타') ? Object.values(EQ) : [];
-  const ph = aiqOf(d).filter((q) => q.st === 'done').map((q) => ({ name: ptsOf(q).equip, k: q.k, ...ptsOf(q) }));
-  return [...eq, ...ph].filter((g) => g.item === id);
-}
-function ptsRow(d, x) {
-  const l = x.src === 'base' ? ptsFor(d, x.id) : [];
+// 묶음 이름은 종이 체크리스트처럼 "(공통)화학안전" (2026-10-23 사용자 지시 — 전에는 "04 화학안전")
+const gname = (k) => (AREA[k] ? `${AREA[k].common ? '(공통)' : ''}${AREA[k].name}` : k.startsWith('eq:') ? k.slice(3) : GRP[k] || SRC[k]);
+// 문항 아래 점검 포인트 — 모든 문항 (2026-10-23 사용자 지시, 개수는 안 적는다). 기구 문항은 그 기구들의 것(EQ — 선반 · 밀링 · CNC처럼 한 문항에 여럿이면 기구 이름으로 나눈다,
+// 05의 둘째 「압력용기」는 첫째와 같다), 나머지 문항과 기타장비·시설은 CK_PTS. 전에는 보유현황에서 고른 기구 문항에만 붙었다(2026-10-20 사진 AI 것은 걷음)
+const ptsFor = (id) => (CK_PTS[id] ? [{ points: CK_PTS[id] }] : Object.values(EQ).filter((g) => g.item === (id === 'ca5-18' ? 'ca5-15' : id)));
+// 아코디언 — 머리를 누르면 펼쳐지며 내려온다. 다시 그리지 않고 칸만 바꿔 움직임이 이어지게, 펼친 것은 UI.ptsOpen에 기억 (같은 날 사용자 지시)
+function ptsRow(x) {
+  const l = x.src === 'base' ? ptsFor(x.id) : [];
   if (!l.length) return '';
-  const open = !!UI.ptsOpen[x.id], n = l.reduce((a, g) => a + g.points.length, 0);
-  return `<button class="cpts" data-act="ptsTg" data-k="${x.id}" aria-expanded="${open}">${I('sparkle', 15)}<span>${esc([...new Set(l.map((g) => g.name))].join(', '))} 점검 포인트 ${n}개</span>${I(open ? 'chevronDown' : 'chevron', 16)}</button>
-    ${open ? l.map((g) => `<div class="cptsg">${l.length > 1 ? `<b>${esc(g.name)}${g.k ? ` (사진 ${g.k})` : ''}</b>` : ''}<ol class="gpts">${g.points.map((p) => `<li><b>${esc(p.t)}</b><span>${esc(p.d)}</span></li>`).join('')}</ol></div>`).join('') : ''}`;
+  const open = !!UI.ptsOpen[x.id];
+  return `<div class="cacc${open ? ' open' : ''}"><button class="cacch" data-act="ptsTg" data-k="${x.id}" aria-expanded="${open}"><span>점검 포인트</span>${I('chevronDown', 18)}</button>
+    <div class="caccb"><div><div class="caccin">${l.map((g) => `${l.length > 1 ? `<b>${esc(g.name)}</b>` : ''}<ol class="gpts">${g.points.map((p) => `<li><b>${esc(p.t)}</b><span>${esc(p.d)}</span></li>`).join('')}</ol>`).join('')}</div></div></div></div>`;
 }
 // 한 줄 = 문항 + 답 넷(양호 | 보통 | 불량 | 해당 없음) + 평가 내용 (2026-10-07 사용자 지시).
-// 불량은 예전처럼 사진과 위험요인을 적는 창이 뜬다. 평가 내용(잘한 점 같은 것)은 어느 답이든 적을 수 있다. 사전 확인의 01 산업안전 일반도 이 줄을 쓴다 (2026-10-23, 번호는 1~4)
+// 불량은 예전처럼 사진과 위험요인을 적는 창이 뜬다. 평가 내용(잘한 점 같은 것)은 어느 답이든 적을 수 있다 — 2026-10-23 사용자 지시로 + 단추 → 창 대신
+// 현장점검 개선 전 내용과 같은 바로 적는 칸. 사전 확인의 01 산업안전 일반도 이 줄을 쓴다 (2026-10-23, 번호는 1~4)
 function ckRow(d, x, i, no = i + 1) {
   const st = x.answer || '';
   const rk = st === 'bad' && (x.risks || []).length ? `<div class="crisk">${x.risks.map((r) => tg(r, 'warn')).join('')}</div>` : '';
   const mark = st === 'bad' ? [x.memo ? '위험요인 내용: ' + esc(x.memo) : '', x.shot && !x.photo ? `사진 ${picsOf(x).length}장` : ''].filter(Boolean).join('<br>') : '';
   return `<div class="crow ${ansCls(st)}">
     <div class="ctop"><span class="cnum">${no}</span><div class="t">${esc(x.text)}</div>${x.photo ? shotThumb(x.photo) : ''}</div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
-    ${ptsRow(d, x)}
+    ${ptsRow(x)}
     <div class="cans c4">${ANS_ORDER.map((v) => `<button class="${st === v ? 'on ' + ansCls(v) : ''}" data-act="${v === 'bad' ? 'ansBad' : 'ans'}" data-n="${i}" data-v="${v}" aria-pressed="${st === v}">${ANS[v]}</button>`).join('')}</div>
     ${rk}${mark ? `<div class="cmemo">${mark}</div>` : ''}
-    ${x.eval ? `<button class="ceval has" data-act="evalOpen" data-n="${i}"><b>평가 내용</b><span>${esc(x.eval)}</span></button>`
-      : `<button class="ceval" data-act="evalOpen" data-n="${i}">${I('plus', 14)} 평가 내용</button>`}
+    <div class="ceva"><b>평가 내용</b><textarea class="gftxa sm" id="ev-${x.id}" data-tx="item:${x.id}" placeholder="여기에 평가 내용 입력">${esc(txVal('item:' + x.id, x.eval))}</textarea></div>
   </div>`;
 }
+// 지난번 미흡을 바탕으로 이번에 중점적으로 볼 것(주관점) — AI가 정리한다(가짜: 미흡 문항 글과 적어 둔 위험요인 내용에서 낱말로 고른다).
+// 지난번 미흡을 체크리스트 문항으로 따로 만들지 않는다 (2026-10-23 사용자 지시 — 전에는 맨 앞 "지난번 미흡" 묶음)
+const FOCUS = [
+  [/전선|피복/, '전선 · 피복', '벗겨졌던 전선을 바꿨는지, 바닥을 지나는 전선이 보호관에 들어 있는지 확인'],
+  [/용접|케이블|물기/, '용접 케이블 · 바닥 물기', '케이블이 물기나 통로 위를 지나지 않는지, 피복 손상과 접지 확인'],
+  [/교육/, '안전 교육 기록', '교육 일지와 참석 서명을 보고, 근로자에게 누전 때 대처 요령을 직접 물어보기'],
+  [/위기 대응|비상 계획/, '전기사고 비상 계획', '비상 연락망과 대응 절차가 문서로 있는지, 근로자가 아는지 확인'],
+  [/소방 시설|화재감지/, '소방 시설 관리', '소화기 압력과 월간 점검표, 화재감지기 작동 기록, 소화전 앞 적재 확인'],
+  [/화재 예방/, '화재 예방', '가연물 정리, 흡연 구역, 용접 작업 때 불티 관리 확인'],
+  [/비상대피|비상구/, '비상구 · 대피로', '비상구 앞 적재, 유도등 점등, 대피로 표시 확인'],
+  [/경영방침|목표/, '안전보건 경영방침', '경영방침과 올해 목표를 문서로 세우고 게시했는지 확인'],
+  [/배관|누수|펌프|승강기/, '배관 · 펌프 · 승강기', '부식 · 누수 자리를 고쳤는지, 펌프와 승강기 점검 기록 확인'],
+  [/위험물질|저장|MSDS|화학/, '유해물질 저장', '저장 용기 표시와 방류턱, MSDS 비치와 근로자 교육 확인'],
+];
+function focusPts(s, fid) {
+  const out = [];
+  openIssues(s, fid).forEach((e) => {
+    const m = FOCUS.find(([re]) => re.test(e.it.text + ' ' + (e.it.memo || '')));
+    const t = m ? m[1] : e.it.text.replace(/\?$/, ''), was = `${e.ins.date} 불량${e.it.memo ? ` · ${e.it.memo}` : ''}`;
+    const o = out.find((x) => x.t === t);
+    if (o) o.was.push(was); else out.push({ t, d: m ? m[2] : '지난번 지적을 고쳤는지, 같은 문제가 다른 곳에 없는지 확인', was: [was] });
+  });
+  return out;
+}
+// 분야별 안전점검 — 안에서 탭 둘: 지난번 미흡 항목(AI 주관점) | 체크리스트 (2026-10-23 사용자 지시). 처음엔 지난번 미흡 항목, 점검하는 동안은 보던 탭 그대로.
+// 지난번 미흡이 없으면 없다고 쓴다 — 점검 기록이 없으면 첫 점검이라고.
+// 체크리스트는 묶음을 쪽으로 나누지 않고 한 쪽에 차례로, 아래로 내려 본다. 맨 아래 마무리에서 결과를 낸다 (같은 날 사용자 지시 — 전에는 묶음마다 한 쪽, 위 칩으로 넘김).
+// 01 (공통)산업안전 일반은 사전점검에서 답하므로 여기서 뺀다
 function checkList(s) {
   const d = s.draft, f = FACTORIES[d.fid];
-  // 보유현황에 없는 기구 문항(auto, 해당 없음으로 들어감)은 세지도 보이지도 않는다 (2026-10-23)
-  const vis = d.items.filter((x) => !x.auto);
+  // 보유현황에 없는 기구 문항(auto, 해당 없음으로 들어감)은 세지도 보이지도 않는다 (2026-10-23). 예전 초안에 남은 지난번 미흡 문항(prev)도 보이지 않는다.
+  // 보유현황을 아직 안 적었으면(null) 기구 문항을 다 감춘다 — 고른 기구 것만 뜬다 (같은 날 사용자 지시, 전에는 다 보였다). 손으로 답한 것은 보인다
+  const fx = firmOf(s, d.fid), noKit = !fx.kit;
+  const shown = (x) => !x.auto && x.area !== 'a1' && x.src !== 'prev' && !(noKit && KIT_IDS.includes(x.id) && !x.answer);
+  const vis = d.items.filter(shown);
   const n = (v) => vis.filter((x) => x.answer === v).length;
-  const done = ANS_ORDER.reduce((a, v) => a + n(v), 0), left = vis.length - done;
+  const done = ANS_ORDER.reduce((a, v) => a + n(v), 0);
   const bad = d.items.filter((x) => x.answer === 'bad');
-  // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다. 해당 없음은 있을 때만 센다
+  // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
   const top = `<div class="apptop">${gband(f.name + ' 점검', 'pick', topIcons())}
     <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${n('bad') ? `<b class="pbad">불량 ${n('bad')}</b>` : ''}<b>${done}</b> / ${vis.length} 답함</span></div>
     <div class="prog">${ANS_ORDER.map((v) => `<i class="${ansCls(v)}" style="width:${(n(v) / vis.length) * 100}%"></i>`).join('')}</div></div></div>`;
-  // 숫자 줄이기 (2026-10-15 사용자 지시 — 같은 "안 본 것"이 위·칩·쪽 제목 세 군데에 다른 수로 나와 헷갈렸다).
-  // 위 = 전체 몇 개 답했나 하나(불량이 있으면 그 수만 곁에), 칩 = 영역 이름과 다 본 표시(✓)만, 쪽 제목 = 이 영역에 안 본 것만.
-  // 답별 수(양호·보통 몇 개)는 마무리 쪽에서 본다
-  // 테마(묶음)마다 한 쪽 — 한 테마를 다 보고 다음 쪽으로 넘긴다. 맨 끝은 마무리 쪽 (2026-09-28 사용자 지시)
-  const pages = [...new Set(vis.map(gkey))].map((k) => {
-    const l = d.items.map((x, i) => [x, i]).filter(([x]) => gkey(x) === k && !x.auto);
+  const groups = [...new Set(vis.map(gkey))].map((k) => {
+    const l = d.items.map((x, i) => [x, i]).filter(([x]) => gkey(x) === k && shown(x));
     return { k, l, rest: l.filter(([x]) => !x.answer).length };
   });
-  const endI = pages.length, cur = Math.min(UI.cpage || 0, endI);
-  const short = (k) => (k === 'prev' ? '지난번 미흡' : gname(k));
-  const chips = `<div class="cpg" role="tablist">${pages.map((p, i) => `<button class="${i === cur ? 'on' : ''}${p.rest ? '' : ' done'}" data-act="cpage" data-v="${i}" aria-selected="${i === cur}">
-      ${p.rest ? '' : I('check', 13)}${short(p.k)}</button>`).join('')}
-    <button class="${cur === endI ? 'on' : ''}" data-act="cpage" data-v="${endI}" aria-selected="${cur === endI}">${I('flag', 13)}마무리</button></div>`;
-  // 점검 결과는 고르지 않는다 — 불량이 있으면 재점검, 없으면 점검완료 (2026-10-13 사용자 결정)
-  const res = autoResult(d.items);
-  let body, foot;
-  if (cur < endI) {
-    const p = pages[cur], k = p.k;
-    const tag = AREA[k] ? tg(AREA[k].common ? '공통' : '설비별') : k === 'prev' ? tg('불량 = 아직 안 고쳐짐') : k.startsWith('eq:') ? tg('AI 장비 체크리스트') : '';
-    body = `<div class="cph"><b>${gname(k)}</b></div>
-      <div class="cpt">${tag}${p.rest ? tg(`안 본 것 ${p.rest}개`, 'now') : `<span class="alldone">${I('check', 13)}다 답함</span>`}</div>
-      <div class="clist">${p.l.map(([x, i]) => ckRow(d, x, i)).join('')}</div>`;
-    // 다음 테마 이름이 두 줄이 되면 "유해위험 / 기구/시설"처럼 낱말 사이에서 끊는다 — 빗금으로 이은 말(기구/시설)은 한 덩어리로 (2026-09-28 사용자 지시)
-    const nx = (cur + 1 < endI ? esc(short(pages[cur + 1].k)) : '마무리').replace(/([가-힣]{2}\/[가-힣]+)/, '<wbr><span class="nw">$1</span>');
-    foot = `<div class="gft2">${cur ? `<button class="btn ghost" data-act="cpage" data-v="${cur - 1}">${I('back', 18)} 이전</button>` : ''}
-      <button class="btn cnext" data-act="cpage" data-v="${cur + 1}"><span class="cnl">다음: ${nx}</span>${I('chevron', 18)}</button></div>`;
-  } else {
-    // 마무리 — 안 본 것이 남았으면 그 쪽으로 바로 가는 줄. 다 안 봐도 낼 수 있다 (2026-10-14 사용자 지시 — 전에는 안 본 것이 남으면 내기 단추를 잠갔다).
-    // 안 본 항목은 "답 없음"으로 남고, 지난번 미흡 항목을 안 봤으면 그 항목은 다음 점검에 다시 붙는다
-    const todo = pages.map((p, i) => [p, i]).filter(([p]) => p.rest);
-    body = `<div class="cph"><span class="cpn">마무리</span><b>점검 결과 내기</b></div>
-      ${todo.length ? `<div class="lbl">아직 안 본 항목 ${left}개 (답 없음으로 남아요)</div><div class="clist">${todo.map(([p, i]) => `<button class="cgo" data-act="cpage" data-v="${i}"><span>${gname(p.k)}</span>${tg(`안 본 것 ${p.rest}`, 'now')}${I('chevron', 16)}</button>`).join('')}</div>` : ''}
-      ${bad.length ? `<div class="lbl">불량으로 찍은 항목 ${bad.length}개</div><ul class="q gul">${bad.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ul>` : `<div class="small">불량으로 찍은 항목이 없어요</div>`}
-      ${kv([['점검 결과', `<b>${res}</b>`], res === '재점검' && ['시정 기한', `${recheckDue({ date: '9/17' })}까지 (2주)`]])}
-      <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">${res === '재점검'
-        ? '내면 불량 항목이 공장주에게 개선 요청으로 가요.<br>공장주가 고친 사진을 보내면 재점검에서 판정해요.' : '불량이 없어 바로 점검완료예요.'}</div></div>`;
-    foot = `<div class="gft2"><button class="btn ghost" data-act="cpage" data-v="${endI - 1}">${I('back', 18)} 이전</button>
-      <button class="btn" data-act="submitFirst">점검 결과 내기</button></div>`;
+  const tab = UI.ckTab === 'list' ? 'list' : 'prev';
+  const sub = `<div class="cksub" role="tablist">${[['prev', '지난번 미흡 항목'], ['list', '체크리스트']].map(([k, w]) =>
+    `<button class="${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-act="ckTab" data-v="${k}">${w}</button>`).join('')}</div>`;
+  if (tab === 'prev') {
+    const fp = focusPts(s, d.fid), nIss = openIssues(s, d.fid).length, past = s.inspections.filter((i) => i.fid === d.fid).sort((a, b) => mdNum(b.date) - mdNum(a.date))[0];  // 가장 최근 점검
+    const focus = fp.length ? `<div class="gfoc"><div class="gfoch"><b>이번 점검 주관점</b>${tg('AI 정리')}<span>지난번 미흡 ${nIss}건 바탕</span></div>
+      <ol class="gpts">${fp.map((p) => `<li><b>${esc(p.t)}</b><span>${esc(p.d)}</span><em>${p.was.map(esc).join('<br>')}</em></li>`).join('')}</ol></div>`
+      : `<div class="cknone">${I('checkCircle', 30)}<b>지난번 미흡 항목 없음</b><span>${past ? `지난 점검(${past.date})에서 고칠 것이 없었거나 모두 고쳐짐` : '첫 점검이라 지난 점검 기록 없음'}</span></div>`;
+    return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
+    ${insTabs(d, 'ck')}
+    ${sub}
+    ${focus}
+  </div></div>`;
   }
+  // 묶음 제목은 작게, 안 본 수는 붙이지 않는다(마무리에만) — 같은 날 사용자 지시. 05에는 보유 기구와 [수정] — 고른 기구 문항만 뜬다
+  const kitLine = `<div class="ckkit"><div><b>보유 기구</b><span>${noKit ? '아직 안 고름 — 고르면 그 기구 문항이 뜸' : fx.kit.length ? fx.kit.map((n) => esc(n === '기타장비' && fx.kitEtc ? `기타장비(${fx.kitEtc})` : n)).join(' · ') : '없음'}</span></div>
+    <button class="btn ghost sm" data-act="kitOpen">${noKit ? '고르기' : '수정'}</button></div>`;
+  let no = 0;
+  const secs = groups.map((g) => `<section class="cksec" id="cg-${g.k}"><div class="cph"><b>${gname(g.k)}</b></div>${g.k === 'a5' ? kitLine : ''}
+    <div class="clist">${g.l.map(([x, i]) => ckRow(d, x, i, ++no)).join('')}</div></section>`).join('');
+  // 마무리 — 안 본 것이 남았으면 그 묶음으로 내려가는 줄. 01은 사전점검으로. 다 안 봐도 낼 수 있다 (2026-10-14 사용자 지시)
+  // 점검 결과는 고르지 않는다 — 불량이 있으면 재점검, 없으면 점검완료 (2026-10-13 사용자 결정)
+  const res = autoResult(d.items), a1 = d.items.filter((x) => x.area === 'a1' && !x.answer).length;
+  const todo = groups.filter((g) => g.rest).map((g) => `<button class="cgo" data-act="ckJump" data-k="${g.k}"><span>${gname(g.k)}</span>${tg(`안 본 것 ${g.rest}`, 'now')}${I('chevron', 16)}</button>`)
+    .concat(a1 ? [`<button class="cgo" data-act="meetGo" data-v="5"><span>${gname('a1')} · 사전점검</span>${tg(`안 본 것 ${a1}`, 'now')}${I('chevron', 16)}</button>`] : []);
+  const left = vis.length - done + a1;
+  const end = `<div class="cph cend"><span class="cpn">마무리</span><b>점검 결과 내기</b></div>
+    ${todo.length ? `<div class="lbl">아직 안 본 항목 ${left}개 (답 없음으로 남아요)</div><div class="clist">${todo.join('')}</div>` : ''}
+    ${bad.length ? `<div class="lbl">불량으로 찍은 항목 ${bad.length}개</div><ul class="q gul">${bad.map((x) => `<li>${esc(x.text)}</li>`).join('')}</ul>` : `<div class="small">불량으로 찍은 항목이 없어요</div>`}
+    ${kv([['점검 결과', `<b>${res}</b>`], res === '재점검' && ['시정 기한', `${recheckDue({ date: '9/17' })}까지 (2주)`]])}
+    <div class="warnbar"><span class="ic">${I('clock', 22)}</span><div class="small ink">${res === '재점검'
+      ? '내면 불량 항목이 공장주에게 개선 요청으로 가요.<br>공장주가 고친 사진을 보내면 재점검에서 판정해요.' : '불량이 없어 바로 점검완료예요.'}</div></div>
+    <button class="btn" data-act="submitFirst">점검 결과 내기</button>`;
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
     ${insTabs(d, 'ck')}
-    ${chips}
-    ${body}
-  </div><div class="ft">${aiBand(s)}${foot}</div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'eval' ? evalSheet(s) : ''}${UI.sheet && UI.sheet.type === 'ai' ? aiSheet(s) : ''}${UI.shot ? shotViewer(s) : ''}`;
+    ${sub}
+    ${secs}
+    ${end}
+  </div></div>${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'kit' ? kitSheet(fx) : ''}${UI.sheet && UI.sheet.type === 'kitEtc' ? kitEtcSheet(fx) : ''}${UI.shot ? shotViewer() : ''}`;
 }
+// 체크리스트에서 보유 기구 다시 보고 고치기 (같은 날 사용자 지시) — 사전점검 보유현황과 같은 칸. 고치면 뒤의 05 문항이 바로 바뀐다
+const kitSheet = (x) => { const kit = x.kit || [];
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="srh"><b>유해위험기구 보유현황</b><span>고른 기구 문항만 뜸</span></div>
+    <div class="geqs">${KIT.map((k) => kitBox(kit.includes(k.name), 'kitTg', k.name)).join('')}</div>
+    ${kit.includes('기타장비') ? (x.kitEtc ? `<button class="gftx has" data-act="kitEtcOpen"><b>기타장비 (   )</b><span>${esc(x.kitEtc)}</span></button>`
+      : `<button class="gftx" data-act="kitEtcOpen">${I('plus', 15)}기타장비 이름</button>`) : ''}
+    <div class="geqs one">${kitBox(!!x.kit && !x.kit.length, 'kitNone', '가진 기구 없음')}</div>
+    <div class="row sstick"><button class="btn" data-act="closeSheet">닫기</button></div></div>`; };
 // 불량 창을 다시 그리기 전에 적던 글을 담아 둔다 (사진 찍기·사정 고르기가 창을 다시 그린다)
 // 점검 기간 창의 날짜 칸 값을 담아 둔다 (다시 그리면 칸이 새로 만들어진다)
 function perMark() {
@@ -1569,12 +1555,10 @@ function perMark() {
 document.addEventListener('focusin', (e) => { if ((e.target.id === 'perFrom' || e.target.id === 'perTo') && UI.sheet && UI.sheet.k !== 'self') { UI.sheet.k = 'self'; perMark(); } });
 document.addEventListener('change', (e) => { if (e.target.id === 'perFrom' || e.target.id === 'perTo') { perKeep(); if (UI.sheet.k !== 'self') { UI.sheet.k = 'self'; perMark(); } } });
 function perKeep() { if ($('#perFrom') && $('#perFrom').value) UI.sheet.from = mdOf($('#perFrom').value); if ($('#perTo') && $('#perTo').value) UI.sheet.to = mdOf($('#perTo').value); }
-function keepSheetText() { if ($('#memoIn')) UI.sheet.memo = $('#memoIn').value; if ($('#evalIn')) UI.sheet.eval = $('#evalIn').value; }
+function keepSheetText() { if ($('#memoIn')) UI.sheet.memo = $('#memoIn').value; }
 const riskHint = (it) => { const t = it.text + (it.eq ? ' ' + it.eq : ''), o = [];
   RISK_HINT.forEach(([re, rs]) => { if (re.test(t)) rs.forEach((r) => { if (!o.includes(r)) o.push(r); }); });
   return o; };
-// 평가 내용 칸 — 불량 창과 평가 내용 창이 같이 쓴다
-const EVAL_PH = '예: 소화기 위치 표시와 월간 점검표를 잘 관리하고 있음';
 function badSheet(s) {
   const it = s.draft.items[UI.sheet.n];
   // 이 문항에 맞는 위험요인(과 이미 고른 것)만 먼저, 나머지는 접어 둔다 (2026-10-15 사용자 지시)
@@ -1593,20 +1577,7 @@ function badSheet(s) {
       : `<div class="geqs srisk">${RISKS.map(rbtn).join('')}</div>`}
     <div class="lbl">위험요인 내용 (안 써도 돼요)</div>
     <textarea class="input" id="memoIn" placeholder="예: 바닥에 늘어진 전선 피복이 벗겨짐">${esc(UI.sheet.memo ?? it.memo ?? '')}</textarea>
-    <div class="lbl">평가 내용 (안 써도 돼요)</div>
-    <textarea class="input" id="evalIn" placeholder="${EVAL_PH}">${esc(UI.sheet.eval ?? it.eval ?? '')}</textarea>
     <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveBad">저장</button></div>
-  </div>`;
-}
-// 평가 내용 — 어느 답이든 적을 수 있다. 무엇을 잘했는지 같은 것 (2026-10-07 사용자 지시)
-function evalSheet(s) {
-  const it = s.draft.items[UI.sheet.n];
-  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
-    <div class="mid">${esc(it.text)}</div>
-    ${it.answer ? `<div class="ans">${ANS[it.answer]}</div>` : ''}
-    <div class="lbl">평가 내용</div>
-    <textarea class="input" id="evalIn" placeholder="${EVAL_PH}">${esc(it.eval || '')}</textarea>
-    <div class="row"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveEval">저장</button></div>
   </div>`;
 }
 /* ---------- G6 재점검 (2026-10-13 사용자 결정 — 2026-09-22에 걷었던 것을 다시 둔다) ----------
@@ -2020,7 +1991,7 @@ const bandObs = new ResizeObserver(homeBand);
 
 function render() {
   if (!ACC) { paintLogin(); return; }
-  if (document.activeElement && document.activeElement.id === 'fxIn' && location.hash === lastHash) { UI.ftxWait = true; return; }  // 개선 전 내용을 적는 중 — ftxSave 참고
+  if (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('gftxa') && location.hash === lastHash) { UI.ftxWait = true; return; }  // 바로 적는 칸에 적는 중 — ftxSave 참고
   const s = DB.s, p = R.path();
   if (location.hash !== lastHash) { UI.mapFull = false; UI.sheet = null; UI.shot = null; UI.fv = null; UI.cell = null; }  // 다른 화면으로 가면(폰의 뒤로 가기 등) 지도 전체화면과 열린 창을 닫는다
   const d = s.draft;
@@ -2069,12 +2040,10 @@ function render() {
     const tmp = document.createElement('div'); tmp.innerHTML = html;
     const nr = tmp.querySelector(part); if (nr) { $(part).replaceWith(nr); homeBand(); return; }
   }
-  // 점검 쪽 칩 줄은 다시 그려도 가로 위치를 그대로 둔다 — 답을 누를 때마다 맨 왼쪽으로 튀었다 (2026-09-28 사용자 제보)
   // 열린 창이 그대로인 채 다시 그리면(날짜 고르기 · 달 넘기기 · 권역 고르기 등) 창이 아래에서 다시 올라오며 깜빡이고 맨 위로 튀었다 (2026-10-14 사용자 제보 — 방문일 창).
-  // 같은 창이면 올라오는 움직임을 빼고 스크롤 자리를 지킨다
-  const cpx = $('.cpg') ? $('.cpg').scrollLeft : null, shOld = UI.sheet && $('.sheet') ? { type: UI.sheet.type, y: $('.sheet').scrollTop } : null;
+  // 같은 창이면 올라오는 움직임을 빼고 스크롤 자리를 지킨다. (점검 쪽 칩 줄의 가로 자리 지키기는 2026-10-23 분야별 안전점검을 한 쪽으로 만들며 걷었다)
+  const shOld = UI.sheet && $('.sheet') ? { type: UI.sheet.type, y: $('.sheet').scrollTop } : null;
   $('#app').innerHTML = html;
-  if (cpx != null && $('.cpg')) $('.cpg').scrollLeft = cpx;
   if ($('.htsl') && UI.tdi) { const sl = $('.htsl'); sl.scrollLeft = Math.min(UI.tdi, +sl.dataset.n - 1) * sl.clientWidth; }  // 오늘 방문 넘김 자리
   bandObs.disconnect(); if ($('.ghome')) { homeBand(); bandObs.observe($('.ghome .bd')); }
   if ($('.ghome .bd') && (PULL.d || PULL.busy)) pullSet(PULL.d);  // 당긴 채 다시 그려도(새 데이터 등) 그 자리 그대로
@@ -2082,7 +2051,6 @@ function render() {
     document.querySelectorAll('#app .sheet, #app .ov').forEach((el) => el.classList.add('keep'));
     $('.sheet').scrollTop = shOld.y;
   }
-  aiPump();
   findPump();
   syncWheels();
   if (NV.st === 'ready') { nvMount(); nvFacMount(); }
@@ -2098,7 +2066,7 @@ function sheet(v) { UI.sheet = v; render(); }
 function startDraft(fid) {
   DB.act((s) => {
     if (s.draft && s.draft.kind === 'first' && s.draft.fid === fid) return;
-    UI.cpage = 0; UI.fact = null; UI.meet = 1;  // 새 점검은 첫 쪽부터 (하던 점검을 이어 할 때는 보던 쪽 그대로)
+    UI.fact = null; UI.meet = 1; UI.ckTab = 'prev';  // 새 점검은 첫 쪽부터 (하던 점검을 이어 할 때는 보던 쪽 그대로)
     s.draft = { kind: 'first', fid, photos: 0, self: [], items: [], aiq: [] };
   });
 }
@@ -2111,10 +2079,9 @@ function fillItems(s) {
   // (사진 것은 "AI 제안" 한 쪽, 장비 것은 장비마다 한 쪽 — eq = 장비 이름. 출처 'ai'라 운영자 통계 "AI 제안 쓰임"에 셈한다)
   const ai = d.items.filter((x) => x.src === 'ai').map((x) => ({ id: x.id, text: x.text, src: 'ai', ...(x.photo ? { photo: x.photo } : {}), ...(x.eq ? { eq: x.eq } : {}) }));
   const self = d.self.map((t, i) => ({ id: 's' + i, text: t, src: 'self' }));
-  // 지난번 미흡 항목 — 맨 앞 묶음. 원래 항목을 ref로 가리키고, 승인되면 답이 원래 항목에 적힌다 (common.js settlePrev)
-  const prev = openIssues(s, d.fid).map((e) => ({ id: `p-${e.ins.id}-${e.it.id}`, text: e.it.text, src: 'prev', ref: { ins: e.ins.id, id: e.it.id }, note: prevNote(e) }));
+  // 지난번 미흡은 문항으로 만들지 않고 분야별 안전점검 맨 위 주관점(AI)으로 본다 (2026-10-23 사용자 지시 — 전에는 맨 앞 "지난번 미흡" 묶음, 승인되면 답이 원래 항목에 적혔다)
   const old = Object.fromEntries(d.items.map((x) => [x.id, x]));
-  d.items = [...prev, ...base, ...ai, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot, eval: old[x.id].eval, risks: old[x.id].risks, ...(old[x.id].auto ? { auto: true } : {}), ...(old[x.id].photo ? { photo: old[x.id].photo } : {}), ...(old[x.id].pics ? { pics: old[x.id].pics } : {}) } : { answer: null }));
+  d.items = [...base, ...ai, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot, eval: old[x.id].eval, risks: old[x.id].risks, ...(old[x.id].auto ? { auto: true } : {}), ...(old[x.id].photo ? { photo: old[x.id].photo } : {}), ...(old[x.id].pics ? { pics: old[x.id].pics } : {}) } : { answer: null }));
   syncKit(s);
 }
 const ensureItems = () => { if (!DB.s.draft.items.length) DB.act(fillItems); };
@@ -2218,10 +2185,25 @@ const ACTS = {
     CAM.n++;
     const full = CAM.base + CAM.n >= FIND_MAX, b = $('#camv .gcvb');
     b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
-    camShrink(v, v.videoWidth, v.videoHeight).then((sh) => { camPut(sh); if (full) camClose(); else camPaint(); });
+    // 영상은 칸을 채우게(가운데 기준) 보이므로, 칸 비율대로 가운데를 잘라 보이는 범위만 남긴다
+    const r = b.clientWidth / b.clientHeight, vw = v.videoWidth, vh = v.videoHeight, sw = Math.min(vw, vh * r), sh = sw / r;
+    camShrink(v, sw, sh, (vw - sw) / 2, (vh - sh) / 2).then((p) => { camPut(p); if (full) camClose(); else camPaint(); });
     camPaint();
   },
   camLast() { if (CAM.recs.length) { CAM.st = 'last'; camPaint(); } },
+  // 플래시(손전등) · 확대 — 폰이 되는 것만 단추가 보인다. 안 먹으면 단추를 거둔다
+  camFlash() {
+    const tr = CAM.stream && CAM.stream.getVideoTracks()[0]; if (!tr) return;
+    CAM.flash = !CAM.flash;
+    tr.applyConstraints({ advanced: [{ torch: CAM.flash }] }).catch(() => { CAM.flash = false; CAM.torch = false; camPaint(); });
+    camPaint();
+  },
+  camZoom({ v }) {
+    const tr = CAM.stream && CAM.stream.getVideoTracks()[0], z = CAM.zoom; if (!tr || !z) return;
+    CAM.zm = +v;
+    tr.applyConstraints({ advanced: [{ zoom: Math.min(z.max, Math.max(z.min, CAM.zm)) }] }).catch(() => { CAM.zoom = null; CAM.zm = 1; camPaint(); });
+    camPaint();
+  },
   camBack() { CAM.st = 'live'; camPaint(); },
   camDrop() {
     const rec = CAM.recs.pop(), fid = CAM.fid;
@@ -2232,11 +2214,11 @@ const ACTS = {
   camClose() { camClose(); },
   camFile() { camIn.click(); },
   camTest() { if (!CAM.fid) CAM.fid = newFind('bad'); putShots(CAM.fid, nextShots(DB.s.draft, 1)); camClose(); },  // 시험 사진 한 장 (PC · 카메라 없는 기기)
-  fRiskDel({ id, v }) { DB.act((s) => { const f = findOf(s.draft, id); f.risks = (f.risks || []).filter((r) => r !== v); f.own = true; }); },
+  fRiskDel({ id, v }) { kindMove(id, () => DB.act((s) => { const f = findOf(s.draft, id); f.risks = (f.risks || []).filter((r) => r !== v); f.own = true; })); },
   fRiskOpen({ id }) { sheet({ type: 'frisk', id, risks: [...(findOf(DB.s.draft, id).risks || [])], touched: false }); },
   fRiskSave() {
     const sh = UI.sheet; UI.sheet = null;
-    DB.act((s) => { const f = findOf(s.draft, sh.id); f.risks = RISKS.filter((r) => sh.risks.includes(r)); f.own = true; });
+    kindMove(sh.id, () => DB.act((s) => { const f = findOf(s.draft, sh.id); f.risks = RISKS.filter((r) => sh.risks.includes(r)); f.own = true; }));
   },
   fRetry({ id }) { DB.act((s) => { const f = findOf(s.draft, id); if (f.ai) f.ai.st = 'wait'; }); },
   // 사진이나 내용이 있으면 묻고 지운다. 빈 줄은 바로
@@ -2259,16 +2241,8 @@ const ACTS = {
     UI.fv = n > 1 ? { id, i: Math.min(i, n - 2) } : null;
     DB.act((s) => { const f = findOf(s.draft, id); f.pics.splice(i, 1); repCheck(f); });
   },
-  // 사진 AI (2026-10-14) — 찍으면 바로 점검을 이어 간다. 시제품은 카메라 대신 바로 "찍은" 것으로 한다
-  camShot() {
-    if (shotsOf(DB.s.draft).length >= SHOT_MAX) { toast(`사진은 ${SHOT_MAX}장까지 찍을 수 있어요`); return; }
-    DB.act((s) => shootAI(s.draft, 'cam'));
-  },
   shotView({ k, i }) { UI.shot = { k: +k, i }; render(); },
   shotClose() { UI.shot = null; render(); },
-  // 창을 열면 띠의 새 소식은 본 것으로 (닫은 뒤에는 "점검 포인트 다시 보기"). 처음에만 올라오는 움직임, 새 사진 결과로 다시 그려도 깜빡이지 않게
-  aiOpen() { DB.act((s) => aiqOf(s.draft).forEach((q) => { if (q.st === 'done') q.seen = true; })); sheet({ type: 'ai' }); UI.sheet.keep = true; },
-  aiRetry() { DB.act((s) => { aiqOf(s.draft).forEach((q) => { if (q.st === 'fail') q.st = 'wait'; }); }); },
   addSelf() { sheet({ type: 'self' }); setTimeout(() => $('#selfIn') && $('#selfIn').focus(), 50); },
   saveSelf() {
     const v = ($('#selfIn').value || '').trim();
@@ -2295,18 +2269,9 @@ const ACTS = {
     el.setAttribute('aria-expanded', open); el.classList.toggle('open', open);
     el.querySelector('span').textContent = open ? '접기' : `나머지 ${box.children.length}개 더 보기`;
   },
-  evalOpen({ n }) { sheet({ type: 'eval', n: +n }); setTimeout(() => $('#evalIn') && $('#evalIn').focus(), 50); },
-  saveEval() {
-    const n = UI.sheet.n, v = $('#evalIn').value.trim();
-    UI.sheet = null;
-    DB.act((s) => { s.draft.items[n].eval = v; });
-  },
-  // 점검 쪽 넘기기 — 넘기면 맨 위로, 위 칩 줄은 지금 쪽이 보이게 민다
-  cpage({ v }) {
-    UI.cpage = +v; render(); scrollTo(0, 0);
-    const c = $('.cpg .on'), bar = c && c.parentElement;
-    if (bar) bar.scrollLeft = c.offsetLeft - (bar.clientWidth - c.offsetWidth) / 2;  // 고른 칩을 가운데로
-  },
+  ckTab({ v }) { UI.ckTab = v; render(); scrollTo(0, 0); },
+  // 분야별 안전점검 마무리의 "안 본 것" — 그 묶음으로 내려간다
+  ckJump({ k }) { const el = document.getElementById('cg-' + k); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); },
   gu({ v }) { UI.gu = v || null; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
   todo({ v }) { UI.td = v; R.go('todo'); },
@@ -2332,7 +2297,8 @@ const ACTS = {
   noti() { const l = notis(DB.s); UI.notiNew = new Set(l.filter((x) => !UI.notiSeen.has(x.id)).map((x) => x.id)); l.forEach((x) => UI.notiSeen.add(x.id)); R.go('noti'); },
   mapFull() { UI.mapFull = true; render(); },
   mapClose() { UI.mapFull = false; render(); },
-  ptsTg({ k }) { UI.ptsOpen[k] = !UI.ptsOpen[k]; render(); },  // 항목에 붙은 점검 포인트 펼치기 (2026-10-20)
+  ptsTg({ k }, el) { const open = (UI.ptsOpen[k] = !UI.ptsOpen[k]); el.closest('.cacc').classList.toggle('open', open); el.setAttribute('aria-expanded', open); },  // 점검 포인트 아코디언 — 다시 그리지 않는다
+  kitOpen() { sheet({ type: 'kit' }); },
   ckTg({ k }, el) {  // 다시 그리면 펼치는 움직임이 안 보여서 칸의 표시만 바꾼다
     UI.ckOpen[k] = !UI.ckOpen[k];
     const c = el.closest('.gck'), on = UI.ckOpen[k];
@@ -2376,10 +2342,10 @@ const ACTS = {
   },
   // 불량 창에는 사진 칸이 없다 (2026-10-22 사용자 지시 — 점검표는 종이 체크리스트를 대신한다). 예전 초안에 찍어 둔 사진은 그대로 둔다
   saveBad() {
-    const n = UI.sheet.n, memo = $('#memoIn').value.trim(), ev = $('#evalIn').value.trim(), reason = UI.sheet.reason || '';
+    const n = UI.sheet.n, memo = $('#memoIn').value.trim(), reason = UI.sheet.reason || '';  // 평가 내용은 줄에서 바로 적는다 (2026-10-23)
     const risks = RISKS.filter((r) => UI.sheet.risks.includes(r));  // 목록 차례대로
     UI.sheet = null;
-    DB.act((s) => { const it = s.draft.items[n]; it.answer = 'bad'; it.memo = memo; it.eval = ev; it.reason = reason; it.risks = risks; });
+    DB.act((s) => { const it = s.draft.items[n]; it.answer = 'bad'; it.memo = memo; it.reason = reason; it.risks = risks; });
   },
   submitFirst() {
     const d = DB.s.draft;

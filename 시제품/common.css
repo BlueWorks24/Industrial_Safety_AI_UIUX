@@ -410,25 +410,22 @@ svg.i{flex:none;vertical-align:-.18em}
 .cans.c4 button.on.amid::before,.cans.c4 button.on.na::before{content:none}
 /* 보통 표시 — 글꼴의 ○는 다른 글자보다 크게 그려져서 CSS로 작은 동그라미를 그린다 */
 .cmid{display:inline-block;width:.62em;height:.62em;border:2px solid currentColor;border-radius:50%;vertical-align:-.02em}
-/* 평가 내용 (2026-10-07) — 어느 답이든 한 줄로 적어 둔다. 안 적었으면 작은 더하기, 적었으면 그 글을 보이고 눌러 고친다 */
-.ceval{align-self:stretch;display:flex;align-items:center;gap:4px;min-height:44px;margin:-6px 0 -6px 30px;border:none;background:none;padding:0;font:inherit;font-size:15px;font-weight:700;color:var(--brand);cursor:pointer;text-align:left}
-.ceval.has{align-self:stretch;display:block;margin:0 0 0 30px;padding:8px 10px;border-radius:10px;background:#f6f8fb;color:var(--ink);font-weight:500;line-height:1.5}
-.ceval.has b{display:block;font-size:12px;font-weight:800;color:var(--mid)}
+/* 평가 내용 (2026-10-07) — 어느 답이든 적어 둔다. 2026-10-23 사용자 지시로 + 단추 → 창 대신 현장점검 개선 전 내용과 같은 바로 적는 칸(.gftxa). 문항이 많아 처음 높이만 낮게 */
+.ceva{display:flex;flex-direction:column;gap:6px}  /* 답 단추와 같은 왼쪽 (2026-10-23 사용자 지시 — 전에는 문항 번호만큼 들여씀) */
+.ceva b{font-size:14px;font-weight:800;color:var(--ink)}
 .cmemo{margin-left:30px;font-size:13px;color:var(--mid);line-height:1.5}
-/* 테마마다 한 쪽 (2026-09-28) — 위 칩 줄로 쪽을 옮기고, 아래 이전 | 다음 단추로 넘긴다 */
-.cpg{position:relative;display:flex;gap:6px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;scrollbar-width:none}
-.cpg::-webkit-scrollbar{display:none}
-.cpg button{flex:none;min-height:40px;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line2);border-radius:999px;padding:0 12px;background:#fff;color:var(--mid);font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}
-.cpg button em{font-style:normal;min-width:18px;height:18px;border-radius:9px;padding:0 5px;background:var(--brand-l);color:var(--brand);font-size:11px;font-weight:800;display:inline-grid;place-items:center}
-.cpg button.done{color:var(--green)}
-.cpg button.done svg{stroke-width:2.4}
-.cpg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
-.cpg button.on em{background:rgba(255,255,255,.2);color:#fff}
+/* 분야별 안전점검 — 묶음을 한 쪽에 차례로 (2026-10-23 사용자 지시 — 전에는 테마마다 한 쪽, 위 칩 줄과 이전 | 다음 단추). 묶음 제목은 위에 남게 붙지 않는다 */
 .cph{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.cksec{display:flex;flex-direction:column;gap:8px;scroll-margin-top:120px}
+.cksec .cph b{font-size:15px;color:var(--mid)}  /* 묶음 제목은 작게 (같은 날 사용자 지시) */
+.ckkit{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}  /* 05 보유 기구 + [수정] */
+.ckkit>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ckkit b{font-size:13px;font-weight:800;color:var(--mid)}
+.ckkit span{font-size:15px;font-weight:700;line-height:1.45;color:var(--ink);word-break:keep-all}
+.ckkit .btn{flex:none;width:auto;padding:0 16px}
+.cph.cend{margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
 .cph b{font-size:19px;font-weight:800;color:var(--ink)}
 .cpn{font-size:13px;font-weight:800;color:var(--brand)}
-.cpt{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:2px}
-.cpt .alldone{display:inline-flex;align-items:center;gap:2px;color:var(--green);font-size:12px;font-weight:800}
 .cgo{width:100%;min-height:52px;display:flex;align-items:center;gap:6px;border:none;background:none;padding:0;font:inherit;font-size:15px;font-weight:700;color:var(--ink);text-align:left;cursor:pointer}
 .cgo span:first-child{flex:1}
 .cgo + .cgo{border-top:1px solid var(--line)}
@@ -894,7 +891,6 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 /* G4 사진 찍기 (2026-09-23) — AI 머리 칸, 찍을 곳 알약, 3칸 사진판(지우기 ✕), AI 보내기 단추 */
 .gaih{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:1.5px solid transparent;
   background:linear-gradient(100deg,#f5f1ff,#eef3ff) padding-box,linear-gradient(100deg,#a88bf0,#7ea0f2) border-box}
-.gaic{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#7b55e6,#4f7cf0)}
 .gaih b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
 .gaih small{display:block;margin-top:2px;font-size:14px;color:var(--mid);line-height:1.4}
 .gtips{display:flex;flex-wrap:wrap;gap:6px}
@@ -957,12 +953,7 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 @keyframes gdraw{to{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){.gsent.fresh *{animation:none !important}.gsent.fresh .gdmark path{stroke-dashoffset:0}}
 /* AI 제안 고르기 (2026-09-23) — 머리 칸, 고른 수, 카드(사진 꼬리표, 둥근 고르기 칸, 사고 사례 줄) */
-.gaip{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 14px;border-radius:16px;border:1.5px solid transparent;
   background:linear-gradient(100deg,#f5f1ff,#eef3ff) padding-box,linear-gradient(100deg,#a88bf0,#7ea0f2) border-box}
-.gaip .gaic{width:38px;height:38px;border-radius:11px}
-.gaip > div{flex:1;min-width:0}
-.gaip b{display:block;font-size:16px;font-weight:800;color:var(--ink)}
-.gaip small{display:block;margin-top:1px;font-size:13px;color:var(--mid)}
 .gaiall{flex:none;min-height:36px;padding:0 12px;border:1px solid #cdbdf5;border-radius:999px;background:#fff;color:var(--violet);font:inherit;font-size:13px;font-weight:800;cursor:pointer}
 .gaicnt{font-size:14px;color:var(--mid);padding:2px 2px 0}
 .gaicnt b{color:var(--violet);font-size:16px}
@@ -1107,74 +1098,54 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .fseg{display:flex;flex-wrap:wrap;gap:8px}
 .fseg button{flex:1 0 auto;min-height:48px;padding:0 14px;border:none;border-radius:12px;background:#f3f5f9;font:inherit;font-size:16px;font-weight:700;color:var(--ink);cursor:pointer}
 .fseg button.on{background:var(--brand-l);box-shadow:inset 0 0 0 2px var(--brand);color:var(--brand)}
-/* 사진 AI — 점검하다가 그때그때 (2026-10-14). 체크리스트 아래 단추 줄 바로 위: 왼쪽 AI 소식 띠, 오른쪽 늘 있는 카메라 */
-.gcamrow{display:flex;align-items:center;gap:8px}
-.gaibd{flex:1;min-width:0;min-height:52px;display:flex;align-items:center;gap:8px;padding:0 14px;border:none;border-radius:14px;background:#fff;box-shadow:inset 0 0 0 1px var(--line2);font:inherit;font-size:15px;font-weight:700;color:var(--ink);text-align:left}
-.gaibd span{flex:1;min-width:0}
-.gaibd b{flex:none;font-size:15px;font-weight:800}
-.gaibd.new{background:var(--violet-l);box-shadow:inset 0 0 0 1.5px var(--violet);color:var(--violet);cursor:pointer}
-.gaibd.new span{color:var(--ink)}
-.gaibd.fail{color:var(--amber);cursor:pointer}
-.gaibd.fail span{color:var(--ink)}
-.gaibd.none{visibility:hidden}
+/* 도는 표시 — 현장점검 개선사항 "AI 분석 중" (체크리스트 아래 사진 AI 띠 · 카메라 단추는 2026-10-23 사용자 지시로 걷었다) */
 .gspin{flex:none;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--violet-l);border-top-color:var(--violet);animation:gspin .9s linear infinite}
 @keyframes gspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.gspin{animation:none}}
-.gcam{flex:none;width:64px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border:none;border-radius:14px;background:var(--navy);color:#fff;font:inherit;font-size:12px;font-weight:800;cursor:pointer}
-.gcam:active{transform:scale(.96)}
 .sheet.keep,.ov.keep{animation:none}
-.gaish .gaip{margin-top:0}
-.gaiph{display:flex;align-items:center;gap:4px;margin-top:4px}
-/* 점검 포인트 (2026-10-20 사용자 지시) — 사진마다 설비 이름, 점검 포인트 목록(이름 + 한두 줄 설명) */
-.gpg{display:flex;flex-direction:column;gap:8px}
-.gpg + .gpg{padding-top:14px;border-top:1px solid var(--line)}
+/* 점검 포인트 (2026-10-20 사용자 지시) — 이름 + 한두 줄 설명 목록. 보유현황 기구 문항 아래(ptsRow)와 분야별 안전점검 주관점이 쓴다 (사진 AI 것은 2026-10-23 걷음) */
 .gpts{margin:0;padding:0;list-style:none;counter-reset:gp;border-radius:16px;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}
 .gpts li{counter-increment:gp;position:relative;display:flex;flex-direction:column;gap:3px;padding:12px 14px 12px 48px}
 .gpts li + li{border-top:1px solid var(--line)}
 .gpts li::before{content:counter(gp);position:absolute;left:14px;top:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--violet-l);color:var(--violet);font-size:13px;font-weight:800}
 .gpts b{font-size:16px;font-weight:800;line-height:1.5;color:var(--ink)}
 .gpts span{font-size:15px;line-height:1.5;color:var(--mid)}
-.gaibd.seen{color:var(--violet);cursor:pointer}
-.gaibd.seen span{color:var(--ink)}
-.gaibd.seen b{font-size:14px;font-weight:700;color:var(--mid)}
-/* 항목에 붙은 점검 포인트 — 점검 화면 문항 아래 접힌 줄, 누르면 점검 포인트 목록 */
-.cpts{align-self:flex-start;display:flex;align-items:center;gap:6px;min-height:40px;margin:-4px 0 -4px 30px;padding:0 12px;border:none;border-radius:999px;background:var(--violet-l);color:var(--violet);font:inherit;font-size:14.5px;font-weight:700;text-align:left;cursor:pointer}
-.cpts span{color:var(--ink);word-break:keep-all}
-.cptsg{display:flex;flex-direction:column;gap:6px;margin-left:30px}
-.cptsg > b{font-size:14px;font-weight:800;color:var(--mid)}
-.cptsg .gpts li{padding:10px 12px 10px 44px}
-.cptsg .gpts li::before{left:12px;top:10px}
-.cptsg .gpts b{font-size:15px}
-.cptsg .gpts span{font-size:14.5px}
-/* AI가 보는 중 띠 (2026-10-14 사용자: 더 AI답게) — 보라→파랑 테두리, 도는 빛 고리 속 반짝이, 빛나는 글자, 바뀌는 한 줄, 훑는 빛줄기 */
-.gaibd.busy{position:relative;overflow:hidden;gap:10px;border:1.5px solid transparent;background:linear-gradient(#f7f4ff,#f7f4ff) padding-box,linear-gradient(100deg,#7b55e6,#4f7cf0) border-box;box-shadow:0 2px 12px rgba(110,68,216,.16)}
-.gaibd .gaiorb{flex:none;position:relative;width:30px;height:30px;display:grid;place-items:center;color:#fff}
-.gaiorb i{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#6e44d8,#4f7cf0,#9fd0ff,#6e44d8);animation:gspin 2.4s linear infinite}
-.gaiorb svg{position:relative}
-.gaibd .gaitx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.gaitx b{font-size:15px;font-weight:800;background:linear-gradient(90deg,#6e44d8 0%,#2f63e0 40%,#9a7cf0 50%,#2f63e0 60%,#6e44d8 100%);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gshine 2.4s linear infinite}
-.gaistep{position:relative;display:block;height:17px;font-style:normal;font-size:12px;font-weight:600;color:var(--mid)}
-.gaistep span{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;animation:gstep 6s infinite}
-.gaibeam{position:absolute;top:0;bottom:0;left:0;width:70px;background:linear-gradient(90deg,rgba(123,85,230,0),rgba(123,85,230,.16),rgba(79,124,240,0));animation:gbeam 2.2s ease-in-out infinite;pointer-events:none}
-@keyframes gshine{to{background-position:-200% 0}}
-@media (prefers-reduced-motion:reduce){.gaiorb i,.gaitx b,.gaibeam{animation:none}.gaistep span{animation:none}.gaistep span:first-child{opacity:1}}
+/* 분야별 안전점검 맨 위 — 지난번 미흡을 바탕으로 AI가 정리한 이번 주관점 (2026-10-23 사용자 지시 — 전에는 지난번 미흡을 따로 문항으로) */
+.gfoc{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.cksub{display:flex;gap:4px;margin-top:4px;padding:4px;border-radius:14px;background:#eef1f5}  /* 분야별 안전점검 안의 탭 둘 — 위 점검 탭과 다르게 알약 모양 (2026-10-23 사용자 지시) */
+.cksub button{flex:1;min-height:44px;border:none;border-radius:11px;background:none;font:inherit;font-size:15px;font-weight:700;color:var(--mid);cursor:pointer}
+.cksub button.on{background:#fff;color:var(--ink);font-weight:800;box-shadow:0 1px 3px rgba(23,32,51,.12)}
+.cknone{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:4px;padding:28px 18px;border-radius:16px;background:#fff;box-shadow:inset 0 0 0 1px var(--line);text-align:center;color:var(--green)}
+.cknone b{font-size:17px;font-weight:800;color:var(--ink)}
+.cknone span{font-size:14px;line-height:1.5;color:var(--mid);word-break:keep-all}
+.gfoch{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.gfoch b{font-size:17px;font-weight:800;color:var(--ink)}
+.gfoch span{margin-left:auto;font-size:13px;color:var(--soft)}
+.gfoc .gpts em{font-style:normal;font-size:12.5px;line-height:1.45;color:var(--soft)}
+/* 문항 아래 점검 포인트 — 아코디언 (2026-10-23 사용자 지시 — 전에는 보라 알약 단추 + 다시 그려 펼침). 머리를 누르면 몸이 높이를 늘리며 내려오고 화살이 돈다.
+   몸은 늘 그려 두고 0fr ↔ 1fr로 높이를 바꾼다(높이를 몰라도 움직임이 된다). 답 단추와 같은 폭 */
+.cacc{border-radius:12px;background:#f6f8fb;box-shadow:inset 0 0 0 1px var(--line)}
+.cacch{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:44px;padding:0 12px 0 14px;border:none;background:none;font:inherit;font-size:14.5px;font-weight:800;color:var(--ink);text-align:left;cursor:pointer}
+.cacch svg{flex:none;color:var(--mid);transition:transform .28s ease}
+.cacc.open .cacch svg{transform:rotate(180deg)}
+.caccb{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s ease}
+.cacc.open .caccb{grid-template-rows:1fr}
+.caccb>div{min-height:0;overflow:hidden}
+.caccin{display:flex;flex-direction:column;gap:6px;padding:0 10px 10px}
+.caccin > b{font-size:14px;font-weight:800;color:var(--mid)}
+.caccin .gpts li{padding:10px 12px 10px 44px}
+.caccin .gpts li::before{left:12px;top:10px}
+.caccin .gpts b{font-size:15px}
+.caccin .gpts span{font-size:14.5px}
+@media (prefers-reduced-motion:reduce){.caccb,.cacch svg{transition:none}}
 /* 찍은 사진 작은 칸 · 크게 보기 (2026-10-14 사용자: AI 제안이 무슨 사진에서 나왔는지 보이게) — 진짜 사진 대신 번호마다 다른 현장 그림 */
 .gsth{position:relative;flex:none;width:64px;height:48px;padding:0;border:none;border-radius:10px;overflow:hidden;background:#dfe4ea;box-shadow:inset 0 0 0 1px rgba(23,32,51,.08);cursor:pointer}
 .gsth .gshart{display:block;width:100%;height:100%}
 .gsth em{position:absolute;left:0;right:0;bottom:0;padding:1px 0 2px;font-style:normal;font-size:11px;font-weight:800;color:#fff;background:linear-gradient(transparent,rgba(15,21,34,.7));text-align:center}
 .crow .ctop .t{flex:1;min-width:0}
-.gaiph{display:flex;align-items:center;gap:12px;margin-top:6px}
-.gaiph .gsth{width:88px;height:66px}
-.gaiph div{display:flex;flex-direction:column;gap:2px}
-.gaiph b{font-size:16px;font-weight:800;color:var(--ink)}
-.gaiph span{font-size:13px;font-weight:600;color:var(--mid)}
 .gshvt{flex:1;padding-left:6px;font-size:17px;font-weight:800;color:#fff}
 .gshvb{position:relative;width:100%;aspect-ratio:4/3}
 .gshvb .gshart{display:block;width:100%;height:100%}
-.gshbox{position:absolute;border:2px solid rgba(178,156,255,.75);border-radius:8px;background:rgba(110,68,216,.10)}
-.gshbox em{position:absolute;left:-2px;top:-24px;padding:2px 7px;border-radius:6px;background:rgba(110,68,216,.75);color:#fff;font-style:normal;font-size:12px;font-weight:800;white-space:nowrap}
-.gshbox.on{border:3px solid #fff;background:rgba(110,68,216,.22);z-index:1}
-.gshbox.on em{background:var(--violet)}
 .rphvf b.dim{color:#aab3c2;font-weight:600}
 /* 지적 사진 여러 장 (2026-10-22 사용자 지시 — 한 건에 5장까지). 작은 칸에는 대표 사진과 장수만, 크게 보기에서 양옆 단추 · 점 · 옆으로 밀기로 넘긴다 */
 .rphvb{position:relative}
@@ -1509,6 +1480,7 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .gfsum span{font-size:13px;font-weight:700;color:var(--mid)}
 .gfsum b{font-size:22px;font-weight:900;line-height:1.2;color:var(--ink)}
 .gfrs0{display:flex;flex-direction:column;gap:10px}
+.gfsec{margin:10px 2px 0;font-size:16px;font-weight:800;color:var(--ink)}  /* 잘된 사항 — 위험요인을 다 지운 줄은 점선 칸 아래에 따로 (2026-10-23 사용자 지시) */
 .gfr{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:none;border-radius:var(--r);background:#fff;box-shadow:var(--sh);font:inherit;color:var(--ink);text-align:left;cursor:pointer}
 .gfrt{flex:none;display:grid;place-items:center;width:64px;aspect-ratio:4/3;border-radius:8px;overflow:hidden;background:#eef1f5;color:var(--soft)}
 .gfrt .gshart{display:block;width:100%;height:100%}
@@ -1560,6 +1532,7 @@ button.gfai{min-height:32px;padding:0 4px;border:none;background:none;font:inher
 .gftxa{display:block;width:100%;min-height:84px;margin-bottom:8px;padding:10px 12px;border:1.5px solid var(--line2);border-radius:12px;background:#fff;font:inherit;font-size:16px;line-height:1.5;color:var(--ink);word-break:keep-all;resize:none;field-sizing:content}
 .gftxa::placeholder{color:var(--soft)}
 .gftxa:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px var(--brand-l)}
+.gftxa.sm{min-height:52px;margin-bottom:0}  /* 분야별 안전점검 평가 내용 — 문항이 많아 처음엔 낮게, 적는 만큼 늘어난다 */
 .gfempty{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;margin-top:6px;padding:36px 16px 32px;border:none;border-radius:var(--r);background:#fff;box-shadow:var(--sh);font:inherit;text-align:center;cursor:pointer}
 /* 카메라는 단추 모양 (2026-10-23 사용자 지시 — 아래 카메라 · 사진첩 · 추가 단추를 걷고 여기서 새 건을 더한다) */
 .gfei{display:grid;place-items:center;width:78px;height:78px;margin-bottom:6px;border-radius:50%;background:var(--navy);color:#fff;box-shadow:0 6px 16px rgba(22,40,77,.3);transition:transform .1s}
@@ -1574,15 +1547,16 @@ button.gfai{min-height:32px;padding:0 4px;border:none;background:none;font:inher
 .gfpmore:active{background:var(--brand-l)}
 .gfpmore.full{color:var(--soft);box-shadow:inset 0 0 0 1.5px var(--line)}
 /* 앱 안 카메라 (2026-10-23 사용자 지시) — 화면 전체, 검은 바탕. #app 밖에 두어(다시 그려도 영상이 안 끊김) .app 색을 따로 적는다.
-   아래: 왼쪽 방금 넣은 사진(누르면 크게 보고 빼기) · 가운데 셔터(누르면 바로 들어감, 반짝임) · 오른쪽 완료 */
+   C안(같은 날 사용자 지시): 영상은 머리 바로 아래 3:4 칸을 채운다(찍을 때 칸 비율대로 잘라 보이는 범위 그대로). 키가 작은 폰이면 칸이 줄고 자르는 비율도 따라간다.
+   영상 위: 왼쪽 안내 · 오른쪽 플래시, 아래 가운데 확대. 아래 칸: 장수 점, 왼쪽 방금 넣은 사진(누르면 크게 보고 빼기) · 가운데 셔터(누르면 바로 들어감, 반짝임) · 오른쪽 완료 */
 .gcv{--navy:#1f3a73;position:fixed;top:0;bottom:0;left:50%;z-index:35;display:flex;flex-direction:column;width:100%;transform:translateX(-50%);background:#000;color:#fff;touch-action:none;overscroll-behavior:contain}
 @media (min-width:500px){.gcv{width:420px}}
 .gcvh{display:flex;align-items:center;gap:8px;padding:12px 12px 10px}
 .gcvh b{font-size:17px;font-weight:800}
 .gcvh span{font-size:14px;font-weight:600;color:#aab3c2}
 .gcvx{flex:none;display:grid;place-items:center;width:44px;height:44px;border:none;background:none;color:#fff;cursor:pointer}
-.gcvb{position:relative;flex:1;min-height:0;display:grid;place-items:center;overflow:hidden}
-.gcvb>video,.gcvb>img{grid-area:1/1;width:100%;height:100%;object-fit:contain}
+.gcvb{position:relative;flex:0 1 auto;width:100%;aspect-ratio:3/4;min-height:0;display:grid;place-items:center;overflow:hidden;background:#111}
+.gcvb>video,.gcvb>img{grid-area:1/1;width:100%;height:100%;object-fit:cover}
 .gcvb>img,.gcv[data-st=last] .gcvb>video,.gcv[data-st=off] .gcvb>video{visibility:hidden}
 .gcv[data-st=last] .gcvb>img{visibility:visible}
 .gcvb::after{content:'';position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
@@ -1591,7 +1565,21 @@ button.gfai{min-height:32px;padding:0 4px;border:none;background:none;font:inher
 @media (prefers-reduced-motion:reduce){.gcvb.flash::after{animation:none}}
 .gcvb>p{grid-area:1/1;display:flex;flex-direction:column;align-items:center;gap:6px;margin:0;padding:0 24px;font-size:17px;font-weight:700;text-align:center}
 .gcvb>p small{font-size:14px;font-weight:500;color:#aab3c2;word-break:keep-all}
-.gcvf{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;min-height:132px;padding:18px 20px calc(26px + env(safe-area-inset-bottom))}
+.gcvo{grid-area:1/1;align-self:start;justify-self:stretch;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 12px}
+.gcvz{grid-area:1/1;align-self:end;padding:12px}
+.gcv:not([data-st=live]) .gcvo,.gcv:not([data-st=live]) .gcvz{display:none}
+.gcvhint{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:rgba(0,0,0,.55);font-size:13.5px;font-weight:700;line-height:1.3}
+.gcvlt{flex:none;display:grid;place-items:center;width:44px;height:44px;border:none;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;cursor:pointer}
+.gcvlt.on{background:#ffd84d;color:#000}
+.gcvzm{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:rgba(0,0,0,.45)}
+.gcvzm button{min-width:42px;height:34px;border:none;border-radius:999px;background:none;color:#fff;font:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+.gcvzm button.on{background:rgba(255,255,255,.92);color:#000}
+.gcvl{flex:1 0 auto;display:flex;flex-direction:column;justify-content:center}
+.gcvd{display:flex;justify-content:center;gap:6px;padding-top:12px}
+.gcvd i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
+.gcvd i.on{background:#fff}
+.gcv[data-st=off] .gcvd{visibility:hidden}
+.gcvf{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;min-height:118px;padding:12px 20px calc(20px + env(safe-area-inset-bottom))}
 .gcv[data-st=last] .gcvf,.gcv[data-st=off] .gcvf{grid-template-columns:1fr 1fr}
 .gcvsh{width:78px;height:78px;padding:0;border:4px solid #fff;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 4px #000;cursor:pointer;transition:transform .1s}
 .gcvsh:active{transform:scale(.92)}
