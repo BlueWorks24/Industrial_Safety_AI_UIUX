@@ -4,6 +4,7 @@ UI/UX 연구용이다. 진짜 서비스의 서버 구조가 아니다.
 - 계정: 공장주·운영자·지킴이 아이디/비밀번호 (시험 편의 — 공장주 설계는 번호 인증), 근로자는 초대로 들어온다
 - 근로자 앱·지킴이 앱·웹(공장주·운영자)은 로그인 쿠키를 따로 쓴다 (asid / gsid / sid)
 - 화면 데이터: 가짜 서버 상태 하나를 JSON 한 덩어리로 둔다. 버전 번호로 여러 기기의 쓰기를 맞춘다.
+- 사진: 지킴이 앱 카메라로 찍은 사진은 data/photos/에 파일로 두고 상태에는 주소만 둔다 (2026-10-23)
 
 사용: python3 server.py [--port 8765] [--reset]
 표준 라이브러리만 쓴다.
@@ -13,7 +14,9 @@ import hashlib
 import http.server
 import json
 import os
+import re
 import secrets
+import shutil
 import socket
 import sqlite3
 import threading
@@ -23,6 +26,9 @@ from urllib.parse import urlparse, parse_qs
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(ROOT, 'data', 'proto.db')
+PHOTO_DIR = os.path.join(ROOT, 'data', 'photos')
+PHOTO_NAME = re.compile(r'[0-9a-f]{16}\.jpg')
+PHOTO_MAX = 8 * 1024 * 1024  # 앱이 긴 변 1600px로 줄여 올려 보통 수백 KB
 LOCK = threading.Lock()
 
 # 시험용 계정 — (아이디, 비밀번호, 역할, 이름, 공장, 소속). 지킴이의 소속은 조 이름이다
@@ -61,6 +67,8 @@ def init_db(reset=False):
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     if reset and os.path.exists(DB_PATH):
         os.remove(DB_PATH)
+    if reset:
+        shutil.rmtree(PHOTO_DIR, ignore_errors=True)  # 찍은 사진도 상태와 같이 지운다
     with db() as con:
         con.executescript('''
         CREATE TABLE IF NOT EXISTS accounts (
@@ -113,7 +121,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().log_message(fmt, *args)
 
     def end_headers(self):
-        self.send_header('Cache-Control', 'no-store')
+        if not self.__dict__.pop('cached', False):
+            self.send_header('Cache-Control', 'no-store')
         super().end_headers()
 
     # ---- 도구 ----
@@ -153,6 +162,22 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self.json_out(404, {'error': 'not found'})
         if u.path == '/api/ping':
             return self.json_out(200, {'ok': True})
+        if u.path.startswith('/api/photo/'):
+            name = u.path[len('/api/photo/'):]
+            path = os.path.join(PHOTO_DIR, name)
+            if not PHOTO_NAME.fullmatch(name) or not os.path.isfile(path):
+                return self.json_out(404, {'error': 'not found'})
+            with open(path, 'rb') as f:
+                data = f.read()
+            # 사진마다 이름이 달라 바뀌지 않는다 — 화면을 다시 그릴 때마다 새로 받지 않게 둔다
+            self.cached = True
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/jpeg')
+            self.send_header('Cache-Control', 'private, max-age=31536000, immutable')
+            self.send_header('Content-Length', str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if u.path == '/api/invite':
             code = (parse_qs(u.query).get('code', [''])[0]).strip().upper()
             with db() as con:
@@ -245,6 +270,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 tok = secrets.token_urlsafe(24)
                 con.execute('INSERT INTO sessions VALUES (?,?,?)', (tok, row['id'], datetime.now().isoformat(timespec='seconds')))
             return self.json_out(200, account_public(row), {'Set-Cookie': f'asid={tok}; Path=/; HttpOnly; SameSite=Lax'})
+        if u.path == '/api/photo':
+            if not self.me('guard'):
+                return self.json_out(401, {'error': 'login'})
+            n = int(self.headers.get('Content-Length') or 0)
+            if not 0 < n <= PHOTO_MAX:
+                return self.json_out(413, {'error': 'size'})
+            data = self.rfile.read(n)
+            if not data.startswith(b'\xff\xd8\xff'):
+                return self.json_out(400, {'error': 'jpeg'})
+            name = secrets.token_hex(8) + '.jpg'
+            os.makedirs(PHOTO_DIR, exist_ok=True)
+            with open(os.path.join(PHOTO_DIR, name), 'wb') as f:
+                f.write(data)
+            return self.json_out(200, {'src': 'api/photo/' + name})
         if u.path == '/api/logout':
             name = COOKIE[self.where(u)]
             c = cookies.SimpleCookie(self.headers.get('Cookie') or '')
