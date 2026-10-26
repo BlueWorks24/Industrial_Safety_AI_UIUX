@@ -244,11 +244,18 @@ function itemState(it) {
   return last.result === 'fixed' ? 'fixed' : 'back';
 }
 // 운영자가 승인한 점검만 공장주에게 가고 재점검 목록에 오른다 (2026-09-22, 흐름도 B⑥-1). 상태가 없는 옛 기록은 승인된 것으로 읽는다.
-const APPROVED = (ins) => (ins.st || 'ok') === 'ok';
+// 2026-10-26 개선 관리(초안): 불량 · 개선사항이 있는 점검은 지킴이가 개선 관리에서 [공장에 보내기]를 눌러야 공장에 간다(toFac: false → 보낸 날).
+// 보내기 전에는 공장 · 운영자 · 지난번 미흡에 안 보인다. toFac이 없는 옛 기록은 보낸 것으로 읽는다
+const APPROVED = (ins) => (ins.st || 'ok') === 'ok' && ins.toFac !== false;
+const toSend = (ins) => (ins.st || 'ok') === 'ok' && ins.toFac === false;
 // 지난번 미흡 항목 — 다음에 그 공장을 점검할 때 이 항목들이 체크리스트에 붙는다 (2026-09-22).
 // 2026-10-13부터는 재점검에서 "안 고쳐짐"으로 남은 항목이 여기로 온다
 // 새 점검에 다시 붙은 복사본(ref가 있는 것)은 원래 항목 하나로만 센다 — 같은 문제를 두 번 세지 않게
-const TRACKED = (it) => it.answer === 'bad' && !it.ref;
+// 2026-10-26 개선 관리: 체크리스트 불량은 공장에 따로 가지 않는다(noFix) — 지킴이가 현장점검 개선사항(종이 10번)으로 올린다. 옛 기록은 그대로
+const TRACKED = (it) => it.answer === 'bad' && !it.ref && !it.noFix;
+// 공장에 간 항목 — 현장점검 개선사항(새 기록)과 옛 기록의 체크리스트 불량. 이름은 차례대로 "개선사항 n" — 지킴이 앱 · 공장 웹 같은 이름 (2026-10-26 사용자 지시)
+const kzList = (ins) => ins.items.filter((x) => x.src === 'find' || TRACKED(x));
+const kzName = (ins, it) => `개선사항 ${kzList(ins).indexOf(it) + 1}`;
 function openIssues(s, fid) {
   const out = [];
   s.inspections.filter((i) => i.fid === fid && APPROVED(i)).forEach((ins) =>
@@ -444,7 +451,7 @@ function applyInspection(s, d) {
   if (d.kind === 'first') {
     // 낸 점검은 바로 확정된다 (2026-10-14 사용자 지시 — 운영자 제출 검사는 아직 정해진 게 아니라 뺐다. 전에는 st 'wait'로 들어가 운영자가 승인·반려했다)
     const ins = { id: 'i' + Date.now().toString(36), fid: d.fid, date: '9/17', by: d.by || '김지킴', team: d.team, ver: d.ver,
-      result: d.result, st: 'ok', sentAt: '9/17', locked: true, items: d.items };
+      result: d.result, st: 'ok', sentAt: '9/17', locked: true, items: d.items, ...(d.result === '재점검' ? { toFac: false } : {}) };
     s.inspections.unshift(ins); settlePrev(s, ins);
   } else if (d.kind === 'recheck') {
     // 재점검 판정 (2026-10-13) — 항목마다 고쳐짐·안 고쳐짐을 원래 항목에 적고, 점검 결과를 지킴이가 고른 것으로 바꾼다
@@ -462,4 +469,19 @@ function applyInspection(s, d) {
 // 예전 시제품이 등록한 서비스 워커가 남아 있으면 지운다
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister())).catch(() => {});
+}
+
+/* ---------- 사진 줄이기 · 올리기 — 지킴이 앱 카메라와 공장 웹 [고쳤어요]가 같이 쓴다 (2026-10-26 guard.js에서 옮김) ---------- */
+// 영상의 한 장면이나 카메라 앱에서 받은 사진을 줄인다 — 서버에 올릴 때는 긴 변 1600px, 서버 없이 그림째 둘 때는 800px. x · y · w · h는 잘라 낼 범위
+const camShrink = (src, w, h, x = 0, y = 0) => new Promise((ok) => {
+  const r = Math.min(1, (DB.remote ? 1600 : 800) / Math.max(w, h)), c = document.createElement('canvas');
+  c.width = Math.round(w * r); c.height = Math.round(h * r);
+  c.getContext('2d').drawImage(src, x, y, w, h, 0, 0, c.width, c.height);
+  c.toBlob((b) => ok({ b, url: URL.createObjectURL(b), w: c.width, h: c.height }), 'image/jpeg', 0.8);
+});
+async function photoSave(sh) {
+  if (!DB.remote) return { src: await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(sh.b); }), w: sh.w, h: sh.h };
+  const r = await fetch('api/photo', { method: 'POST', headers: { 'Content-Type': 'image/jpeg' }, body: sh.b });
+  if (!r.ok) throw new Error('photo ' + r.status);
+  return { src: (await r.json()).src, w: sh.w, h: sh.h };
 }

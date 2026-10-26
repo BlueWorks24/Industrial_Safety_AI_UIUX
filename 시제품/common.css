@@ -397,7 +397,7 @@ svg.i{flex:none;vertical-align:-.18em}
 .cans button.on::before{margin-right:4px}
 .cans button.on.ok{background:var(--green)}
 .cans button.on.ok::before{content:"✓"}
-.cans button.on.bad{background:var(--amber)}
+.cans button.on.bad{background:var(--red)}  /* 불량은 빨강 (2026-10-26 사용자 지시 — 전에는 주황) */
 .cans button.on.bad::before{content:"⚠"}
 .cans button.on.na{background:#6b7789}
 .cans button.on.na::before{content:"—"}
@@ -416,19 +416,17 @@ svg.i{flex:none;vertical-align:-.18em}
 .cmemo{margin-left:30px;font-size:13px;color:var(--mid);line-height:1.5}
 /* 분야별 안전점검 — 묶음을 한 쪽에 차례로 (2026-10-23 사용자 지시 — 전에는 테마마다 한 쪽, 위 칩 줄과 이전 | 다음 단추). 묶음 제목은 위에 남게 붙지 않는다 */
 .cph{display:flex;align-items:baseline;gap:8px;margin-top:6px}
-.cksec{display:flex;flex-direction:column;gap:8px;scroll-margin-top:120px}
-.cksec .cph b{font-size:15px;color:var(--mid)}  /* 묶음 제목은 작게 (같은 날 사용자 지시) */
-.ckkit{display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1px var(--line)}  /* 05 보유 기구 + [수정] */
-.ckkit>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ckkit b{font-size:13px;font-weight:800;color:var(--mid)}
-.ckkit span{font-size:15px;font-weight:700;line-height:1.45;color:var(--ink);word-break:keep-all}
-.ckkit .btn{flex:none;width:auto;padding:0 16px}
-.cph.cend{margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.cksec{display:flex;flex-direction:column;gap:8px}
+.ckkit{display:flex;flex-direction:column;gap:10px;margin:14px 2px 2px}  /* 05 (유해위험기구) 머리 — 보유 n종 + 수정 ›, 남색 밑줄 (10-26 시안 B) */
+.ckkh{display:flex;align-items:baseline;gap:8px;padding-bottom:10px;border-bottom:2px solid var(--navy)}
+.ckkh b{font-size:18px;font-weight:900;color:var(--navy)}
+.ckkh span{flex:1;font-size:15px;font-weight:700;color:var(--mid)}
+.cklnk{display:inline-flex;align-items:center;gap:2px;min-height:36px;padding:0 0 0 8px;border:0;background:none;font:inherit;font-size:15px;font-weight:800;color:var(--navy);cursor:pointer}
+.ckkit.none .ckkh{border-bottom-color:var(--line2)}  /* 보유 기구 선택 전 */
+.ckkit .btn{background:var(--navy);box-shadow:none}
+.ckend{display:flex;flex-direction:column;gap:14px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}  /* 마무리 — 결과 · 시정 기한 + 내기만 (10-26) */
 .cph b{font-size:19px;font-weight:800;color:var(--ink)}
 .cpn{font-size:13px;font-weight:800;color:var(--brand)}
-.cgo{width:100%;min-height:52px;display:flex;align-items:center;gap:6px;border:none;background:none;padding:0;font:inherit;font-size:15px;font-weight:700;color:var(--ink);text-align:left;cursor:pointer}
-.cgo span:first-child{flex:1}
-.cgo + .cgo{border-top:1px solid var(--line)}
 .btn.cnext{display:flex;align-items:center;justify-content:center;gap:4px;word-break:keep-all;line-height:1.3}
 .btn.cnext .nw{white-space:nowrap}
 .btn.cnext .cnl{min-width:0;text-align:center}
@@ -777,12 +775,29 @@ span.gtdtg{cursor:default}
 .rtx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .rtx .t{font-size:15px;font-weight:600;line-height:1.45;color:var(--ink)}
 .rtx small{font-size:13px;color:var(--mid);line-height:1.4}
-.rans{flex:none;display:inline-flex;align-items:center;gap:3px;font-size:13px;font-weight:600;white-space:nowrap;color:var(--mid);line-height:1.6}
-.rans.bad{color:var(--amber);font-weight:800}
-.gview-t{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;font-weight:800;color:var(--mid)}
-.gview-t .ok{color:var(--green)}
-.gview-t .bad{color:var(--amber)}
-.gview-t .amid{color:#8f6a00}
+/* 점검 내용 보기 답 — 네모 꼬리표 글자만 (2026-10-26 사용자 지시 — 알아보기 쉽게): 양호 초록 테두리, 불량 빨강 채움, 보통 노랑 테두리, 해당 없음 회색 */
+.rans{flex:none;display:inline-grid;place-items:center;min-width:60px;padding:3px 8px;border:1.5px solid var(--line2);border-radius:6px;font-size:14px;font-weight:800;white-space:nowrap;color:var(--soft);line-height:1.4}
+.rans.ok{border-color:#9fd3b6;color:var(--green)}
+.rans.bad{border-color:var(--red-d);background:var(--red-d);color:#fff}
+.rans.amid{border-color:#e6cf86;color:#8f6a00}
+.ivsum{grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
+.ivsum .ok b{color:var(--green)}.ivsum .bad b{color:var(--red-d)}.ivsum .na b{color:var(--soft)}.ivsum .amid b{color:#8f6a00}
+.ivver{margin-left:8px;font-size:13px;font-weight:700;color:var(--soft)}
+/* 사진은 줄 아래 폭을 다 쓰는 두 칸 3:4 (같은 날 사용자: 너무 작다 — 처음엔 글 아래 60px 칸) */
+.vrow:has(.ivphs){flex-wrap:wrap}
+.ivphs{flex-basis:100%;display:flex;flex-direction:column;gap:12px;margin-top:4px}
+.ivph>span{display:block;padding-bottom:6px;font-size:14px;font-weight:800;color:var(--mid)}
+.ivph>div{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.ivp{position:relative;width:100%;aspect-ratio:3/4;padding:0;border:none;border-radius:12px;overflow:hidden;background:#e7ebf1;cursor:pointer}
+/* 현장점검 개선사항 묶음 — 제목 · 이름 · 내용 글씨를 키움 */
+.grp.ivf{font-size:18px;color:var(--ink)}
+.rlist.ivf .vrow{padding:16px 0}
+.rlist.ivf .rtx .t{font-size:19px;font-weight:800}
+.rlist.ivf .rtx small{font-size:15.5px;line-height:1.55}
+.rlist.ivf .rno{font-size:16px}
+.ivp img{width:100%;height:100%;object-fit:cover;display:block}
+.ivsheet img{display:block;width:100%;max-height:62vh;object-fit:contain;border-radius:12px;background:#111}
+.ivsheet .row .btn{flex:1}
 /* 최근 센서 이상 기록 — 지난번 미흡처럼 머리 칸에 개수, 아래는 날짜·시각 | 무엇이 · 어떻게 끝났나 (2026-09-22) */
 .gpvh.sen{background:#eef2fb;color:var(--brand)}
 .gpvh.sen em{background:var(--brand)}
@@ -928,7 +943,9 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .srmbtn svg{transform:rotate(90deg);transition:transform .15s}
 .srmbtn.open svg{transform:rotate(-90deg)}
 .sheet .row.sstick{position:sticky;bottom:-20px;margin:0 -16px -20px;padding:12px 16px 20px;background:#fff;box-shadow:0 -6px 14px rgba(23,32,51,.06)}
-.crisk{display:flex;flex-wrap:wrap;gap:4px;margin-left:30px}
+.crisk{display:flex;flex-direction:column;gap:2px}  /* 고른 위험요인 — 평가 내용과 같은 왼쪽 · 같은 제목 꼴 (10-26) */
+.crisk b{font-size:14px;font-weight:800;color:var(--ink)}
+.crisk span{font-size:15px;font-weight:600;line-height:1.5;color:var(--red-d);word-break:keep-all}
 .gainote{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mid);margin-top:4px}
 .gainote svg{flex:none}
 /* AI 기다리기 (2026-09-23) — 가운데 모음. 지금은 낸 뒤 화면이 쓴다 (기다리기 그림은 2026-10-23 장비 고르기와 같이 걷음) */
@@ -1020,44 +1037,14 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .hsort button.on{background:var(--brand-l);color:var(--brand);font-weight:800}
 /* 홈 할 일 묶음 소제목 — 재점검 n곳 · 점검 n곳 */
 .hgrp{margin-top:6px;font-size:14px;font-weight:800;color:var(--mid)}
-/* 장비 고르기 다듬기 (2026-10-14 사용자: 촌스럽다) — 고르기 화면(.geqbd, 2026-10-23부터 사전 확인의 보유현황 · 위험물질)에만. 위험요인 고르기 창(.srisk)은 그대로.
-   글씨 17px · 칸 높이 56px 이상은 그대로(어르신도 쉽게). 분류마다 흰 카드, 장비 칸은 옅은 바탕, 고르면 보라 테두리와 네모 체크 */
+/* 사전 확인 화면 간격. 보유현황 · 위험물질 고르기 칸은 2026-10-26부터 .kpsec(아래) — 그 전의 회색 두 칸 · 보라 고르기(.geqsec)는 걷었다 */
 .geqbd{gap:12px}
-.geqsec{display:flex;flex-direction:column;gap:12px;padding:16px 14px 14px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh)}
-.geqbd .geqs{gap:8px}
-.geqbd .geq{min-height:56px;padding:8px 12px;border:none;border-radius:12px;background:#f3f5f9;box-shadow:none;font-size:17px;transition:background .15s,box-shadow .15s}
-.geqbd .geq:active{transform:scale(.98)}
-.geqbd .geqc{width:24px;height:24px;border-radius:7px;border:2px solid #b9c2cf}
-.geqbd .geq.on{background:var(--violet-l);box-shadow:inset 0 0 0 2px var(--violet);color:#3d1f9e}
-.geqbd .geq.on .geqc{border-color:var(--violet);background:var(--violet)}
-/* 사전 확인 (2026-10-23) — 위험물질 네 칸과 "가진 기구 없음"은 한 줄에 하나 */
-.geqs.one{grid-template-columns:1fr}
-/* 재점검 — 고치기 전 · 고친 뒤 사진 한 쌍 (2026-10-14 사용자 — 개선 전/후 사진 주고받기 ③). 같은 크기로 나란히, 아래에 누가 언제 찍었나.
-   공장주가 아직 안 보냈으면 점선 칸에 "카톡으로 받은 사진 올리기"(지킴이가 대신 넣는 길) */
-.rpair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.rph{position:relative;display:block;width:100%;aspect-ratio:4/3;padding:0;border:none;border-radius:12px;overflow:hidden;background:#eef1f5;font:inherit;cursor:pointer}
 .rphart{position:absolute;inset:0;width:100%;height:100%}
-.rphc{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:18px 9px 7px;background:linear-gradient(rgba(15,23,42,0),rgba(15,23,42,.7));color:#fff;font-size:12px;line-height:1.3;text-align:left}
-.rphc b{font-size:13px;font-weight:800}
-.rph.none{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#f6f8fb;border:1.5px dashed var(--line2);cursor:default}
-.rph.none .rphc{background:none;color:var(--soft)}
-.rph.none .rphc b{color:var(--mid)}
-.rph.wait{justify-content:center}
-.rphe{font-size:13px;font-weight:700;line-height:1.35;color:var(--soft);text-align:center}
-.rph.none:not(.wait) .rphe{margin-bottom:28px}
-.rnote{font-size:14px;line-height:1.45;color:var(--ink)}
-.rnote b{margin-right:6px;font-weight:700;color:var(--mid)}
-.rwhy{min-height:48px;font-size:15px}
-/* 사진 크게 보기 — 화면 가득, 위에서 고치기 전 · 고친 뒤를 바꾼다(옆으로 밀어도) */
+/* 사진 크게 보기 — 화면 가득(현장점검 개선사항 사진 · 예전 초안의 AI 제안 사진). 옆으로 밀어 넘긴다 */
 .rphv{position:fixed;top:0;bottom:0;left:50%;z-index:30;display:flex;flex-direction:column;width:100%;transform:translateX(-50%);background:#0f1522}
 .rphvh{display:flex;align-items:center;gap:8px;padding:14px 12px 10px}
-.rphvt{flex:1;display:flex;padding:3px;border-radius:11px;background:rgba(255,255,255,.12)}
-.rphvt button{flex:1;min-height:42px;border:none;border-radius:9px;background:none;color:#d3d9e4;font:inherit;font-size:15px;font-weight:700;cursor:pointer}
-.rphvt button.on{background:#fff;color:var(--ink)}
-.rphvt button:disabled{opacity:.35;cursor:default}
 .rphvx{flex:none;display:grid;place-items:center;width:44px;height:44px;border:none;background:none;color:#fff;cursor:pointer}
 .rphvb{flex:1;display:flex;align-items:center;justify-content:center;touch-action:pan-y;user-select:none}
-.rphvb .rphart{position:static;width:100%;height:auto;aspect-ratio:4/3}  /* 작은 칸에서는 칸을 채우는 그림이라, 여기선 제자리에 둔다(닫기 단추를 덮던 것) */
 .rphvf{display:flex;flex-direction:column;gap:4px;padding:14px 16px 28px;color:#fff;font-size:15px}
 .rphvf span{font-size:13px;color:#aab3c2}
 /* 기업 정보 고치기 (2026-10-14 사용자 지시) — 칸 머리 오른쪽 "고치기", 고친 칸 아래에 누가 언제 고쳤나 */
@@ -1157,7 +1144,6 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .gpvd{display:flex;justify-content:center;gap:7px;padding-bottom:8px}
 .gpvd i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)}
 .gpvd i.on{background:#fff}
-.rphn{position:absolute;top:6px;right:6px;padding:2px 8px;border-radius:999px;background:rgba(15,21,34,.7);color:#fff;font-size:12px;font-style:normal;font-weight:800}
 
 /* 지킴이 홈 — 카드가 입구 (2026-10-19 사용자 지시). 한 화면 안: HIPA 표시 + 알림, 인사, 찾기, 오늘 방문(AI 요약), 큰 카드 넷.
    옅은 회색 바탕 위 흰 카드 (레퍼런스 앱 배치). 카드를 누르면 할 일 화면(#/todo) */
@@ -1207,11 +1193,6 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .hpill.o{background:#fff3e6;color:#c2620a}
 .hpill.n{height:24px;padding:0 9px;background:var(--brand);color:#fff;font-size:12.5px;font-weight:800}
 /* 할 일 화면 — 위 탭(전체 · 점검 · 판정 · 방문일 · 시정), 권역 · 거리순 · 일정순, 줄마다 동그란 단추 */
-.tdtabs{display:flex;gap:5px;margin:0 -16px;padding:2px 16px;overflow-x:auto;scrollbar-width:none}
-.tdtabs::-webkit-scrollbar{display:none}
-.tdtabs button{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:0 11px;border:none;border-radius:999px;background:#f1f3f6;font:inherit;font-size:14.5px;font-weight:800;color:var(--mid);cursor:pointer}
-.tdtabs button em{font-style:normal;opacity:.75}
-.tdtabs button.on{background:var(--brand);color:#fff}
 .tdtool{display:flex;align-items:center;gap:8px}
 .tdtool .harea{min-height:42px}
 .hit{display:flex;align-items:center;gap:6px;padding:4px 12px 4px 4px;border:1px solid #e9edf2;border-radius:22px;background:#fff}
@@ -1284,8 +1265,6 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 
 /* 할 일 화면도 홈과 같은 모양 (2026-10-19 사용자 지시) — 옅은 회색 바탕 위 흰 카드, 글자 단추, 둥근 알약 탭 · 권역 · 정렬 */
 .app:has(.gtodo),.gtodo{background:#f2f4f7}
-.gtodo .tdtabs button{background:#fff;box-shadow:0 1px 6px rgba(20,24,31,.05)}
-.gtodo .tdtabs button.on{background:var(--brand);box-shadow:none}
 .gtodo .harea{border:none;border-radius:999px;box-shadow:0 2px 12px rgba(20,24,31,.05)}
 .gtodo .harea.on{box-shadow:inset 0 0 0 1.5px var(--brand)}
 .gtodo .hsort{border:none;border-radius:999px;padding:3px;gap:2px;box-shadow:0 2px 12px rgba(20,24,31,.05)}
@@ -1322,6 +1301,34 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 @media (max-width:379px){.hkc[data-v=result] .hpill{padding:0 8px;font-size:12px;letter-spacing:-.02em}}
 /* 할 일 화면의 점검 · 판정 카드 — 점검 결과 탭과 같은 카드 (2026-10-19) */
 .gtodo .fcard.tdc{border-radius:20px}
+/* 할 일 카드 (2026-10-26) — 지도 없이 이름 · 주소 · 거리를 크게, 정보는 이름표 | 값 줄 표, 시정 기한은 이름 줄 오른쪽에 D-n 크게 (사용자 시안 F, 그 전엔 E) */
+.gtodo .fcard.tdc{padding:16px}
+.tdc .fname{font-size:21px;font-weight:900}
+.tdhd{display:flex;align-items:flex-start;gap:10px}
+.tdhd>div:first-child{flex:1;min-width:0}
+.tdloc{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin-top:2px;font-size:16px;font-weight:600;color:var(--mid)}
+.tdloc span{display:inline-flex;align-items:center;gap:3px}
+.tdloc .i{color:var(--soft)}
+/* 기한 도장 (사용자 시안 E) — 채움 없는 얇은 테두리 네모, 머리 띠 "시정 기한", D-n, ~날짜. 지나면 빨강 */
+.tddue{flex:none;min-width:84px;text-align:center;border:1.5px solid var(--navy);border-radius:4px;overflow:hidden}
+.tddue small{display:block;padding:2px 0;background:var(--navy);color:#fff;font-size:12px;font-weight:700}
+.tddue b{display:block;padding:5px 8px 1px;font-size:19px;font-weight:900;color:var(--navy);white-space:nowrap}
+.tddue em{display:block;padding:0 8px 5px;font-style:normal;font-size:12.5px;font-weight:700;color:var(--mid)}
+.tddue.warn{border-color:var(--red-d)}
+.tddue.warn small{background:var(--red-d)}
+.tddue.warn b{color:var(--red-d)}
+.tdgt{margin:12px 0 4px;border-top:1px solid var(--line)}
+.tdgt>div{display:grid;grid-template-columns:100px minmax(0,1fr);align-items:center;min-height:42px;border-bottom:1px solid var(--line)}
+.tdgt em{font-style:normal;font-size:16px;font-weight:600;color:var(--mid)}
+.tdgt b{padding:8px 0;font-size:16.5px;font-weight:800;color:var(--ink);overflow-wrap:anywhere}
+.tdgt b.warn{color:var(--amber)}
+.tdgt b.now{color:var(--brand)}
+.tdgt b.soft{color:var(--soft);font-weight:600}
+.tdsch{flex:none;margin-top:2px}  /* 점검 카드 — 일정 변경은 이름 줄 오른쪽 위 */
+.tdsub{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}  /* 시정 중 — 다시 알리기 · 전화 반반, 긴 단추 위 */
+.tdsub .fbtn{justify-content:center;min-height:46px;font-size:15px}
+.tdsub + .fbtn.tdgo{margin-top:8px}
+.fbtn.tdgo{align-self:stretch;justify-content:center;min-height:50px;margin-top:10px;font-size:17px;font-weight:800;border-radius:12px}  /* 점검 시작 · 이어서 점검 — 카드 폭 긴 단추 */
 
 /* 큰 제목 — 스크롤하면 머리 줄의 작은 제목으로 줄어든다 (2026-10-19 사용자 지시, guard.js ltitle · ltCheck) */
 .ltitle{margin:8px 2px 2px;font-size:30px;font-weight:800;letter-spacing:-.04em;line-height:1.2}
@@ -1330,8 +1337,12 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .app .apptop.shrunk .crumb{opacity:1;transform:none}
 .app .apptop.shrunk .head{border-bottom-color:var(--ring)}
 /* 재점검 탭 — 판정 필요 · 시정 중 고르기 칸 (2026-10-19). 거리순 · 일정순과 같은 모양, 한 줄 가득 */
-.gtodo .hsort.rsub{margin-left:0;display:grid;grid-template-columns:1fr 1fr}
-.gtodo .hsort.rsub button em{font-style:normal;opacity:.7}
+/* 보낼 것 · 시정 중 · 판정 필요 · 개선완료 한 줄 (10-26). 밑줄 탭 — 상자 없이 글자 + 남색 밑줄, 숫자는 옆에 작은 회색 (같은 날 사용자 시안 F) */
+.gtodo .hsort.rsub{margin-left:0;display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0;background:none;border-radius:0;box-shadow:none;border-bottom:1px solid var(--line2)}
+.gtodo .hsort.rsub button{min-height:48px;margin-bottom:-1px;padding:0 2px;border-radius:0;border-bottom:3px solid transparent;background:none;font-size:14px;letter-spacing:-.03em;white-space:nowrap}
+.gtodo .hsort.rsub button.on{border-bottom-color:var(--navy);color:var(--navy)}
+.gtodo .hsort.rsub button em{margin-left:2px;font-style:normal;font-size:13px;font-weight:800;color:var(--soft)}
+.gtodo .hsort.rsub button.on em{color:var(--navy)}
 
 /* 근로자 앱 — 지킴이 앱과 같은 모양 (2026-10-20 사용자 지시). 홈은 지킴이 홈 틀(.ghome — 남색 띠 · 카드 넷)을 그대로 쓰고,
    남색 띠는 센서 감시 카드 가운데서 끝난다(worker.js homeBand). 안쪽 화면(.wsub)은 지킴이 할 일 화면처럼 옅은 회색 바탕 위 흰 카드 + 큰 제목.
@@ -1592,3 +1603,89 @@ button.gfai{min-height:32px;padding:0 4px;border:none;background:none;font:inher
 .gfva .btn:disabled{opacity:.35}
 /* 찍은 사진은 시험용 사진(photos/)을 칸에 맞춰 채운다. 크게 보기는 칸을 사진 비율대로 두어(photoBox) 잘리지 않는다 (2026-10-22) */
 img.gshart{display:block;object-fit:cover}
+
+/* 개선 관리 (2026-10-26) — 정리 화면은 현장점검 탭과 같은 줄(.gfr). 개선 전 · 개선 후 사진은 좌우 3:4(사용자 시안 B), 현장점검에서 찍은 진짜 사진 */
+.kzpair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kzpt{position:relative;display:block;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:#dfe4ea}
+.kzpt em{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.94);color:var(--navy);font-style:normal;font-size:12.5px;font-weight:800}
+.kzpt em.after{color:var(--green)}
+.kzpt b{position:absolute;right:8px;bottom:8px;display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;background:rgba(15,21,34,.62);color:#fff;font-size:12.5px;font-weight:800}
+.kzpt.wait{background:#f3f5f8;box-shadow:inset 0 0 0 1.5px var(--line2)}
+.kzpt.wait>span{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--mid);font-size:13px;font-weight:700;text-align:center;line-height:1.4}
+.kzpt.wait svg{color:var(--soft)}
+.kzadd{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kzadd .gfpmore{min-height:44px;font-size:14px}
+.kzst button{font-size:14px}
+/* 판정 — 공장주 회신(보낸 날 · 고친 내용 · 사진 수). 접어 두고 누르면 이름표 | 값 표로 펼침 (2026-10-26 사용자 지시 — 한 줄로 이어 써서 알아보기 어려웠다) */
+.kzfx{border:1px solid var(--line2);border-radius:12px;background:#fff;overflow:hidden}
+.kzfxh{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:0 12px 0 14px;border:none;background:none;font:inherit;text-align:left;cursor:pointer}
+.kzfxh b{font-size:15.5px;font-weight:800;color:var(--ink)}
+.kzfxh span{flex:1;font-size:14.5px;font-weight:700;color:var(--navy)}
+.kzfxh .i{color:var(--soft);transform:rotate(90deg);transition:transform .25s}
+.kzfx.on .kzfxh .i{transform:rotate(-90deg)}
+.kzfxw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .25s ease}  /* 아코디언 — 칸 높이를 0 ↔ 제 높이로 */
+.kzfx.on .kzfxw{grid-template-rows:1fr}
+.kzfxw>div{min-height:0;overflow:hidden}
+.kzfxb{border-top:1px solid var(--line)}
+.kzfxb>div{display:grid;grid-template-columns:86px minmax(0,1fr);align-items:center;min-height:44px;padding:0 14px}
+.kzfxb>div + div{border-top:1px solid var(--line)}
+.kzfxb em{font-style:normal;font-size:14.5px;font-weight:600;color:var(--mid)}
+.kzfxb b{padding:8px 0;font-size:15.5px;font-weight:800;color:var(--ink);overflow-wrap:anywhere}
+.kzfxb b.soft{color:var(--soft);font-weight:600}
+.kzdl{margin-left:8px;font-weight:800;color:var(--navy)}  /* 시정 기한 남은 날 — 알약 없이 글자 (같은 날 사용자: AI스럽다) */
+.kzdl.warn{color:var(--red-d)}
+.kzres .seg button{min-height:48px}
+.kzw.got{color:var(--navy)}
+.kzw{font-style:normal;font-weight:800}.kzw.ing{color:#8a6400}.kzw.ok{color:var(--green)}.kzw.no{color:var(--red-d)}.kzw.etc{color:var(--mid)}
+img.rphimg{object-fit:cover}
+/* 기업등록 (2026-10-26 — 홈 카드 전체 공장 자리). 목록 카드는 공장 카드(.fcard.fall)에서 지도 그림만 뺀 꼴, 등록 칸은 사전 확인 표 머리(.gfth) 아래 이름표 위 · 칸 아래 */
+.fgfind select.input{flex:0 0 112px;padding-right:8px}
+#fgres .hlh{margin-bottom:8px}  /* + 기업등록 단추가 아래 표에 붙지 않게 (같은 날 사용자 지시) */
+/* 목록 표 (사용자 시안 D) — 기업명 · 행정구역 · 최종점검, 줄을 누르면 기업 보기 */
+.fgt{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--line2);border-radius:14px;overflow:hidden;box-shadow:var(--sh);font-size:15.5px}
+.fgt th{padding:10px 8px;background:var(--brand-l);color:var(--navy);font-size:14px;font-weight:800;text-align:left}
+.fgt td{padding:13px 8px;border-top:1px solid var(--line);font-weight:600;color:var(--mid)}
+.fgt td:first-child{font-weight:800;color:var(--ink)}
+.fgt th:first-child,.fgt td:first-child{padding-left:14px}
+.fgt td.none{color:var(--soft)}
+.fgt tbody tr{cursor:pointer}
+.fgt tbody tr:active td{background:var(--brand-l)}
+.fgnw{margin-left:6px;padding:1px 6px;border-radius:5px;background:var(--brand-l);color:var(--brand);font-size:11.5px;font-weight:800;vertical-align:2px}
+.fgnew{margin-left:auto;display:inline-flex;align-items:center;gap:4px;min-height:38px;padding:0 14px;border:none;border-radius:10px;background:var(--navy);color:#fff;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.fgform{background:#fff;border:1px solid var(--line2);border-radius:14px;overflow:hidden;box-shadow:var(--sh)}
+.fgreq{font-size:13px;font-weight:700;color:var(--mid);padding-right:8px}
+.fgreq .gftm{margin:0 2px 0 0}
+.fgfld{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-top:1px solid var(--line)}
+.fgform .gfth + .fgfld{border-top-color:var(--line2)}
+.fgfld>span{font-size:14px;font-weight:800;color:var(--ink)}
+.fgfld .input[readonly]{background:#f6f8fb;color:var(--ink);cursor:pointer}
+.fgfld .fseg button{min-height:44px;font-size:15px}
+.fgaddr{display:flex;gap:8px}
+.fgaddr .input{flex:1;min-width:0}
+.fgaddr .btn{flex:none;width:auto;min-height:0;padding:0 16px;font-size:15px}
+.fginj{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.fginj .input{padding:10px 8px;text-align:center}
+.fgares{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.fgares .arow + .arow{margin-top:0}
+.fgares .arow b{flex:1;font-size:15px}
+
+/* 보유 기구 고르기 (2026-10-26 사용자 시안 F) — 위 고른 기구 모아 보기(× 로 빼기) + 한 줄 목록 네모 체크 + 가진 기구 없음. 사전점검 3/5 · 체크리스트 창 */
+.kpsec{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh);overflow:hidden}
+.kpsum{padding:14px 16px;border-bottom:1px solid var(--line);background:#f6f8fb}
+.kpsum>b{display:block;font-size:14px;font-weight:800;color:var(--mid)}
+.kpchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.kpchips button{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 8px 0 11px;border:1px solid var(--line2);border-radius:8px;background:#fff;font:inherit;font-size:15px;font-weight:800;color:var(--navy);cursor:pointer}
+.kpchips button .i{color:var(--soft)}
+.kprow{display:flex;align-items:center;gap:12px;width:100%;min-height:54px;padding:8px 16px;border:none;background:none;font:inherit;font-size:17px;font-weight:600;color:var(--ink);text-align:left;word-break:keep-all;cursor:pointer}
+.kprow + .kprow{border-top:1px solid var(--line)}
+.kprow>span:not(.kpchk){flex:1;min-width:0}
+.kprow.on{font-weight:800;color:var(--navy)}
+.kprow:active{background:var(--brand-l)}
+.kpchk{flex:none;width:24px;height:24px;border-radius:6px;border:2px solid #b9c2cf;display:grid;place-items:center;background:#fff;color:#fff}
+.kprow.on .kpchk{border-color:var(--navy);background:var(--navy)}
+.kpchk svg{stroke-width:3}
+.kpetc{padding:4px 16px 8px;border-top:1px solid var(--line)}
+.kpnone{border-top:6px solid #f2f4f7}
+.kpnone .kprow{color:var(--mid)}
+.kpnone .kprow.on{color:var(--navy)}
+.sheet .kpsec{box-shadow:none}

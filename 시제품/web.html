@@ -101,6 +101,40 @@ button.brand{background:none;border:none;padding:0;cursor:pointer;text-align:lef
 .item2.strong{box-shadow:0 0 0 1px var(--line),inset 5px 0 0 var(--amber)}
 .item2 b{font-size:18px}
 .item2 .small b{font-size:inherit}
+/* 공장주 · 지킴이 점검 고칠 것 — 지킴이 앱 개선 관리와 같은 꼴 (2026-10-26 사용자 지시): 개선 전 | 개선 후 사진 좌우 3:4, 지도유형 번호 칸 */
+.ofx{--nv:#1f3a73;background:#fff;border-radius:18px;box-shadow:0 0 0 1px var(--line);overflow:hidden}
+.ofxh{display:flex;align-items:center;gap:10px;padding:14px 22px;background:var(--nv);color:#fff}
+.ofxh b{font-size:19px;font-weight:850}
+.ofxd{font-size:14px;color:#c3cde0}
+.ofxs{margin-left:auto;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.16);font-size:14px;font-weight:800}
+.ofx.st-todo .ofxs{background:#fbefc4;color:#7a5a00}.ofx.st-back .ofxs{background:var(--red-l);color:var(--red-d)}.ofx.st-fixed .ofxs{background:var(--green-l);color:var(--green)}
+.ofxb{display:grid;grid-template-columns:minmax(0,400px) 1fr;gap:24px;padding:20px 22px}
+.ofxpair{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-self:start}
+.ofxp{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:#dfe4ea}
+.ofxp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ofxp em{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:6px;background:rgba(255,255,255,.94);color:var(--nv);font-style:normal;font-size:13px;font-weight:800}
+.ofxp em.after{color:var(--green)}
+.ofxp b{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;background:rgba(15,21,34,.62);color:#fff;font-size:13px;font-weight:800}
+.ofxp.none{background:#f3f5f8;box-shadow:inset 0 0 0 1.5px var(--line2);color:var(--mid);font-size:14px;font-weight:700;text-align:center;line-height:1.4}
+.ofxp.none svg{color:var(--soft)}
+.ofxp.add{border:none;font:inherit;font-size:15px;font-weight:800;color:var(--nv);background:#f5f7fc;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--nv) 35%,#fff);cursor:pointer}
+.ofxp.add svg{color:var(--nv)}.ofxp.add:hover{background:#eef2fa}
+.ofxi{display:flex;flex-direction:column;gap:14px;min-width:0}
+.ofxk{display:flex;flex-direction:column;gap:6px}
+.ofxk>span{font-size:14px;font-weight:800;color:var(--ink)}
+.ofxk p{margin:0;font-size:16px;line-height:1.55;color:var(--ink);word-break:keep-all}
+.ofxchips{display:flex;flex-wrap:wrap;gap:6px}
+.ofxchip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 10px 0 6px;border-radius:8px;background:#fdecea;color:#8f1f17;font-size:15px;font-weight:800}
+.ofxchip i{display:grid;place-items:center;min-width:24px;height:24px;padding:0 5px;border-radius:6px;background:var(--red);color:#fff;font-style:normal;font-size:13px}
+.ofxlog{margin:0;padding:12px 14px;list-style:none;display:flex;flex-direction:column;gap:6px;border-radius:12px;background:#f6f8fb;font-size:14px;color:var(--mid)}
+.ofxlog b{margin-right:8px;color:var(--ink)}.ofxlog em{font-style:normal;font-weight:800}.ofxlog em.ok{color:var(--green)}.ofxlog em.no{color:var(--red-d)}
+.ofxa{display:flex;justify-content:flex-end;margin-top:auto}
+@media (max-width:860px){.ofxb{grid-template-columns:1fr}}
+.ofxup{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.ofxut{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:#f3f5f8;font-size:13px;font-weight:700;color:var(--mid)}
+.ofxut img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ofxut button{position:absolute;top:4px;right:4px;display:grid;place-items:center;width:26px;height:26px;border:none;border-radius:50%;background:rgba(15,21,34,.7);color:#fff;cursor:pointer}
+.ofxut.add{border:none;font:inherit;font-size:13px;font-weight:800;color:#1f3a73;background:#f5f7fc;box-shadow:inset 0 0 0 2px #b3bfd6;cursor:pointer}
 .rowx{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .state{font-size:15px;font-weight:700}
 .ph{display:inline-grid;place-items:center;width:44px;height:34px;background:linear-gradient(135deg,#dfe5ee,#c9d2df);border-radius:6px;font-size:13px}

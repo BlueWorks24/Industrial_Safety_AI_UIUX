@@ -4,7 +4,7 @@ UI/UX 연구용이다. 진짜 서비스의 서버 구조가 아니다.
 - 계정: 공장주·운영자·지킴이 아이디/비밀번호 (시험 편의 — 공장주 설계는 번호 인증), 근로자는 초대로 들어온다
 - 근로자 앱·지킴이 앱·웹(공장주·운영자)은 로그인 쿠키를 따로 쓴다 (asid / gsid / sid)
 - 화면 데이터: 가짜 서버 상태 하나를 JSON 한 덩어리로 둔다. 버전 번호로 여러 기기의 쓰기를 맞춘다.
-- 사진: 지킴이 앱 카메라로 찍은 사진은 data/photos/에 파일로 두고 상태에는 주소만 둔다 (2026-10-23)
+- 사진: 지킴이 앱 카메라로 찍은 사진 · 공장주가 [고쳤어요]로 올린 사진은 data/photos/에 파일로 두고 상태에는 주소만 둔다 (2026-10-23, 공장주는 10-26)
 
 사용: python3 server.py [--port 8765] [--reset]
 표준 라이브러리만 쓴다.
@@ -271,7 +271,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 con.execute('INSERT INTO sessions VALUES (?,?,?)', (tok, row['id'], datetime.now().isoformat(timespec='seconds')))
             return self.json_out(200, account_public(row), {'Set-Cookie': f'asid={tok}; Path=/; HttpOnly; SameSite=Lax'})
         if u.path == '/api/photo':
-            if not self.me('guard'):
+            # 지킴이 앱 카메라, 공장주 웹 [고쳤어요]의 고친 뒤 사진 (2026-10-26 — 공장주도 올린다)
+            w = self.me('web')
+            if not (self.me('guard') or (w and w['role'] == 'owner')):
                 return self.json_out(401, {'error': 'login'})
             n = int(self.headers.get('Content-Length') or 0)
             if not 0 < n <= PHOTO_MAX:
