@@ -25,9 +25,9 @@ html[data-standalone] body{overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* 팝업·시트가 떠 있는 동안 뒷화면은 스크롤되지 않는다 (2026-09-18) — 문서가 스크롤될 때도, body가 스크롤될 때도.
    body는 스크롤을 맡는 홈 화면 앱일 때만 잠근다 — 브라우저에서 body까지 잠그면 body가 화면 높이(100%)로 잘려
    뒷화면이 맨 위로 튀었다 (2026-10-15 사용자 제보 — 기업 정보 "수정") */
-html:has(.ov){overflow:hidden}
-html[data-standalone] body:has(.ov){overflow:hidden}
-@media (display-mode:standalone){body:has(.ov){overflow:hidden}}
+html:has(.ov),html:has(#ctl.ctl){overflow:hidden}  /* 조작판이 열려 있어도 뒤 화면은 안 움직인다 (2026-10-26) */
+html[data-standalone] body:has(.ov),html[data-standalone] body:has(#ctl){overflow:hidden}
+@media (display-mode:standalone){body:has(.ov),body:has(#ctl){overflow:hidden}}
 body{touch-action:manipulation}
 body{background:var(--bg);color:var(--ink);font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;font-size:16px;letter-spacing:-.01em;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit}
@@ -168,9 +168,13 @@ button.thumb{background:var(--surface) !important;border:2px dashed var(--line2)
 @keyframes fade{from{opacity:0}to{opacity:1}}
 
 /* 시연 조작판 (진행자용) */
-.ctl{position:fixed;right:10px;top:40px;width:min(340px,calc(100% - 20px));max-height:80dvh;overflow:auto;background:#1e2433;color:#e8ecf3;border-radius:18px;padding:14px;z-index:50;font-size:14px;box-shadow:var(--sh-l)}
-.ctl h3{margin:10px 0 6px;font-size:12px;color:#9aa4b8}
-.ctl .cb{display:inline-flex;align-items:center;min-height:36px;margin:2px;padding:0 12px;border:none;border-radius:10px;background:#2e3648;color:#e8ecf3;font-size:13px;font-weight:600;cursor:pointer}
+/* 시연 조작판 — 2026-10-26 사용자 지시로 폰 폭에 맞춰 아래에서 올라오는 창(넓은 화면은 오른쪽 위 칸), 단추는 역할 고르기 · 처음 상태로 둘 */
+.ctl{position:fixed;left:0;right:0;bottom:0;max-height:78dvh;overflow:auto;overscroll-behavior:contain;background:#1e2433;color:#e8ecf3;border-radius:20px 20px 0 0;padding:14px 16px calc(18px + env(safe-area-inset-bottom));z-index:50;font-size:15px;box-shadow:0 -10px 30px rgba(0,0,0,.3)}
+@media (min-width:700px){.ctl{left:auto;right:12px;bottom:auto;top:40px;width:380px;max-height:86dvh;border-radius:18px}}
+.ctl .chd{display:flex;align-items:center;gap:8px}.ctl .chd b{font-size:17px}.ctl .chd .cb{margin-left:auto}
+.ctl .cbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.ctl .cbtns .cb{justify-content:center;min-height:48px;margin:0;font-size:15px}
+.ctl .cb{display:inline-flex;align-items:center;min-height:40px;margin:2px;padding:0 12px;border:none;border-radius:10px;background:#2e3648;color:#e8ecf3;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
 .ctl .cb.on{background:#f5b25b;color:#1e2433}
 .ctl .al{border-top:1px solid #333c50;padding:8px 0}
 .ctl .small{color:#9aa4b8}
@@ -1634,6 +1638,31 @@ img.gshart{display:block;object-fit:cover}
 .kzfxb b.soft{color:var(--soft);font-weight:600}
 .kzdl{margin-left:8px;font-weight:800;color:var(--navy)}  /* 시정 기한 남은 날 — 알약 없이 글자 (같은 날 사용자: AI스럽다) */
 .kzdl.warn{color:var(--red-d)}
+/* 개선 관리 · 제출할 것 (2026-10-26 저녁 사용자 지시 — 시안 A 한 화면 쭉): 흰 칸 셋(개선을 위한 조언 · 체크리스트 · 제출 전 확인) */
+.sbc{display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:var(--r);background:#fff;box-shadow:var(--sh)}
+.sbh{display:flex;align-items:center;gap:8px}.sbh b{font-size:18px;font-weight:800}.sbh span{margin-left:auto;font-size:14px;font-weight:700;color:var(--mid)}
+.sbh .sbcode{margin-left:auto}
+.sbl{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:800;color:var(--ink)}
+.sbver{display:grid;grid-template-columns:100px minmax(0,1fr);gap:8px;align-items:center}
+.sbver .input{padding:10px 12px}
+.sbcode{display:inline-flex;align-items:center;padding:5px 10px;border-radius:8px;background:#f1f3f7;font-size:14px;font-weight:800;color:var(--navy)}
+.sbcode:empty{display:none}
+.sbc .gftxa{margin:0;min-height:120px}
+.sbc .gfsum{margin-top:0}
+.sbtx{margin:0;font-size:16px;line-height:1.55;white-space:pre-wrap;word-break:keep-all}
+.sbck{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.sbck>div{display:flex;align-items:center;gap:10px;min-height:46px;border-bottom:1px solid var(--line);font-size:16px;font-weight:700}
+.sbck i{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:50%}
+.sbck .y i{background:var(--green-l);color:var(--green)}
+.sbck .n{color:var(--red-d)}.sbck .n i{background:var(--red-l);color:var(--red-d)}
+/* 제출 전 확인 — 위 탭 넷(점검 탭과 같은 꼴), 확인 줄 중 고칠 것은 그 탭으로 가는 단추 (같은 날) */
+.sbtabs{margin-top:0}
+.sbnext{margin-top:6px}  /* 쪽 맨 아래 [다음: 탭] */
+.sbck button{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:0;border:none;border-bottom:1px solid var(--line);background:none;font:inherit;font-size:16px;font-weight:700;color:var(--red-d);text-align:left;cursor:pointer}
+.sbck button>svg:last-child{margin-left:auto;color:var(--soft)}
+/* 점검 내용 보기 — 제출 전이면 제출 전 확인으로 가는 줄 */
+button.glock.ivedit{width:100%;border:none;font:inherit;font-size:14px;font-weight:700;background:var(--brand-l);color:var(--navy);text-align:left;cursor:pointer}
+button.glock.ivedit>svg:last-child{margin-left:auto}
 .kzres .seg button{min-height:48px}
 .kzw.got{color:var(--navy)}
 .kzw{font-style:normal;font-weight:800}.kzw.ing{color:#8a6400}.kzw.ok{color:var(--green)}.kzw.no{color:var(--red-d)}.kzw.etc{color:var(--mid)}

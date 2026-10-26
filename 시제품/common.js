@@ -248,6 +248,9 @@ function itemState(it) {
 // 보내기 전에는 공장 · 운영자 · 지난번 미흡에 안 보인다. toFac이 없는 옛 기록은 보낸 것으로 읽는다
 const APPROVED = (ins) => (ins.st || 'ok') === 'ok' && ins.toFac !== false;
 const toSend = (ins) => (ins.st || 'ok') === 'ok' && ins.toFac === false;
+// 제출할 것 (2026-10-26 사용자 지시) — 판정까지 끝난(또는 개선사항이 없던) 점검은 지킴이가 개선을 위한 조언을 적어 [제출]해야 끝난다(sub: false → {at, by}).
+// sub가 없는 옛 기록은 제출한 것으로 읽는다. 운영자 검사(승인 · 반려)는 없다 — 제출하면 바로 확정 (2026-10-14 사용자 지시)
+const toSub = (ins) => ins.sub === false && APPROVED(ins) && !inRecheck(ins);
 // 지난번 미흡 항목 — 다음에 그 공장을 점검할 때 이 항목들이 체크리스트에 붙는다 (2026-09-22).
 // 2026-10-13부터는 재점검에서 "안 고쳐짐"으로 남은 항목이 여기로 온다
 // 새 점검에 다시 붙은 복사본(ref가 있는 것)은 원래 항목 하나로만 센다 — 같은 문제를 두 번 세지 않게
@@ -373,70 +376,19 @@ function toggleCtl(force) {
   if (!el) { el = document.createElement('div'); el.id = 'ctl'; el.className = 'ctl'; document.body.appendChild(el); }
   drawCtl();
 }
+// 2026-10-26 사용자 지시로 둘만 남겼다 — 역할 고르기 · 처음 상태로(시연 때 실제로 쓰는 것이 이 둘뿐, 더 필요한 것은 그때 말하기로).
+// 같은 날 지킴이 탭(개선 관리 단계 넘기기 등)으로 한 번 다시 짰다가 걷었고, 9월 센서 경보 시연 조작(경보 일으키기 · 시간 · 센서 끊김 ·
+// 근로자 의견 · 전파 끊김 · AI 멈춤)도 같이 걷었다. 폰 폭에 맞춰 아래에서 올라오는 창, 열려 있는 동안 뒤 앱 화면은 스크롤되지 않는다
 function drawCtl() {
   const el = $('#ctl'); if (!el) return;
-  const s = DB.s;
-  const live = s.alarms.filter(SIM.live);
-  el.innerHTML = `
-  <div class="row" style="justify-content:space-between"><b>시연 조작판 · ${hm(s.clock)}</b><button class="cb" data-c="close">닫기</button></div>
-  <h3>경보 일으키기</h3>
-  ${['daesung', 'hanbit', 'dongbang'].map((f) => `<div class="small" style="margin-top:4px">${FACTORIES[f].name}</div>${SITE_SENSORS(f).map((k) => `<button class="cb" data-c="raise" data-k="${k}">${SENSORS[k].short}</button>`).join('')}`).join('')}
-  <h3>시간</h3>
-  <button class="cb" data-c="tick" data-m="5">+5분</button><button class="cb" data-c="tick" data-m="1">+1분</button><button class="cb" data-c="tick" data-m="60">+1시간</button><button class="cb" data-c="to18">18:00으로</button>
-  <h3>진행 중 경보 ${live.length}건</h3>
-  ${live.map((a) => `<div class="al"><b>${esc(FACTORIES[alarmFid(a)].name + ' ' + SIM.title(a))}</b> · ${a.status === 'open' ? '조치 안 됨' : a.status === 'watch' ? '지켜보는 중 → ' + hm(a.remindAt) : '다시 알림 중'} · 미룸 ${a.snoozes}<br>
-     <button class="cb" data-c="normal" data-id="${a.id}">센서 정상으로</button>
-     <button class="cb" data-c="other" data-id="${a.id}">${OWNER_NAME[alarmFid(a)]}가 조치 완료</button></div>`).join('') || '<div class="small">없음</div>'}
-  <h3>근로자 의견 (공장주 화면이 생기기 전 흉내)</h3>
-  <button class="cb" data-c="vread">최근 의견 · 대표님 읽음</button>
-  <button class="cb" data-c="vreply">최근 의견 · 대표님 답</button>
-  <button class="cb" data-c="vdone">최근 의견 · 해결함</button>
-  <h3>센서 값 끊김 (다시 누르면 들어옴)</h3>
-  ${['daesung', 'hanbit', 'dongbang'].map((f) => `<div class="small" style="margin-top:4px">${FACTORIES[f].name}</div>${SITE_SENSORS(f).map((k) => `<button class="cb ${SIM.sensor(s, k).state === 'unknown' ? 'on' : ''}" data-c="cut" data-k="${k}">${SENSORS[k].short}${SIM.sensor(s, k).state === 'repair' ? ' (수리 중)' : ''}</button>`).join('')}`).join('')}
-  <h3>상황</h3>
-  <button class="cb ${s.net.worker ? '' : 'on'}" data-c="net" data-w="worker">근로자 폰 인터넷 끊김</button>
-  <button class="cb ${s.net.guard ? '' : 'on'}" data-c="net" data-w="guard">지킴이 폰 전파 없음</button>
-  <button class="cb ${s.aiDown ? 'on' : ''}" data-c="ai">AI 멈춤</button>
-  <h3>처음부터</h3>
-  <button class="cb" data-c="reset">처음 상태로 (09:10)</button>
-  <a class="cb" href="index.html">역할 고르기</a>
-  <h3>기록</h3>
-  <div class="small" style="max-height:140px;overflow:auto">${s.log.map(esc).join('<br>') || '—'}</div>`;
+  el.innerHTML = `<div class="chd"><b>시연 조작판</b><button class="cb" data-c="close">닫기</button></div>
+  <div class="cbtns"><a class="cb" href="index.html">역할 고르기</a><button class="cb" data-c="reset">처음 상태로</button></div>`;
 }
 document.addEventListener('click', (e) => {
   const b = e.target.closest('#ctl [data-c]'); if (!b) return;
-  const c = b.dataset.c;
-  if (c === 'close') { $('#ctl').remove(); return; }
-  if (c === 'reset') { if (confirm('처음 상태로 되돌릴까요?')) { sessionStorage.clear(); DB.reset(); location.hash = '#/'; } return; }
-  DB.act((s) => {
-    if (c === 'raise') SIM.raise(s, b.dataset.k);
-    if (c === 'tick') SIM.tick(s, +b.dataset.m);
-    if (c === 'to18' && s.clock < 18 * 60) SIM.tick(s, 18 * 60 - s.clock);
-    if (c === 'cut') SIM.cut(s, b.dataset.k);
-    if (c === 'normal') SIM.normal(s, b.dataset.id);
-    if (c === 'other') SIM.ack(s, b.dataset.id, OWNER_NAME[alarmFid(SIM.get(s, b.dataset.id))]);
-    if (c === 'ai') s.aiDown = !s.aiDown;
-    const ins = (c === 'approve' || c === 'reject') && s.inspections.find((i) => i.id === b.dataset.id);
-    if (ins && c === 'approve') approveInsp(s, ins, '운영자');
-    if (ins && c === 'reject') rejectInsp(s, ins, '운영자', '불량 항목의 위험요인이 짧아요. 무엇이 어떻게 위험한지 적어 다시 내 주세요.');
-    const v = (s.voices || [])[0];
-    if (v && c === 'vread') { v.readAt = '9/17'; DB.log('대표님 의견 읽음'); }
-    if (v && c === 'vreply') {
-      v.readAt = v.readAt || '9/17'; v.replyAt = '9/17';
-      v.reply = '알려 줘서 고마워요. 내일 오전까지 고치겠습니다.';
-      v.replyTx = { vi: 'Cảm ơn bạn đã báo. Tôi sẽ sửa trước sáng mai.', en: 'Thanks for telling me. I will fix it by tomorrow morning.' };
-      DB.log('대표님 의견 답');
-    }
-    if (v && c === 'vdone') { v.readAt = v.readAt || '9/17'; v.done = true; DB.log('대표님 의견 해결함'); }
-    if (c === 'net') {
-      const w = b.dataset.w;
-      s.net[w] = !s.net[w];
-      if (w === 'worker') s.offlineSince.worker = s.net.worker ? null : s.clock;
-      if (s.net[w]) flushOutbox(s, w);
-    }
-  });
+  if (b.dataset.c === 'close') { $('#ctl').remove(); return; }
+  if (b.dataset.c === 'reset' && confirm('처음 상태로 되돌릴까요?')) { sessionStorage.clear(); DB.reset(); location.hash = '#/'; }
 });
-DB.on(drawCtl);
 
 // 전파가 돌아오면 못 보낸 것을 보낸다
 function flushOutbox(s, who) {
@@ -451,7 +403,7 @@ function applyInspection(s, d) {
   if (d.kind === 'first') {
     // 낸 점검은 바로 확정된다 (2026-10-14 사용자 지시 — 운영자 제출 검사는 아직 정해진 게 아니라 뺐다. 전에는 st 'wait'로 들어가 운영자가 승인·반려했다)
     const ins = { id: 'i' + Date.now().toString(36), fid: d.fid, date: '9/17', by: d.by || '김지킴', team: d.team, ver: d.ver,
-      result: d.result, st: 'ok', sentAt: '9/17', locked: true, items: d.items, ...(d.result === '재점검' ? { toFac: false } : {}) };
+      result: d.result, st: 'ok', sentAt: '9/17', locked: true, items: d.items, sub: false, ...(d.result === '재점검' ? { toFac: false } : {}) };
     s.inspections.unshift(ins); settlePrev(s, ins);
   } else if (d.kind === 'recheck') {
     // 재점검 판정 (2026-10-13) — 항목마다 고쳐짐·안 고쳐짐을 원래 항목에 적고, 점검 결과를 지킴이가 고른 것으로 바꾼다
@@ -463,6 +415,7 @@ function applyInspection(s, d) {
     });
     ins.final = { from: '재점검', at: '9/17', by: d.by, fixed: d.results.filter((r) => r.result === 'fixed').length, total: d.results.length };
     ins.result = d.result;
+    ins.sub = false;  // 판정 뒤에는 제출할 것으로 (2026-10-26)
   }
 }
 
