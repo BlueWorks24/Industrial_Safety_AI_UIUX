@@ -32,6 +32,16 @@ const OPER = (() => {
   const ST = { wait: ['검사 대기', 'blue'], ok: ['승인', 'green'], back: ['반려', 'amber'] };
   const stPill = (i) => `<span class="pill ${ST[stOf(i)][1]}">${ST[stOf(i)][0]}</span>`;
   const badOf = (i) => i.items.filter((x) => x.answer === 'bad' && !x.ref);
+  // 제출 (2026-10-27 사용자 지시) — 지킴이가 개선 관리 끝에서 [제출]하면 확정. 운영자에겐 점검중 · 제출 전 · 제출 모두 보인다.
+  // sub === false가 제출 전, sub가 없는 옛 기록은 제출로 본다(common.js toSub와 같은 규칙). 새로 제출된 것은 운영자가 열어 보기 전까지 종 · 탭 수에 뜬다(s.op.seen)
+  const subOf = (i) => (i.sub === false ? 'pre' : 'sub');
+  const PROC = { pre: ['제출 전', 'amber'], sub: ['제출', 'green'] };
+  const procPill = (i) => `<span class="pill ${PROC[subOf(i)][1]}">${PROC[subOf(i)][0]}</span>`;
+  const subAt = (i) => (i.sub && i.sub.at) || '';
+  const isNew = (s, i) => !!subAt(i) && !(OPS(s).seen || []).includes(i.id);
+  const subKey = (s, i) => (isNew(s, i) ? 1e5 : 0) + mdNum(subAt(i) || i.date) * 10 + (subAt(i) ? 1 : 0);  // 새로 → 제출한 날 → 같은 날이면 앱에서 제출한 것 먼저
+  const submitted = (s) => s.inspections.filter((i) => subOf(i) === 'sub').sort((a, b) => subKey(s, b) - subKey(s, a));
+  const KZ_W = { ok: '개선완료', ing: '개선 중', no: '미개선', etc: '기타' };
   const waiting = (s) => s.inspections.filter((i) => stOf(i) === 'wait').sort((a, b) => mdNum(a.sentAt || a.date) - mdNum(b.sentAt || b.date));
   // 점검번호 — 기존 웹 점검코드 꼴을 흉내 낸 임시 번호 (지킴이 앱 주간 보고와 같은 규칙)
   const insNo = (s, i) => { const [m, d] = i.date.split('/').map(Number); const k = s.inspections.filter((x) => x.date === i.date).indexOf(i) + 1;
@@ -137,6 +147,7 @@ const OPER = (() => {
     });
     (s.faults || []).filter((f) => f.status === 'open').forEach((f) => out.push({ lv: 0, k: 'fault', fid: f.fid, ic: 'tool', go: `factory/${f.fid}`, tag: '고장 신고', t: FACTORIES[f.fid].name, w: SENSORS[f.key].title, d: [`${f.at} ${f.by} 신고`, `"${f.reason}"`] }));
     Object.keys(SENSORS).filter((k) => SIM.sensor(s, k).state === 'unknown').forEach((k) => out.push({ lv: 1, k: 'fault', fid: SENSORS[k].fid, ic: 'signal', go: `factory/${SENSORS[k].fid}`, tag: '값 끊김', t: FACTORIES[SENSORS[k].fid].name, w: SENSORS[k].title, d: [`${SIM.sensor(s, k).since}부터 값이 안 와요`] }));
+    s.inspections.filter((i) => isNew(s, i)).forEach((i) => out.push({ lv: 2, k: 'sub', fid: i.fid, ic: 'clipboard', go: `insp/s/${i.id}`, tag: '점검 제출', t: FACTORIES[i.fid].name, w: i.result || RESULTS[0], d: [i.sub.by, `${i.sub.at} 제출`] }));
     waiting(s).forEach((i) => out.push({ lv: 2, k: 'wait', fid: i.fid, ic: 'clipboard', go: `insp/v/${i.id}`, tag: (i.backs || []).length ? '다시 냄' : '검사 대기', t: FACTORIES[i.fid].name, w: i.result || RESULTS[0], d: [i.by, `${i.date} 점검`, `불량 ${badOf(i).length}개`] }));
     const ap = pendingApps(s);
     if (ap.length) out.push({ lv: 3, k: 'apply', ic: 'user', go: 'squads/guards', tag: '지킴이', t: `가입 신청 ${ap.length}명`, w: '', d: ap.map((a) => `${a.name}(${a.field})`) });
@@ -572,7 +583,7 @@ const OPER = (() => {
   }
 
   /* ---------- M2 점검 — 제출 검사 · 점검 기록 · 방문 일정 · 개선 요청 · 주간 보고 ---------- */
-  const inspTabs = (s, on) => tabs(on, [['insp', '제출 검사', waiting(s).length], ['insp/all', '점검 기록'], ['insp/visits', '방문 일정'], ['insp/fix', '개선 요청'], ['insp/weekly', '주간 보고']]);
+  const inspTabs = (s, on) => tabs(on, [['insp', '제출된 점검', s.inspections.filter((i) => isNew(s, i)).length], ['insp/all', '점검 기록'], ['insp/visits', '방문 일정'], ['insp/fix', '개선 요청'], ['insp/weekly', '주간 보고']]);
   function inspDetail(s, i, act) {
     const f = FACTORIES[i.fid], st = stOf(i), prev = i.items.filter((x) => x.ref), bad = badOf(i);
     // 답은 양호 · 보통 · 불량 · 해당 없음 (2026-10-07). 개선 요청은 불량만
@@ -582,8 +593,17 @@ const OPER = (() => {
     const line = (x, w) => `<div class="opln"><span>${esc(x.text)}</span><b>${w}</b>${x.eval ? `<small>${esc(x.eval)}</small>` : ''}</div>`;
     const cnt = [['양호', ok.length], ['보통', mid.length], ['해당 없음', na.length], ['답 없음', none.length]].filter(([k, n]) => n || k === '양호');
     return `
-      <div class="rowx"><span class="opttl">${f.name}</span>${stPill(i)}</div>
-      ${kv([['점검번호', insNo(s, i)], ['점검일', i.date], ['지킴이', `${insTeam(i)} ${esc(i.by)}`], ['읍·면·동', f.dong], ['업종', f.type], ['결과', i.result || RESULTS[0]], ['판', i.ver || CHECKLIST.ver], ['문항', i.items.length + '개']])}
+      <div class="rowx"><span class="opttl">${f.name}</span>${procPill(i)}</div>
+      ${kv([['점검번호', insNo(s, i)], ['점검일', i.date], ['지킴이', `${insTeam(i)} ${esc(i.by)}`], ['읍·면·동', f.dong], ['업종', f.type], ['결과', i.result || RESULTS[0]], ['판', i.ver || CHECKLIST.ver], ['문항', i.items.length + '개'],
+        ['제출', subOf(i) === 'pre' ? '제출 전' : subAt(i) ? `${subAt(i)} ${esc(i.sub.by)}` : '제출']])}
+      ${subOf(i) === 'pre' ? '<div class="opnote">제출 전 점검이라 지킴이가 아직 고칠 수 있어요</div>' : ''}
+      ${i.adv && (i.adv.text || '').trim() ? `<div class="lbl">개선을 위한 조언</div><div class="item2"><div class="rowx"><b>${esc(i.adv.cls)}${i.adv.ver ? ' ' + esc(i.adv.ver) : ''}</b></div><div class="opadv">${esc(i.adv.text)}</div></div>` : ''}
+      ${(() => { const fs = kzList(i); if (!fs.length) return '';
+        const ph = (l, w) => `<figure class="opkzp">${l && l.length ? `<img src="${l[0].src}" alt="${w} 사진" loading="lazy">${l.length > 1 ? `<em>+${l.length - 1}</em>` : ''}` : '<span>사진 없음</span>'}<figcaption>${w}</figcaption></figure>`;
+        return `<div class="lbl">현장점검 개선사항 ${fs.length}건</div>${fs.map((x, n) => `<div class="item2 opkz"><div class="rowx"><b>개선사항 ${n + 1}</b><span class="state">${KZ_W[x.st || 'ing']}</span></div>
+          <div class="opkzr">${ph(x.photos, '개선 전')}${ph(x.after, '개선 후')}
+            <div class="opkzt">${(x.risks || []).length ? `<div class="small">지도유형: <b class="ink">${x.risks.map(esc).join(', ')}</b></div>` : ''}
+              <div class="small">개선 전 내용: ${x.memo ? esc(x.memo) : '없음'}</div><div class="small">개선 후 내용: ${x.post ? esc(x.post) : '없음'}</div></div></div></div>`).join('')}`; })()}
       ${hist.map((b) => `<div class="warn"><b>${b.at} 반려</b><br>${esc(b.note)}${b === i.back ? '' : '<br>고쳐서 다시 냄'}</div>`).join('')}
       ${prev.length ? `<div class="lbl">지난번 미흡 확인 ${prev.length}개</div>${prev.map((x) => `<div class="item2${x.answer === 'bad' ? ' strong' : ''}"><div class="rowx"><b>${esc(x.text)}</b><span class="state">${FIXED_ANS(x.answer) ? '고쳐짐' : x.answer === 'bad' ? '안 고쳐짐' : '답 없음'}</span></div>
         ${x.reason ? `<div class="small">안 고쳐진 사정: ${esc(x.reason)}</div>` : ''}${(x.risks || []).length ? `<div class="small">위험요인: ${x.risks.map(esc).join(', ')}</div>` : ''}${x.memo ? `<div class="small">위험요인 내용: ${esc(x.memo)}</div>` : ''}</div>`).join('')}` : ''}
@@ -595,39 +615,44 @@ const OPER = (() => {
       ${act && st === 'wait' ? `
         ${noMemo.length || none.length ? `<div class="warn"><b>살펴볼 점</b>${noMemo.length ? `<br>불량 항목 ${noMemo.length}개에 위험요인이 없어요` : ''}${none.length ? `<br>답하지 않은 항목이 ${none.length}개 있어요` : ''}</div>` : ''}
         <div class="row opact"><button class="btn ghost inl" data-act="backOpen" data-id="${i.id}">반려</button><button class="btn inl" data-act="okOpenDlg" data-id="${i.id}">승인</button></div>` : ''}
-      ${st === 'ok' ? `<div class="opnote">${I('lock', 16)}<span>${i.okAt ? `${i.okAt} ${esc(i.okBy || '운영자')} 승인<br>` : ''}승인한 점검은 고칠 수 없어요${bad.length ? `<br>불량 ${bad.length}개는 공장주에게 개선 요청으로 갔어요` : ''}</span></div>` : ''}
+      ${subOf(i) === 'sub' ? `<div class="opnote">${I('lock', 16)}<span>제출한 점검은 고칠 수 없어요</span></div>` : ''}
       ${st === 'back' ? '<div class="small">지킴이가 고쳐서 다시 내기를 기다려요</div>' : ''}`;
   }
+  // 제출된 점검 (2026-10-27 사용자 지시 — 옛 제출 검사(승인 · 반려) 자리. 10-14에 운영자 검사를 뺐다) — 새로 제출된 것 먼저, 그다음 제출한 날 최근 순
   function review(s, id) {
-    const list = waiting(s), cur = list.find((i) => i.id === id) || list[0];
-    if (!cur) return frame('insp', `${inspTabs(s, 'insp')}<div class="kcard opempty"><div class="kt">검사 기다리는 점검이 없어요</div><button class="more" data-go="insp/all">점검 기록 보기</button></div>`);
+    const list = submitted(s), cur = list.find((i) => i.id === id) || list[0];
+    if (!cur) return frame('insp', `${inspTabs(s, 'insp')}<div class="kcard opempty"><div class="kt">제출된 점검이 없어요</div><button class="more" data-go="insp/all">점검 기록 보기</button></div>`);
+    seeLater(s, cur);
     return frame('insp', `${inspTabs(s, 'insp')}
-      <div class="split"><div class="list"><div class="lbl">오래된 것부터 ${list.length}건</div>
-        ${list.map((i) => `<button class="q ${i === cur ? 'now' : ''}" data-go="insp/v/${i.id}"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span>${(i.backs || []).length ? '<span class="pill amber">다시 냄</span>' : ''}</div>
-          <div class="opsubt"><span>${i.date} 점검</span><span>${insTeam(i)} ${esc(i.by)}</span></div><div class="opsubt"><span>${i.result || RESULTS[0]}</span><span>불량 ${badOf(i).length}개</span></div></button>`).join('')}</div>
-      <div class="detail">${inspDetail(s, cur, true)}</div></div>`);
+      <div class="split"><div class="list"><div class="lbl">제출 ${list.length}건</div>
+        ${list.map((i) => `<button class="q ${i === cur ? 'now' : ''}" data-go="insp/s/${i.id}"><div class="rowx"><span class="t">${FACTORIES[i.fid].name}</span>${isNew(s, i) ? '<span class="pill blue">새로</span>' : ''}</div>
+          <div class="opsubt"><span>${subAt(i) ? `${subAt(i)} 제출` : `${i.date} 점검`}</span><span>${insTeam(i)} ${esc(i.by)}</span></div><div class="opsubt"><span>${i.result || RESULTS[0]}</span><span>개선사항 ${kzList(i).length}건</span></div></button>`).join('')}</div>
+      <div class="detail">${inspDetail(s, cur, false)}</div></div>`);
   }
+  // 연 점검은 본 것으로 — 그리는 중에 DB를 바꾸지 않게 다음 차례에 (한 번만)
+  const seeLater = (s, i) => { if (isNew(s, i)) setTimeout(() => { if (isNew(DB.s, i)) DB.act((t) => { opw(t, 'seen', []).push(i.id); }); }, 0); };
   // 점검 한 건 — 한 곳을 연 화면이라 위 탭 대신 돌아가기 (2026-10-20)
   function inspView(s, id) {
     const i = s.inspections.find((x) => x.id === id);
     if (!i) return recList(s);
     if (stOf(i) === 'wait') return review(s, id);
+    seeLater(s, i);
     return frame('insp', `<div class="detail opone">${inspDetail(s, i, false)}</div>`, { title: '점검 보기', back: { act: 'back', t: '뒤로' } });
   }
   function recList(s) {
     const F = UI.f.rec, sq = squads(s);
-    const rows = s.inspections.filter((i) => (!F.sq || insTeam(i) === F.sq) && (!F.st || stOf(i) === F.st) && (!F.res || (i.result || RESULTS[0]) === F.res)
+    const rows = s.inspections.filter((i) => (!F.sq || insTeam(i) === F.sq) && (!F.st || subOf(i) === F.st) && (!F.res || (i.result || RESULTS[0]) === F.res)
       && (!F.q || FACTORIES[i.fid].name.includes(F.q))).sort((a, b) => mdNum(b.date) - mdNum(a.date));
     const d = s.draft && FACTORIES[s.draft.fid];
     const draft = d && (!F.st || F.st === 'draft') && (!F.sq || F.sq === TEAM.name) && !F.res && (!F.q || d.name.includes(F.q));
     return frame('insp', `${inspTabs(s, 'insp/all')}
       <div class="opf">${sel('rec.sq', F.sq, [['', '모든 조'], ...sq.map((q) => [q.name, q.name])], '점검조')}
-        ${sel('rec.st', F.st, [['', '전체'], ['draft', '점검중'], ['wait', '검사 대기'], ['ok', '승인'], ['back', '반려']], '점검과정')}
+        ${sel('rec.st', F.st, [['', '전체'], ['draft', '점검중'], ['pre', '제출 전'], ['sub', '제출']], '점검과정')}
         ${sel('rec.res', F.res, [['', '전체'], ...RESULTS.map((r) => [r, r])], '점검결과')}${find('rec.q', F.q, '공장 이름')}</div>
       <div class="tscroll"><table><tr><th>점검번호</th><th>점검일</th><th>공장</th><th>읍·면·동</th><th>점검조</th><th>지킴이</th><th>결과</th><th>불량</th><th>과정</th><th></th></tr>
         ${draft ? `<tr><td>—</td><td>9/17</td><td><b>${d.name}</b></td><td>${d.dong}</td><td>${TEAM.name}</td><td>—</td><td>—</td><td>—</td><td><span class="pill gray">점검중</span></td><td></td></tr>` : ''}
         ${rows.map((i) => `<tr class="click" data-go="insp/v/${i.id}"><td>${insNo(s, i)}</td><td>${i.date}</td><td><b>${FACTORIES[i.fid].name}</b></td><td>${FACTORIES[i.fid].dong}</td>
-          <td>${insTeam(i)}</td><td>${esc(i.by)}</td><td>${i.result || RESULTS[0]}</td><td>${badOf(i).length}개</td><td>${stPill(i)}</td><td class="go">보기 ›</td></tr>`).join('')}
+          <td>${insTeam(i)}</td><td>${esc(i.by)}</td><td>${i.result || RESULTS[0]}</td><td>${badOf(i).length}개</td><td>${procPill(i)}</td><td class="go">보기 ›</td></tr>`).join('')}
       </table></div>
       ${rows.length || draft ? '' : '<div class="small">맞는 점검이 없어요.</div>'}
       <div class="proto">시제품 · 점검 기록은 ${TEAM.name} 것만 있어요</div>`);
@@ -1024,7 +1049,7 @@ const OPER = (() => {
       if (p[0] === 'factories' && p[1] === 'sensor') UI.f.fac = { sen: 'yes' };
     }
     let html;
-    if (p[0] === 'insp') html = p[1] === 'v' ? inspView(s, p[2]) : p[1] === 'all' ? recList(s) : p[1] === 'visits' ? visits(s) : p[1] === 'fix' ? fixList(s) : p[1] === 'weekly' ? weeklyList(s) : review(s);
+    if (p[0] === 'insp') html = p[1] === 'v' ? inspView(s, p[2]) : p[1] === 's' ? review(s, p[2]) : p[1] === 'all' ? recList(s) : p[1] === 'visits' ? visits(s) : p[1] === 'fix' ? fixList(s) : p[1] === 'weekly' ? weeklyList(s) : review(s);
     else if (p[0] === 'factories') html = p[1] === 'new' ? facNew(s) : facList(s);
     else if (p[0] === 'factory') html = factory(s, p[1]);
     else if (p[0] === 'squads') html = p[1] === 'guards' ? guardList(s) : p[1] ? sqEdit(s, p[1]) : sqList(s);

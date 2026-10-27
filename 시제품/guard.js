@@ -1108,8 +1108,8 @@ function pre(s, fid) {
 }
 
 /* ---------- 사진 번호 ----------
-   체크리스트 화면 아래 카메라로 찍으면 사진 속 설비의 점검 포인트(주관점)를 내던 사진 AI(G4, 2026-10-14~)는 2026-10-23 사용자 지시로 걷었다 —
-   카메라 단추 · AI 띠 · 점검 포인트 창 · 문항 아래 사진 점검 포인트. 지난번 미흡을 바탕으로 한 주관점은 분야별 안전점검 맨 위(focusPts). */
+   체크리스트 화면 아래 카메라로 찍으면 사진 속 설비의 점검 포인트(주안점)를 내던 사진 AI(G4, 2026-10-14~)는 2026-10-23 사용자 지시로 걷었다 —
+   카메라 단추 · AI 띠 · 점검 포인트 창 · 문항 아래 사진 점검 포인트. 지난번 미흡을 바탕으로 한 주안점은 분야별 안전점검 맨 위(focusPts). */
 // 사진은 번호로 기억한다 — 현장점검 개선사항 사진(pics)이 이 번호를 쓴다
 const shotsOf = (d) => d.shots || Array.from({ length: d.photos || 0 }, (_, i) => i + 1);  // 예전 초안은 장수만 있다
 // 찍은 사진 (2026-10-14 사용자: AI 제안 옆에 무슨 사진에서 나온 것인지 보이게) — 시제품은 카메라 대신 시험용 AI 생성 사진 다섯 장(photos/)을
@@ -1267,12 +1267,12 @@ function pickScreen(s) {
   const nAi = d.items.filter((x) => x.src === 'ai').length;  // AI는 항목을 만들지 않는다 (2026-10-20) — 그 전 초안에 넣어 둔 것만
   // 보유현황에 없는 기구 문항은 체크리스트에서 감추므로 세지 않는다
   const kit = firmOf(s, d.fid).kit, nOff = kit ? KIT.filter((k) => !kit.includes(k.name)).flatMap((k) => k.ids).length : 0;
-  const nPrev = openIssues(s, d.fid).length, total = nBase - nOff + nAi + d.self.length;  // 지난번 미흡은 문항이 아니라 주관점 (2026-10-23)
+  const nPrev = openIssues(s, d.fid).length, total = nBase - nOff + nAi + d.self.length;  // 지난번 미흡은 문항이 아니라 주안점 (2026-10-23)
   const answered = d.items.some((x) => x.answer && !x.auto);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
     ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, tmpBtn())}
     ${insTabs(d, 'ck')}
-    ${nPrev ? `<div class="grp">지난번 미흡 항목 — 이번 주관점으로<span class="must">${nPrev}개</span></div>
+    ${nPrev ? `<div class="grp">지난번 미흡 항목 — 이번 주안점으로<span class="must">${nPrev}개</span></div>
     ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
     <div class="grp">기본 체크리스트<span class="must">${CHECKLIST.ver}</span><span class="must">${nBase}문항</span></div>
     ${CHECKLIST.areas.map(ckArea).join('')}
@@ -1643,7 +1643,7 @@ function ckRow(d, x, i, no = i + 1) {
     <div class="ceva"><b>평가 내용</b><textarea class="gftxa sm" id="ev-${x.id}" data-tx="item:${x.id}" placeholder="여기에 평가 내용 입력">${esc(txVal('item:' + x.id, x.eval))}</textarea></div>
   </div>`;
 }
-// 지난번 미흡을 바탕으로 이번에 중점적으로 볼 것(주관점) — AI가 정리한다(가짜: 미흡 문항 글과 적어 둔 위험요인 내용에서 낱말로 고른다).
+// 지난번 미흡을 바탕으로 이번에 중점적으로 볼 것(주안점) — AI가 정리한다(가짜: 미흡 문항 글과 적어 둔 위험요인 내용에서 낱말로 고른다).
 // 지난번 미흡을 체크리스트 문항으로 따로 만들지 않는다 (2026-10-23 사용자 지시 — 전에는 맨 앞 "지난번 미흡" 묶음)
 const FOCUS = [
   [/전선|피복/, '전선 · 피복', '벗겨졌던 전선을 바꿨는지, 바닥을 지나는 전선이 보호관에 들어 있는지 확인'],
@@ -1667,7 +1667,7 @@ function focusPts(s, fid) {
   });
   return out;
 }
-// 분야별 안전점검 — 안에서 탭 둘: 지난번 미흡 항목(AI 주관점) | 체크리스트 (2026-10-23 사용자 지시). 처음엔 지난번 미흡 항목, 점검하는 동안은 보던 탭 그대로.
+// 분야별 안전점검 — 안에서 탭 둘: 지난번 미흡 항목(AI 주안점) | 체크리스트 (2026-10-23 사용자 지시). 처음엔 지난번 미흡 항목, 점검하는 동안은 보던 탭 그대로.
 // 지난번 미흡이 없으면 없다고 쓴다 — 점검 기록이 없으면 첫 점검이라고.
 // 체크리스트는 묶음을 쪽으로 나누지 않고 한 쪽에 차례로, 아래로 내려 본다. 맨 아래 마무리에서 결과를 낸다 (같은 날 사용자 지시 — 전에는 묶음마다 한 쪽, 위 칩으로 넘김).
 // 01 (공통)산업안전 일반은 사전점검에서 답하므로 여기서 뺀다
@@ -1718,7 +1718,7 @@ function checkList(s) {
     `<button class="${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-act="ckTab" data-v="${k}">${w}</button>`).join('')}</div>`;
   if (tab === 'prev') {
     const fp = focusPts(s, d.fid), nIss = openIssues(s, d.fid).length, past = s.inspections.filter((i) => i.fid === d.fid).sort((a, b) => mdNum(b.date) - mdNum(a.date))[0];  // 가장 최근 점검
-    const focus = fp.length ? `<div class="gfoc"><div class="gfoch"><b>이번 점검 주관점</b>${tg('AI 정리')}<span>지난번 미흡 ${nIss}건 바탕</span></div>
+    const focus = fp.length ? `<div class="gfoc"><div class="gfoch"><b>이번 점검 주안점</b>${tg('AI 정리')}<span>지난번 미흡 ${nIss}건 바탕</span></div>
       <ol class="gpts">${fp.map((p) => `<li><b>${esc(p.t)}</b><span>${esc(p.d)}</span><em>${p.was.map(esc).join('<br>')}</em></li>`).join('')}</ol></div>`
       : `<div class="cknone">${I('checkCircle', 30)}<b>지난번 미흡 항목 없음</b><span>${past ? `지난 점검(${past.date})에서 고칠 것이 없었거나 모두 고쳐짐` : '첫 점검이라 지난 점검 기록 없음'}</span></div>`;
     return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
@@ -1810,7 +1810,9 @@ function kzRows(ins, mode) {
   const fs = kzList(ins);
   const on = fs.find((x) => x.id === UI.kzOn) || (mode === 'judge' && toFix(ins).find((x) => rckFix(x))) || fs[0];
   const nOk = fs.filter((x) => x.st === 'ok').length, allOk = fs.length && nOk === fs.length;
-  const sum = `<div class="gfsum">${[['개선사항', fs.length], [mode === 'sub' ? '미개선' : '개선 중', fs.length - nOk], ['개선완료', nOk]].map(([w, n]) => `<div><span>${w}</span><b>${n}</b></div>`).join('')}</div>`;
+  const cnt = [['개선사항', fs.length], [mode === 'sub' ? '미개선' : '개선 중', fs.length - nOk], ['개선완료', nOk]];
+  const sum = `<div class="gfsum">${cnt.map(([w, n]) => `<div><span>${w}</span><b>${n}</b></div>`).join('')}</div>`;
+  const mini = miniBar(cnt);
   const thumb = (x) => ((x.photos || []).length ? `<img class="gshart" src="${x.photos[0].src}" alt="" decoding="async">` : I('camera', 22));
   const tile = (x, side) => { const l = side === 'after' ? x.after || [] : x.photos || [], w = side === 'after' ? '개선 후' : '개선 전', fx = rckFix(x);
     if (side === 'before' && !l.length && x.shot) return `<span class="kzpt">${beforeArt(x)}<em class="before">${w}</em></span>`;  // 옛 기록 — 자리 그림
@@ -1831,8 +1833,17 @@ function kzRows(ins, mode) {
       <div class="gfrk"><div class="gfrkh"><b>개선 전 내용</b></div><textarea class="gftxa" data-tx="kzpre:${x.id}" placeholder="여기에 개선 전 내용 입력">${esc(txVal('kzpre:' + x.id, x.memo))}</textarea></div>
       <div class="gfrk"><div class="gfrkh"><b>개선 후 내용</b></div><textarea class="gftxa" data-tx="kzpost:${x.id}" placeholder="여기에 개선 후 내용 입력">${esc(txVal('kzpost:' + x.id, x.post))}</textarea></div>
     </section>`);
-  return `${sum}<div class="gfrs0">${fs.map(row).join('')}</div>`;
+  return `${sum}${mini}<div class="gfrs0">${fs.map(row).join('')}</div>`;
 }
+// 요약 칸 작은 줄 — 바로 위 요약 칸(.gfsum)이 머리 밑으로 지나가면 머리 바로 아래 작은 한 줄로 같은 수, 머리의 "› 공장 판정"처럼
+// (2026-10-27 사용자 지시 — 개선 관리. 같은 날 체크리스트 양호 · 불량 · 해당 없음도). 높이 0이라 자리를 안 차지한다 — 부모 틈 하나는 위 여백으로 되돌린다
+const miniBar = (cells) => `<div class="kzmini" aria-hidden="true"><div>${cells.map(([w, n, c]) => `<span${c ? ` class="${c}"` : ''}>${w}<b>${n}</b></span>`).join('')}</div></div>`;
+function kzMiniCheck() {
+  const m = $('.kzmini'), sum = m && m.previousElementSibling, top = $('.apptop'); if (!m || !sum || !top) return;
+  m.style.top = top.offsetHeight + 'px'; m.style.marginTop = -(parseFloat(getComputedStyle(m.parentElement).rowGap) || 0) + 'px';
+  m.classList.toggle('on', sum.getBoundingClientRect().bottom <= top.getBoundingClientRect().bottom + 2);
+}
+document.addEventListener('scroll', kzMiniCheck, { capture: true, passive: true });
 function sendScreen(s, id) {
   const ins = kzIns(s, id);
   if (!ins || !(toSend(ins) || inRecheck(ins))) { R.go('todo'); return ''; }
@@ -1913,7 +1924,7 @@ function subScreen(s, id, tab) {
     + cph('01 산업안전 일반') + `<div class="clist">${ins.items.map((y, i) => [y, i]).filter(([y]) => y.area === 'a1').map(([y, i], j) => ckRow(ins, y, i, j + 1)).join('')}</div>`;
   // 분야별 안전점검 — 점검 중 체크리스트 탭과 같은 줄(답 넷 · 평가 내용 · 점검 포인트), 위에 답 수
   else if (tab === 'ck') { const shown = ckShown(s, ins), vis = ins.items.filter(shown), n = (v) => vis.filter((y) => y.answer === v).length;
-    body = `<div class="gfsum ivsum">${ANS_ORDER.filter((v) => n(v) || v !== 'mid').map((v) => `<div class="${ansCls(v)}"><span>${ANS[v]}</span><b>${n(v)}</b></div>`).join('')}</div>${ckSecs(s, ins, shown)}`; }
+    body = `<div class="gfsum ivsum">${ANS_ORDER.filter((v) => n(v) || v !== 'mid').map((v) => `<div class="${ansCls(v)}"><span>${ANS[v]}</span><b>${n(v)}</b></div>`).join('')}</div>${miniBar(ANS_ORDER.filter((v) => n(v) || v !== 'mid').map((v) => [ANS[v], n(v), ansCls(v)]))}${ckSecs(s, ins, shown)}`; }
   // 개선사항 — 개선 관리 정리 화면과 같은 줄(개선 전 | 개선 후 사진, 개선여부, 지도유형, 내용)
   else if (tab === 'kz') body = fs.length ? kzRows(ins, 'sub') : `<div class="cknone">${I('checkCircle', 30)}<b>개선사항 없음</b><span>현장점검에서 찍은 개선사항이 없던 점검</span></div>`;
   else {
@@ -1945,20 +1956,21 @@ function subScreen(s, id, tab) {
 /* ---------- 낸 뒤 ---------- */
 // 낸 뒤 — AI 기다리기처럼 머리글을 달고 가운데로 모은다 (2026-09-28 사용자 지시). 막 냈을 때만 표시가 튀어나오고 체크가 그려진다
 function sent(s, kind, fid) {
-  const wait = unsentN(s), first = kind === 'first', f = FACTORIES[fid], fresh = UI.sentFresh;
+  const wait = unsentN(s), first = kind === 'first', sub = kind === 'sub', f = FACTORIES[fid], fresh = UI.sentFresh;  // sub — 개선 관리 최종 제출 (2026-10-27 사용자 지시, 같은 낸 뒤 화면)
   const ns = first && !wait && s.inspections.find((i) => i.fid === fid && toSend(i) && TEAM.members.includes(i.by));  // 공장에 보내기 전 (10-26 개선 관리)
-  const nb = !ns && !wait && s.inspections.find((i) => i.fid === fid && toSub(i) && TEAM.members.includes(i.by));  // 제출 전 — 개선사항이 없었거나 판정이 끝남 (같은 날 저녁)
+  const nb = !ns && !wait && !sub && s.inspections.find((i) => i.fid === fid && toSub(i) && TEAM.members.includes(i.by));  // 제출 전 — 개선사항이 없었거나 판정이 끝남 (같은 날 저녁)
   if (fresh) setTimeout(() => { UI.sentFresh = false; }, 50);
-  return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">${head(f ? f.name + (kind === 'recheck' ? ' 재점검' : ' 점검') : '점검 결과', '')}
+  return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">${head(f ? f.name + (sub ? ' 제출' : kind === 'recheck' ? ' 재점검' : ' 점검') : '점검 결과', '')}
     <div class="gaiw gsent${fresh ? ' fresh' : ''}" role="status">
       <div class="gdmark${wait ? ' wait' : ''}"><i></i><span>${wait ? I('clock', 40) : I('check', 44)}</span></div>
-      <div class="center big">${wait ? '휴대폰에 저장됐어요' : '올라갔어요'}</div>
+      <div class="center big">${wait ? '휴대폰에 저장됐어요' : sub ? '제출했어요' : '올라갔어요'}</div>
       <div class="center small ink">${wait ? '전파가 없어요. <b>연결되면 저절로 올라가요.</b><br>앱을 지우거나 로그아웃하지 마세요.'
         : ns ? `개선사항 ${ns.items.filter(TRACKED).length}건은 아직 공장에 안 감<br>개선 관리에서 정리해 보내 주세요`
-        : nb ? '아직 제출 전<br>개선을 위한 조언을 적어 제출해 주세요' : '공장주와 운영자가 지금 볼 수 있어요.'}</div>
+        : nb ? '아직 제출 전<br>개선을 위한 조언을 적어 제출해 주세요' : sub ? '점검 확정<br>공장주와 운영자가 지금 볼 수 있어요.' : '공장주와 운영자가 지금 볼 수 있어요.'}</div>
     </div>
   </div><div class="ft">${ns ? `<button class="btn" data-go="send/${ns.id}">개선 관리로</button><button class="btn ghost" data-go="">홈으로</button>`
-    : nb ? `<button class="btn" data-go="sub/${nb.id}">조언 쓰고 제출</button><button class="btn ghost" data-go="">홈으로</button>` : '<button class="btn" data-go="">홈으로</button>'}</div></div>`;
+    : nb ? `<button class="btn" data-go="sub/${nb.id}">조언 쓰고 제출</button><button class="btn ghost" data-go="">홈으로</button>`
+    : sub && s.inspections.some((i) => toSub(i) && TEAM.members.includes(i.by)) ? '<button class="btn" data-go="todo">제출할 것으로</button><button class="btn ghost" data-go="">홈으로</button>' : '<button class="btn" data-go="">홈으로</button>'}</div></div>`;
 }
 
 // 불량 항목 하나의 재점검 판정 (마지막 것)
@@ -2020,7 +2032,7 @@ function inspView(s, id, from) {
     ${pend && toSub(i) ? `<button class="glock ivedit" data-go="sub/${id}">${I('pen', 16)} 제출 전, 제출 전 확인에서 고치기${I('chevron', 16)}</button>`
       : pend ? `<div class="glock">${I('clock', 16)} 제출 전, 판정 뒤 제출 전 확인에서 고침</div>` : `<div class="glock">${I('lock', 16)} 제출한 점검이라 고칠 수 없음</div>`}
     <div class="tdgt">${top.map(([k, v]) => `<div><em>${k}</em><b>${v}</b></div>`).join('')}</div>${adv}
-    <div class="gfsum ivsum">${ANS_ORDER.filter((v) => n(v) || v !== 'mid').map((v) => `<div class="${ansCls(v)}"><span>${ANS[v]}</span><b>${n(v)}</b></div>`).join('')}</div>
+    <div class="gfsum ivsum">${ANS_ORDER.filter((v) => n(v) || v !== 'mid').map((v) => `<div class="${ansCls(v)}"><span>${ANS[v]}</span><b>${n(v)}</b></div>`).join('')}</div>${miniBar(ANS_ORDER.filter((v) => n(v) || v !== 'mid').map((v) => [ANS[v], n(v), ansCls(v)]))}
     ${rows}
   </div></div>${UI.sheet && UI.sheet.type === 'ivph' ? ivPhSheet(i) : ''}`;
 }
@@ -2385,7 +2397,7 @@ function render() {
   if (NV.st === 'ready') { nvMount(); nvFacMount(); }
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
   if (UI.focusQ && $('#fq')) { UI.focusQ = false; $('#fq').focus(); }
-  ltCheck();
+  ltCheck(); kzMiniCheck();
   if (keep && $('#' + keep)) { const el = $('#' + keep); el.value = val; el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
 }
 let lastHash = null;
@@ -2408,7 +2420,7 @@ function fillItems(s) {
   // (사진 것은 "AI 제안" 한 쪽, 장비 것은 장비마다 한 쪽 — eq = 장비 이름. 출처 'ai'라 운영자 통계 "AI 제안 쓰임"에 셈한다)
   const ai = d.items.filter((x) => x.src === 'ai').map((x) => ({ id: x.id, text: x.text, src: 'ai', ...(x.photo ? { photo: x.photo } : {}), ...(x.eq ? { eq: x.eq } : {}) }));
   const self = d.self.map((t, i) => ({ id: 's' + i, text: t, src: 'self' }));
-  // 지난번 미흡은 문항으로 만들지 않고 분야별 안전점검 맨 위 주관점(AI)으로 본다 (2026-10-23 사용자 지시 — 전에는 맨 앞 "지난번 미흡" 묶음, 승인되면 답이 원래 항목에 적혔다)
+  // 지난번 미흡은 문항으로 만들지 않고 분야별 안전점검 맨 위 주안점(AI)으로 본다 (2026-10-23 사용자 지시 — 전에는 맨 앞 "지난번 미흡" 묶음, 승인되면 답이 원래 항목에 적혔다)
   const old = Object.fromEntries(d.items.map((x) => [x.id, x]));
   d.items = [...base, ...ai, ...self].map((x) => Object.assign(x, old[x.id] ? { answer: old[x.id].answer, memo: old[x.id].memo, reason: old[x.id].reason, shot: old[x.id].shot, eval: old[x.id].eval, risks: old[x.id].risks, ...(old[x.id].auto ? { auto: true } : {}), ...(old[x.id].photo ? { photo: old[x.id].photo } : {}), ...(old[x.id].pics ? { pics: old[x.id].pics } : {}) } : { answer: null }));
   syncKit(s);
@@ -2777,7 +2789,7 @@ const ACTS = {
     const ins = kzIns(DB.s, id); if (!ins || !toSub(ins)) return;
     if (!advOf(ins).text.trim()) { toast('개선을 위한 조언을 적어 주세요'); if (R.path()[2] !== 'end') R.go(`sub/${id}/end`); return; }
     DB.act((s) => { const g = kzIns(s, id); if (!g) return; g.adv = advOf(g); g.sub = { at: '9/17', by: ME }; DB.log(`지킴이 제출 · ${FACTORIES[g.fid].name}`); });
-    toast('제출했어요'); UI.td = 'rck'; UI.rsub = 'sub'; R.go('todo');
+    UI.td = 'rck'; UI.rsub = 'sub'; UI.sentFresh = true; R.go('sent/sub/' + ins.fid);  // 점검 마치기 · 판정 저장과 같은 낸 뒤 화면 (2026-10-27 사용자 지시 — 전엔 알림 띠만)
   },
   pickReason({ v }) { keepSheetText(); UI.sheet.reason = UI.sheet.reason === v ? null : v; render(); },
 };

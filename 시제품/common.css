@@ -1502,6 +1502,15 @@ html[data-standalone] body:has(.gffull){overflow:hidden}
 .gfsum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}
 .gfsum > div{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:#fff;box-shadow:var(--sh)}
 .gfsum span{font-size:13px;font-weight:700;color:var(--mid)}
+/* 요약 작은 줄 (2026-10-27 — 개선 관리, 체크리스트 양호 · 불량 · 해당 없음) — 머리 바로 아래에 붙고, 위 요약 칸이 머리 밑으로 지나가면 나타난다. 높이 0이라 자리를 안 차지한다(부모 틈은 kzMiniCheck가 위 여백으로 되돌림) */
+.kzmini{position:sticky;z-index:4;height:0;margin:0 -16px}
+.kzmini>div{display:flex;padding:7px 16px;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 4px 10px rgba(23,32,51,.05);opacity:0;transform:translateY(-6px);pointer-events:none;transition:opacity .2s,transform .2s}
+.kzmini.on>div{opacity:1;transform:none}
+.kzmini span{flex:1;display:flex;align-items:baseline;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:var(--mid)}
+.kzmini span + span{border-left:1px solid var(--line)}
+.kzmini b{font-size:15px;font-weight:900;color:var(--ink)}
+.kzmini .ok b{color:var(--green)}.kzmini .bad b{color:var(--red-d)}.kzmini .na b{color:var(--soft)}.kzmini .amid b{color:#8f6a00}
+@media (prefers-reduced-motion:reduce){.kzmini>div{transition:none}}
 .gfsum b{font-size:22px;font-weight:900;line-height:1.2;color:var(--ink)}
 .gfrs0{display:flex;flex-direction:column;gap:10px}
 .gfsec{margin:10px 2px 0;font-size:16px;font-weight:800;color:var(--ink)}  /* 잘된 사항 — 위험요인을 다 지운 줄은 점선 칸 아래에 따로 (2026-10-23 사용자 지시) */
