@@ -31,6 +31,9 @@ function tasks(s) {
 const topIcons = () => { const n = notiUnseen(DB.s);
   return `<span class="gtopi"><button class="gti" data-act="search" aria-label="공장 찾기">${I('search', 23)}</button>`
     + `<button class="gti" data-act="noti" aria-label="알림${n ? ` 새 소식 ${n}개` : ''}">${I('bell', 23)}${n ? `<em>${n}</em>` : ''}</button></span>`; };
+// 점검 중 머리 오른쪽은 찾기 · 알림 대신 [임시저장] (2026-10-27 사용자 지시 — 시안 A, 단추 5, 누른 뒤 바).
+// 적는 대로 이미 저장되니 단추는 "저장됐다"를 보여 주는 일 — 누르면 그 자리에서 초록 ✓ 저장됨(낸 뒤 그림을 작게)으로 2초, 다시 돌아온다
+const tmpBtn = () => `<button class="gtmp" data-act="tmpSave">${I('save', 17)}임시저장</button>`;
 const gband = (title, back, end) => `<div class="head">${back != null ? `<button class="back" data-go="${back}" aria-label="뒤로">${I('back', 22)}</button>` : ''}`
   + `<button class="hm hipa" data-go="" aria-label="홈"><img src="hipa-logo.svg" alt="HIPA"></button><span class="crumb">${title}</span><span class="end">${end}</span></div>`;
 const head = (title, go = '', end = topIcons()) => `<div class="apptop">${gband(title, go, end)}</div>`;
@@ -1195,6 +1198,18 @@ const kitPicker = (x) => { const kit = x.kit || [];
   return checkPicker({ all: KIT.map((k) => k.name), sel: kit, act: 'kitTg', unit: (n) => `고른 기구 ${n}종`, none: ['가진 기구 없음', !!x.kit && !x.kit.length, 'kitNone'],
     mid: kit.includes('기타장비') ? `<div class="kpetc">${x.kitEtc ? `<button class="gftx has" data-act="kitEtcOpen"><b>기타장비 (   )</b><span>${esc(x.kitEtc)}</span></button>`
       : `<button class="gftx" data-act="kitEtcOpen">${I('plus', 15)}기타장비 이름</button>`}</div>` : '' }); };
+// 위험요인 고르기 — 보유 기구 고르기와 같은 꼴: 위에 고른 것(눌러 빼기), 아래 네모 줄 (2026-10-27 사용자 지시)
+// 창 높이를 넘으면 줄 목록(.kpscr)만 스크롤 — 위 칩 · 아래 단추는 그대로 (2026-10-27 사용자 지시)
+// 추천(recs)을 주면 추천 · 고른 것만 먼저, 나머지는 접는다 — 개선 관리 지도유형은 안 주고 다 편다. 누를 때 창을 다시 그리지 않는다(riskTg)
+const riskSum = (sel) => sel.length ? `<b>고른 위험요인 ${sel.length}개</b><div class="kpchips">${sel.map((r) => `<button data-act="riskTg" data-v="${r}" aria-label="${r} 빼기">${r}${I('close', 14)}</button>`).join('')}</div>` : '<b>고른 것 없음</b>';
+function riskPicker(sel, recs) {
+  const row = (r) => { const on = sel.includes(r);
+    return `<button class="kprow${on ? ' on' : ''}" data-act="riskTg" data-v="${r}" aria-pressed="${on}"><span class="kpchk">${on ? I('check', 15) : ''}</span><span>${r}</span>${recs && recs.includes(r) ? '<em class="gfrec">AI 추천</em>' : ''}</button>`; };
+  const top = recs ? RISKS.filter((r) => recs.includes(r) || sel.includes(r)) : [], more = RISKS.filter((r) => !top.includes(r));
+  return `<section class="kpsec"><div class="kpsum">${riskSum(sel)}</div>
+    <div class="kpscr">${top.length ? `<div class="kplist">${top.map(row).join('')}</div><div class="kplist srmore" hidden>${more.map(row).join('')}</div>` : `<div class="kplist">${RISKS.map(row).join('')}</div>`}</div></section>
+    ${top.length ? `<button class="srmbtn" data-act="riskMore" aria-expanded="false"><span>나머지 ${more.length}개 더 보기</span>${I('chevron', 16)}</button>` : ''}`;
+}
 // 위험물질 — 넷째 칸 "해당없음"은 다른 것과 같이 못 고르니 맨 아래 따로 (chemTg)
 const chemPicker = (x) => { const chem = (x.chem || []).filter((c) => c !== CHEM[3]);
   return checkPicker({ all: CHEM.slice(0, 3), sel: chem, act: 'chemTg', unit: (n) => `고른 항목 ${n}개`, none: [CHEM[3], (x.chem || []).includes(CHEM[3]), 'chemTg'] }); };
@@ -1212,7 +1227,7 @@ function meetScreen(s, st) {
     : `<div class="clist">${d.items.map((y, i) => [y, i]).filter(([y]) => y.area === 'a1').map(([y, i], j) => ckRow(d, y, i, j + 1)).join('')}</div>`;
   const last = st === MEET.length;
   return `${sbar(f.name)}<div class="scr"><div class="bd geqbd">
-    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid)}
+    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, tmpBtn())}
     ${insTabs(d, 'meet')}
     <div class="cph"><span class="cpn">${st} / ${MEET.length}</span><b>${MEET[st - 1][0]}</b></div>
     ${body}
@@ -1255,7 +1270,7 @@ function pickScreen(s) {
   const nPrev = openIssues(s, d.fid).length, total = nBase - nOff + nAi + d.self.length;  // 지난번 미흡은 문항이 아니라 주관점 (2026-10-23)
   const answered = d.items.some((x) => x.answer && !x.auto);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
-    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid)}
+    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, tmpBtn())}
     ${insTabs(d, 'ck')}
     ${nPrev ? `<div class="grp">지난번 미흡 항목 — 이번 주관점으로<span class="must">${nPrev}개</span></div>
     ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
@@ -1400,6 +1415,7 @@ document.addEventListener('input', (e) => { const k = e.target.dataset && e.targ
 // 그 단추가 하는 일보다 먼저 저장한다 (사전 확인 표 칸과 같은 방식). 적던 칸 안을 누르면 그대로
 document.addEventListener('click', (e) => { if (!UI.ftx && !UI.ftxWait) return; const t = e.target.closest('[data-tx]'); if (!t || !UI.ftx || t.dataset.tx !== UI.ftx.k) ftxSave(); }, true);  // 판 번호 칸(.input)도 (2026-10-26 저녁)
 addEventListener('hashchange', () => { if (UI.ftx) ftxSave(); });
+// 맨 아래 [다음: 분야별 안전점검] — 사전점검 [다음]과 같은 단추 (2026-10-27 사용자 지시)
 function fixScreen(s) {
   const d = s.draft, f = FACTORIES[d.fid], fs = findsOf(d), on = factOf(d);
   const bad = fs.filter((x) => kindOf(x) === 'bad'), good = fs.filter((x) => kindOf(x) === 'good'), nRisk = bad.reduce((a, x) => a + (x.risks || []).length, 0);
@@ -1413,25 +1429,20 @@ function fixScreen(s) {
   // 점선 칸은 카메라 아래 "개선사항 n 찍기" 한 줄(같은 날 사용자 지시 — 위 [사진 추가]와 달리 새 건이 생긴다는 것을 번호로)
   const shot = (more) => `<button class="gfempty${more ? ' more' : ''}" data-act="fcam"><span class="gfei">${I('camera', 34)}</span><b>${more ? `${FIND_WORD.bad} ${bad.length + 1} 찍기` : '개선할 곳을 찾으면<br>한 건씩 더해 주세요'}</b></button>`;
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:10px">
-    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid)}
+    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, tmpBtn())}
     ${insTabs(d, 'fix')}
     ${fs.length ? `${sum}${bad.length ? `<div class="gfrs0">${bad.map(row).join('')}</div>` : ''}${shot(true)}
       ${good.length ? `<div class="gfsec">잘된 사항</div><div class="gfrs0">${good.map(row).join('')}</div>` : ''}` : shot(false)}
-  </div></div>${UI.sheet && UI.sheet.type === 'frisk' ? fRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fdel' ? fDelSheet(s) : ''}${UI.fv ? findViewer(s) : ''}`;
+  </div><div class="ft"><button class="btn cnext" data-act="insTab" data-v="ck"><span class="cnl">다음: 분야별 안전점검</span>${I('chevron', 18)}</button></div></div>${UI.sheet && UI.sheet.type === 'frisk' ? fRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fdel' ? fDelSheet(s) : ''}${UI.fv ? findViewer(s) : ''}`;
 }
 // 위험요인 고르기 — AI가 추천한 것과 고른 것을 먼저, 나머지는 접어 둔다 (불량 창과 같은 모양)
 function fRiskSheet(s) {
   const d = s.draft, sh = UI.sheet, f = findOf(d, sh.id);
   if (!f) return '';
-  const recs = f.ai && f.ai.st === 'done' ? f.ai.recs : [], sel = sh.risks;
-  const rbtn = (r) => { const on = sel.includes(r);
-    return `<button class="geq${on ? ' on' : ''}" data-act="riskTg" data-v="${r}" aria-pressed="${on}"><span class="geqc">${on ? I('check', 16) : ''}</span><span class="geqn">${r}</span>${recs.includes(r) ? '<em class="gfrec">AI 추천</em>' : ''}</button>`; };
-  const top = RISKS.filter((r) => recs.includes(r) || sel.includes(r)), more = RISKS.filter((r) => !top.includes(r));
+  const recs = f.ai && f.ai.st === 'done' ? f.ai.recs : [];
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="srh"><b>${findWord(d, f)} 위험요인</b></div>
-    ${top.length ? `<div class="geqs srisk">${top.map(rbtn).join('')}</div>` : ''}
-    <div class="geqs srisk srmore"${top.length ? ' hidden' : ''}>${more.map(rbtn).join('')}</div>
-    ${top.length ? `<button class="srmbtn" data-act="riskMore" aria-expanded="false"><span>나머지 ${more.length}개 더 보기</span>${I('chevron', 16)}</button>` : ''}
+    ${riskPicker(sh.risks, recs)}
     <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="fRiskSave">저장</button></div>
   </div>`;
 }
@@ -1499,23 +1510,34 @@ const scrollFind = (id) => { const el = document.getElementById('fr-' + id); if 
    영상 위에 안내("사진 n") · 플래시 · 확대(1× 2×), 아래 칸에 장수 점과 셔터. 플래시 · 확대는 폰이 되는 것만 보인다.
    사진은 줄여(JPEG) 서버에 올리고(api/photo) 점검에는 주소만 둔다(d.real). 서버 없이 열면 그림째 둔다.
    진짜 사진은 AI 흉내 답이 없어 "AI가 찾은 위험요인 없음"이 된다 — 지킴이가 직접 더한다 */
-const CAM = { open: false, st: '', fid: null, kz: null, made: false, title: '', base: 0, shot: null, stream: null, torch: false, flash: false, zoom: null, zm: 1, q: Promise.resolve() };
+const CAM = { open: false, st: '', fid: null, made: false, title: '', base: 0, shot: null, stream: null, torch: false, flash: false, zoom: null, zm: 1, q: Promise.resolve() };
 const camIn = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*', hidden: true });
 camIn.setAttribute('capture', 'environment');  // 폰에서는 고르기 창 없이 카메라 앱이 바로 열린다
 camIn.addEventListener('change', () => { const f = camIn.files[0]; camIn.value = ''; if (f) camLoad(f); });
 document.body.appendChild(camIn);
 function camOpen(fid) {
   const d = DB.s.draft, f = fid && findOf(d, fid);
-  Object.assign(CAM, { fid, kz: null, made: false, title: f ? findWord(d, f) : `${FIND_WORD.bad} ${findsOf(d).filter((x) => kindOf(x) === 'bad').length + 1}`, base: f ? f.pics.length : 0, shot: null });
+  Object.assign(CAM, { fid, made: false, title: f ? findWord(d, f) : `${FIND_WORD.bad} ${findsOf(d).filter((x) => kindOf(x) === 'bad').length + 1}`, base: f ? f.pics.length : 0, shot: null });
   if (!window.isSecureContext || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { camIn.click(); return; }  // 누른 그 순간에 열어야 폰이 막지 않는다
   CAM.open = true; camStart();
 }
-// 개선 관리에서 찍기 — 낸 점검의 개선사항에 개선 전 · 개선 후 사진을 더한다 (2026-10-26)
-function camOpenKz(it, side) {
-  const l = (side === 'after' ? it.after : it.photos) || [];
-  Object.assign(CAM, { fid: null, kz: { ins: UI.kzIns, it: it.id, side }, made: false, title: `${kzName(kzIns(DB.s, UI.kzIns), it)} ${side === 'after' ? '개선 후' : '개선 전'}`, base: l.length, shot: null });
-  if (!window.isSecureContext || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { camIn.click(); return; }
-  CAM.open = true; camStart();
+// 개선 관리 개선 전 · 개선 후 추가는 사진첩에서 고른다 (2026-10-27 사용자 지시 — 전엔 앱 카메라). 여러 장 한 번에, 남은 칸(5장까지)만큼 차례로 줄여 올린다
+// 고르기 칸은 누를 때마다 새로 만든다 — 하나를 다시 쓰면 안드로이드 크롬에서 뒤로 가기로 닫은 뒤 다시 안 열렸다(같은 날 사용자 제보). 남은 옛 칸은 버린다
+function galOpen(k) {
+  document.querySelectorAll('.galin').forEach((e) => e.remove());
+  const el = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*', multiple: true, hidden: true, className: 'galin' });
+  el.addEventListener('change', () => { const files = [...el.files]; el.remove(); galPut(k, files); });
+  el.addEventListener('cancel', () => el.remove());
+  document.body.appendChild(el); el.click();
+}
+function galPut(k, files) {
+  const it = kzItem(DB.s, k.it); if (!it || !files.length) return;
+  const room = FIND_MAX - ((k.side === 'after' ? it.after : it.photos) || []).length;
+  if (files.length > room) toast(`사진은 ${FIND_MAX}장까지예요. ${room}장만 넣어요`);
+  files.slice(0, room).forEach((f) => { CAM.q = CAM.q.then(() => new Promise((ok, no) => { const img = new Image(), url = URL.createObjectURL(f);
+      img.onload = () => { URL.revokeObjectURL(url); camShrink(img, img.naturalWidth, img.naturalHeight).then(ok); };
+      img.onerror = () => { URL.revokeObjectURL(url); no(); }; img.src = url; }))
+    .then(photoSave).then((p) => kzPut(k, p)).catch(() => toast('사진을 넣지 못했어요')); });
 }
 function camStart() {
   CAM.st = 'start'; camPaint();
@@ -1542,7 +1564,6 @@ function camClose() {
 }
 // 한 장 넣기 — 올리기는 차례대로, 사진 번호는 올린 뒤에 정한다(둘이 겹치지 않게)
 function camPut(sh) {
-  if (CAM.kz) { const k = CAM.kz; CAM.q = CAM.q.then(() => photoSave(sh)).then((p) => kzPut(k, p)).catch(() => toast('사진을 올리지 못했어요')); return; }
   if (!CAM.fid) { CAM.fid = newFind('bad'); CAM.made = true; }
   const fid = CAM.fid;
   CAM.q = CAM.q.then(() => photoSave(sh)).then((p) => {
@@ -1689,7 +1710,7 @@ function checkList(s) {
   const n = (v) => vis.filter((x) => x.answer === v).length;
   const done = ANS_ORDER.reduce((a, v) => a + n(v), 0);
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
-  const top = `<div class="apptop">${gband(f.name + ' 점검', 'pick', topIcons())}
+  const top = `<div class="apptop">${gband(f.name + ' 점검', 'pick', tmpBtn())}
     <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${n('bad') ? `<b class="pbad">불량 ${n('bad')}</b>` : ''}<b>${done}</b> / ${vis.length} 답함</span></div>
     <div class="prog">${ANS_ORDER.map((v) => `<i class="${ansCls(v)}" style="width:${(n(v) / vis.length) * 100}%"></i>`).join('')}</div></div></div>`;
   const tab = UI.ckTab === 'list' ? 'list' : 'prev';
@@ -1744,19 +1765,14 @@ const riskHint = (it) => { const t = it.text + (it.eq ? ' ' + it.eq : ''), o = [
 function badSheet(s) {
   const it = ckDoc(s).items[UI.sheet.n];
   // 이 문항에 맞는 위험요인(과 이미 고른 것)만 먼저, 나머지는 접어 둔다 (2026-10-15 사용자 지시)
-  const hint = riskHint(it), top = RISKS.filter((r) => hint.includes(r) || UI.sheet.risks.includes(r)), more = RISKS.filter((r) => !top.includes(r));
-  const rbtn = (r) => { const on = UI.sheet.risks.includes(r);
-    return `<button class="geq${on ? ' on' : ''}" data-act="riskTg" data-v="${r}" aria-pressed="${on}"><span class="geqc">${on ? I('check', 16) : ''}</span><span class="geqn">${r}</span>${hint.includes(r) ? '<em class="gfrec">AI 추천</em>' : ''}</button>`; };
+  const hint = riskHint(it);
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="mid">${esc(it.text)}</div>
     <div class="ans">${it.ref ? '불량 (아직 안 고쳐짐)' : '불량'}</div>
     ${it.ref ? `<div class="lbl">공장주에게 들은 사정 (안 골라도 돼요)</div>
       ${['큰 공사가 필요해요', '부품이나 업체를 기다려요', '이유를 몰라요'].map((r) => `<button class="pick${UI.sheet.reason === r ? ' on' : ''}" data-act="pickReason" data-v="${r}">${r}</button>`).join('')}` : ''}
     <div class="srh"><b>위험요인</b><span>${UI.sheet.auto && hint.length ? 'AI 추천 미리 선택 · 누르면 해제' : '여러 개 고를 수 있어요'}</span></div>
-    ${top.length ? `<div class="geqs srisk">${top.map(rbtn).join('')}</div>
-    <div class="geqs srisk srmore" hidden>${more.map(rbtn).join('')}</div>
-    <button class="srmbtn" data-act="riskMore" aria-expanded="false"><span>나머지 ${more.length}개 더 보기</span>${I('chevron', 16)}</button>`
-      : `<div class="geqs srisk">${RISKS.map(rbtn).join('')}</div>`}
+    ${riskPicker(UI.sheet.risks, hint)}
     <div class="lbl">위험요인 내용 (안 써도 돼요)</div>
     <textarea class="input" id="memoIn" placeholder="예: 바닥에 늘어진 전선 피복이 벗겨짐">${esc(UI.sheet.memo ?? it.memo ?? '')}</textarea>
     <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="saveBad">저장</button></div>
@@ -1800,14 +1816,14 @@ function kzRows(ins, mode) {
     if (side === 'before' && !l.length && x.shot) return `<span class="kzpt">${beforeArt(x)}<em class="before">${w}</em></span>`;  // 옛 기록 — 자리 그림
     if (side === 'after' && !l.length && fx && fx.photo) return `<span class="kzpt">${phArt('after')}<em class="after">${w}</em></span>`;  // 공장 [고쳤어요]의 사진(시제품은 자리 그림)
     return l.length ? `<span class="kzpt">${side === 'after' ? afterArt(x) : beforeArt(x)}<em class="${side}">${w}</em>${l.length > 1 ? `<b>${I('image', 14)}+${l.length - 1}</b>` : ''}</span>`
-      : `<span class="kzpt wait"><span>${I('camera', 30)}${side === 'before' ? '사진 없음' : x.st === 'ok' ? '개선 후 사진 없음<br>현장에서 고쳤으면 찍기' : '개선 후 사진<br>공장이 보내면 여기에'}</span></span>`; };
+      : `<span class="kzpt wait"><span>${I('camera', 30)}${side === 'before' ? '사진 없음' : x.st === 'ok' ? '개선 후 사진 없음<br>현장에서 고쳤으면 추가' : '개선 후 사진<br>공장이 보내면 여기에'}</span></span>`; };
   const row = (x) => (x !== on ? `<button class="gfr" data-act="kzOn" data-id="${x.id}"><span class="gfrt">${thumb(x)}</span>
       <span class="gfrb"><b>${kzName(ins, x)}</b><span class="gfrs">${mode === 'judge' && rckFix(x) && x.st !== 'ok' ? '<em class="kzw got">사진 옴</em> · ' : ''}<em class="kzw ${x.st || 'ing'}">${kzWord(x)}</em>${(x.risks || []).length ? ` · ${x.risks.map(esc).join(', ')}` : ''}</span></span>
       <span class="gfrc">${I('camera', 14)}${(x.photos || []).length + (x.after || []).length}</span></button>`
     : `<section class="gfr on"><div class="gfrh"><b>${kzName(ins, x)}</b><span class="gfrn">${kzWord(x)}</span></div>
       <div class="kzpair">${tile(x, 'before')}${tile(x, 'after')}</div>
       ${rckFix(x) ? kzFx(x) : ''}
-      <div class="kzadd"><button class="gfpmore" data-act="kzCam" data-id="${x.id}" data-v="before">${I('camera', 17)}개선 전 추가</button><button class="gfpmore" data-act="kzCam" data-id="${x.id}" data-v="after">${I('camera', 17)}개선 후 추가</button></div>
+      <div class="kzadd"><button class="gfpmore" data-act="kzGal" data-id="${x.id}" data-v="before">${I('image', 17)}개선 전 추가</button><button class="gfpmore" data-act="kzGal" data-id="${x.id}" data-v="after">${I('image', 17)}개선 후 추가</button></div>
       <div class="gfrk"><div class="gfrkh"><b>개선여부</b></div><div class="cans c4 kzst">${KZ_ST.map(([k, w, c]) => `<button class="${(x.st || 'ing') === k ? 'on ' + c : ''}" data-act="kzSt" data-id="${x.id}" data-v="${k}" aria-pressed="${(x.st || 'ing') === k}">${w}</button>`).join('')}</div></div>
       <div class="gfrk"><div class="gfrkh"><b>지도유형 (유해위험요인)</b></div>
         <div class="gfchips">${(x.risks || []).map((r) => `<span class="gfchip"><i>${RISKS.indexOf(r) + 1}</i>${r}<button data-act="kzRiskDel" data-id="${x.id}" data-v="${r}" aria-label="${r} 빼기">${I('close', 15)}</button></span>`).join('')}
@@ -1849,16 +1865,13 @@ function kzFx(x) {
 // 지도유형 고르기 — 현장점검 위험요인 창과 같은 꼴
 function kzRiskSheet(s) {
   const it = kzItem(s, UI.sheet.id); if (!it) return '';
-  const sel = UI.sheet.risks;
-  const rbtn = (r) => { const on = sel.includes(r);
-    return `<button class="geq${on ? ' on' : ''}" data-act="riskTg" data-v="${r}" aria-pressed="${on}"><span class="geqc">${on ? I('check', 16) : ''}</span><span class="geqn">${r}</span></button>`; };
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="srh"><b>${kzName(kzIns(s, UI.kzIns), it)} 지도유형</b><span>여러 개 고를 수 있어요</span></div>
-    <div class="geqs srisk">${RISKS.map(rbtn).join('')}</div>
+    ${riskPicker(UI.sheet.risks)}
     <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="kzRiskSave">저장</button></div>
   </div>`;
 }
-// 개선 관리 사진 넣기 — 앱 카메라(CAM.kz)로 찍은 사진, 시험 사진
+// 개선 관리 사진 넣기 — 사진첩에서 고른 사진(galOpen)
 function kzPut(k, p) {
   DB.act((s) => { const ins = s.inspections.find((i) => i.id === k.ins), it = ins && ins.items.find((x) => x.id === k.it); if (!it) return;
     const key = k.side === 'after' ? 'after' : 'photos';
@@ -1877,11 +1890,10 @@ const advCode = (a) => [a.cls, a.ver].filter(Boolean).join(' ');
 const SUB_TABS = [['meet', '사전점검'], ['ck', '분야별 안전점검'], ['kz', '개선사항'], ['end', '제출']];
 // 제출 전 확인 줄 — [맞나, 글, 고치러 갈 탭]
 function subCheck(ins) {
-  const ck = ins.items.filter((x) => x.src !== 'find' && !x.ref), fs = kzList(ins), a = advOf(ins);
-  const none = ck.filter((x) => !x.answer).length, bad = ck.filter((x) => x.answer === 'bad').length;
-  // 기존 웹은 위험요인 수와 지적사항 수가 같아야 한다 — 사람이 세던 것을 앱이 센다. 달라도 막지는 않는다(내 판단 — 맞출 길이 체크리스트 고치기뿐이라)
+  const ck = ins.items.filter((x) => x.src !== 'find' && !x.ref), a = advOf(ins);
+  const none = ck.filter((x) => !x.answer).length;
+  // 체크리스트 불량 수와 개선사항 수는 맞추지 않는다 — 체크리스트에 없는 개선사항도 있어 둘은 따로다 (2026-10-27 사용자 지시)
   return [[!none, none ? `답 없는 문항 ${none}개` : '답 없는 문항 없음', 'ck'],
-    [bad === fs.length, `체크리스트 불량 ${bad}개, 개선사항 ${fs.length}건${bad === fs.length ? ' 맞음' : ' 다름'}`, 'ck'],
     [!!a.text.trim(), a.text.trim() ? '개선을 위한 조언 씀' : '개선을 위한 조언 안 씀', '']];
 }
 // 개선사항 옛 기록(체크리스트 불량이 공장에 간 것)은 체크리스트에서 답을 못 바꾼다 — 개선사항 탭의 개선여부로
@@ -2527,7 +2539,7 @@ const ACTS = {
   camUse() { camPut(CAM.shot); camClose(); },
   camClose() { camClose(); },
   camFile() { camIn.click(); },
-  camTest() { if (CAM.kz) { const k = CAM.kz, n = 1 + ((Date.now() / 1000) | 0) % PHOTOS.length, ph = photoOf(n); kzPut(k, { src: ph.src, w: ph.w, h: ph.h }); camClose(); return; }
+  camTest() {
     if (!CAM.fid) CAM.fid = newFind('bad'); putShots(CAM.fid, nextShots(DB.s.draft, 1)); camClose(); },  // 시험 사진 한 장 (PC · 카메라 없는 기기)
   fRiskDel({ id, v }) { kindMove(id, () => DB.act((s) => { const f = findOf(s.draft, id); f.risks = (f.risks || []).filter((r) => r !== v); f.own = true; })); },
   fRiskOpen({ id }) { sheet({ type: 'frisk', id, risks: [...(findOf(DB.s.draft, id).risks || [])], touched: false }); },
@@ -2575,11 +2587,13 @@ const ACTS = {
   ansBad({ n }) { if (ckLock(+n)) return; const it = ckDoc().items[+n], auto = it.answer !== 'bad';
     sheet({ type: 'bad', n: +n, reason: it.reason || null, risks: auto ? riskHint(it) : [...(it.risks || [])], auto }); },
   // 위험요인 고르기 (2026-10-07) — 창을 다시 그리면 위로 튀고 올라오는 움직임이 다시 나와서, 누른 칸의 표시만 바꾼다
-  riskTg({ v }, el) {
+  // 위 고른 칩을 눌러도 같은 일 — 줄 표시와 위 칩만 고친다 (2026-10-27)
+  riskTg({ v }) {
     const l = UI.sheet.risks || [], on = !l.includes(v);  // 지적사항 창은 AI 추천 전이면 비어 있다
     UI.sheet.risks = on ? [...l, v] : l.filter((x) => x !== v); UI.sheet.touched = true;
-    el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
-    el.querySelector('.geqc').innerHTML = on ? I('check', 16) : '';
+    const el = $(`.sheet .kprow[data-v="${v}"]`); el.classList.toggle('on', on); el.setAttribute('aria-pressed', on);
+    el.querySelector('.kpchk').innerHTML = on ? I('check', 15) : '';
+    $('.sheet .kpsum').innerHTML = riskSum(UI.sheet.risks);
   },
   // 나머지 위험요인 펼치기·접기 — 다시 그리지 않고 보이기만 바꾼다(창이 위로 튀지 않게, 적던 글도 그대로)
   riskMore(_, el) {
@@ -2718,8 +2732,9 @@ const ACTS = {
     const ins = kzIns(s, UI.kzIns); if (!toSub(ins)) return;
     const l = [...(it.log || [])].reverse().find((y) => y.t === 'recheck'); if (l) l.result = v === 'ok' ? 'fixed' : 'not';
     if (ins.final) ins.final.fixed = kzList(ins).filter((y) => itemState(y) === 'fixed').length; }); },
-  kzCam({ id, v }) { const it = kzItem(DB.s, id), l = it && ((v === 'after' ? it.after : it.photos) || []);
-    if (!it) return; if (l.length >= FIND_MAX) { toast(`사진은 ${FIND_MAX}장까지예요`); return; } camOpenKz(it, v); },
+  kzGal({ id, v }) { const it = kzItem(DB.s, id), l = it && ((v === 'after' ? it.after : it.photos) || []);
+    if (!it) return; if (l.length >= FIND_MAX) { toast(`사진은 ${FIND_MAX}장까지예요`); return; }
+    galOpen({ ins: UI.kzIns, it: id, side: v }); },  // 누른 그 순간에 열어야 폰이 막지 않는다
   kzRiskOpen({ id }) { sheet({ type: 'kzrisk', id, risks: [...(kzItem(DB.s, id).risks || [])] }); },
   kzRiskDel({ id, v }) { DB.act((s) => { const it = kzItem(s, id); if (it) it.risks = (it.risks || []).filter((r) => r !== v); }); },
   kzRiskSave() { const { id, risks } = UI.sheet; UI.sheet = null; DB.act((s) => { const it = kzItem(s, id); if (it) it.risks = RISKS.filter((r) => risks.includes(r)); }); },
@@ -2752,6 +2767,12 @@ const ACTS = {
   },
   // 제출할 것 (2026-10-26 저녁) — 기업 구분 고르기, 제출. 조언을 안 적었으면 잠긴 단추 — 누르면 까닭
   advCls({ id, v }) { DB.act((s) => { const g = kzIns(s, id); if (g) g.adv = { ...advOf(g), cls: v }; }); },
+  tmpSave(_, el) {
+    const b = $('.gtmp') || el; if (!b) return;
+    clearTimeout(UI.tmpT);
+    b.classList.add('done'); b.innerHTML = `<span class="c">${I('check', 13)}</span>저장됨`;
+    UI.tmpT = setTimeout(() => { const x = $('.gtmp.done'); if (x) { x.classList.remove('done'); x.innerHTML = `${I('save', 17)}임시저장`; } }, 2000);
+  },
   subGo({ id }) {
     const ins = kzIns(DB.s, id); if (!ins || !toSub(ins)) return;
     if (!advOf(ins).text.trim()) { toast('개선을 위한 조언을 적어 주세요'); if (R.path()[2] !== 'end') R.go(`sub/${id}/end`); return; }
