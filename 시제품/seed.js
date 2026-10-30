@@ -500,18 +500,19 @@ const SEED = {
     // 2026-10-01 사용자 요청으로 3건 더함 — 결과 네 종류가 다 나오고 요일별 막대(월1·화2·수3)가 보이게. 반려는 홈 맨 위 할 일이 되므로 넣지 않는다
     // 2026-10-13 재점검: 불량이 있으면 처음 결과는 재점검이다. 점검완료·패트롤·기타로 끝난 곳은 재점검 판정(final)까지 마친 것으로 둔다.
     // claim: 공장주가 고쳤어요(사진)를 보낸 문항 · fixed: 지킴이가 고쳐짐으로 판정한 문항 · fin: 판정한 날
+    // kz: 시정 중에 지킴이가 정해 둔 개선여부(ok 개선완료 · no 미개선) — 개선 관리 카드 승인 · 반려 · 보류가 다 보이게 (2026-10-29)
     ...[['saehan', '9/14', '최지킴', 'ok', '점검완료', ['a1-2', 'a4-1'], ['a1-2', 'a4-1'], ['a1-2', 'a4-1'], '9/16'],
       ['ujin', '9/15', '박지킴', 'ok', '점검완료', ['a3-0', 'a3-2'], ['a3-0', 'a3-2'], ['a3-0'], '9/16'],  // a3-3 → a3-2 (2026-10-19 전기안전이 종이대로 3문항)
       ['seongwon', '9/15', '박지킴', 'ok', '재점검', ['a1-0', 'a3-2'], ['a1-0']],
-      ['donghwa', '9/16', '최지킴', 'ok', '재점검', ['a2-0', 'a3-1', 'a5-2']],
+      ['donghwa', '9/16', '최지킴', 'ok', '재점검', ['a2-0', 'a3-1', 'a5-2'], ['a2-0', 'a3-1'], [], null, { 'a2-0': 'ok', 'a3-1': 'no' }],
       ['mirae', '9/16', '이조장', 'ok', '패트롤', ['a1-0', 'a2-1'], [], [], '9/17'],
       ['hangyeol', '9/16', '이조장', 'ok', '기타', ['a4-0', 'a1-1', 'a3-2'], ['a1-1', 'a3-2'], ['a1-1', 'a3-2'], '9/17'],
-    ].map(([fid, date, by, st, result, bad, claim = [], fixed = [], fin]) => ({
+    ].map(([fid, date, by, st, result, bad, claim = [], fixed = [], fin, kz = {}]) => ({
       id: 'w' + fid, fid, date, by, locked: true, st, result,
       ...(fin ? { final: { from: '재점검', at: fin, by, fixed: fixed.length, total: bad.length } } : {}),
       items: CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => { const k = `${a.key}-${i}`;
         return { id: `${fid}-${k}`, text: t, src: 'base', area: a.key, answer: bad.includes(k) ? 'bad' : 'ok',
-          ...(bad.includes(k) ? { shot: true, log: [...(claim.includes(k) ? [{ t: 'fix', at: date, tm: '17:30', note: '', photo: true }] : []),
+          ...(bad.includes(k) ? { shot: true, ...(kz[k] ? { st: kz[k] } : {}), log: [...(claim.includes(k) ? [{ t: 'fix', at: date, tm: '17:30', note: '', photo: true }] : []),
             ...(fin ? [{ t: 'recheck', at: fin, by, result: fixed.includes(k) ? 'fixed' : 'not', photo: claim.includes(k) }] : [])] } : {}) }; })) })),
     // 동방산업 — 재점검 기한(9/03)이 지났는데 공장주 사진은 와 있다 (2026-10-13). 고치기 전 사진은 세 장 (2026-10-22 여러 장 보기)
     { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '재점검', items: [

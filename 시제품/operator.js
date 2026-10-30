@@ -587,14 +587,14 @@ const OPER = (() => {
   function inspDetail(s, i, act) {
     const f = FACTORIES[i.fid], st = stOf(i), prev = i.items.filter((x) => x.ref), bad = badOf(i);
     // 답은 양호 · 보통 · 불량 · 해당 없음 (2026-10-07). 개선 요청은 불량만
-    const ok = i.items.filter((x) => x.answer === 'ok' && !x.ref), mid = i.items.filter((x) => x.answer === 'mid' && !x.ref), na = i.items.filter((x) => x.answer === 'na' && !x.ref), none = i.items.filter((x) => !x.answer);
+    const ok = i.items.filter((x) => x.answer === 'ok' && !x.ref), mid = i.items.filter((x) => x.answer === 'mid' && !x.ref), na = i.items.filter((x) => x.answer === 'na' && !x.ref && !x.auto), none = i.items.filter((x) => !x.answer);
     const noMemo = bad.filter((x) => !x.memo && !(x.risks || []).length), hist = [...(i.backs || []), ...(i.back ? [i.back] : [])];
     // 2026-10-20 지킴이 앱 결로 — `·` 이음 · 그림 문자(✓ ⚠ 📷 🔒 ▸)를 걷고, 개수는 세로줄로 나눈 조각, 접고 펴기는 꺾쇠 아이콘
     const line = (x, w) => `<div class="opln"><span>${esc(x.text)}</span><b>${w}</b>${x.eval ? `<small>${esc(x.eval)}</small>` : ''}</div>`;
     const cnt = [['양호', ok.length], ['보통', mid.length], ['해당 없음', na.length], ['답 없음', none.length]].filter(([k, n]) => n || k === '양호');
     return `
       <div class="rowx"><span class="opttl">${f.name}</span>${procPill(i)}</div>
-      ${kv([['점검번호', insNo(s, i)], ['점검일', i.date], ['지킴이', `${insTeam(i)} ${esc(i.by)}`], ['읍·면·동', f.dong], ['업종', f.type], ['결과', i.result || RESULTS[0]], ['판', i.ver || CHECKLIST.ver], ['문항', i.items.length + '개'],
+      ${kv([['점검번호', insNo(s, i)], ['점검일', i.date], ['지킴이', `${insTeam(i)} ${esc(i.by)}`], ['읍·면·동', f.dong], ['업종', f.type], ['결과', i.result || RESULTS[0]], ...(i.score != null ? [['평가 점수', `${i.score}점`]] : i.grade ? [['위험도 등급', i.grade]] : []), ['판', i.ver || CHECKLIST.ver], ['문항', i.items.filter((x) => !x.auto).length + '개'],
         ['제출', subOf(i) === 'pre' ? '제출 전' : subAt(i) ? `${subAt(i)} ${esc(i.sub.by)}` : '제출']])}
       ${subOf(i) === 'pre' ? '<div class="opnote">제출 전 점검이라 지킴이가 아직 고칠 수 있어요</div>' : ''}
       ${i.adv && (i.adv.text || '').trim() ? `<div class="lbl">개선을 위한 조언</div><div class="item2"><div class="rowx"><b>${esc(i.adv.cls)}${i.adv.ver ? ' ' + esc(i.adv.ver) : ''}</b></div><div class="opadv">${esc(i.adv.text)}</div></div>` : ''}

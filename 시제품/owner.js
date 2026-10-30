@@ -90,7 +90,7 @@ function inspRec(s) {
   const order = { back: 0, todo: 1, claimed: 2, fixed: 3 };
   const bad = ins.items.filter(TRACKED).sort((a, b) => order[itemState(a)] - order[itemState(b)]);
   // 답은 양호 · 보통 · 불량 · 해당 없음 (2026-10-07). 개선 요청은 불량만 — 양호·보통은 펼쳐 보기에 묶는다
-  const ok = ins.items.filter((x) => x.answer === 'ok' && !x.ref), mid = ins.items.filter((x) => x.answer === 'mid' && !x.ref), na = ins.items.filter((x) => x.answer === 'na' && !x.ref);
+  const ok = ins.items.filter((x) => x.answer === 'ok' && !x.ref), mid = ins.items.filter((x) => x.answer === 'mid' && !x.ref), na = ins.items.filter((x) => x.answer === 'na' && !x.ref && !x.auto);  // 고르지 않은 기구의 05 문항(auto)은 기록에만 (2026-10-28)
   // 이 점검에서 다시 본 지난번 미흡 — 원래 항목(옛 점검 기록)을 찾아 그 상태와 단추를 여기서도 보인다
   const refs = ins.items.filter((x) => x.ref).map((x) => { const o = s.inspections.find((i) => i.id === x.ref.ins); const it = o && o.items.find((y) => y.id === x.ref.id); return it && { o, it }; }).filter(Boolean);
   // 항목 카드 — 지킴이 앱 개선 관리와 같은 꼴 (2026-10-26 사용자 지시): "개선사항 n" + 상태, 개선 전 | 개선 후 사진을 좌우로 크게,
@@ -144,14 +144,14 @@ function fixDlg(s) {
   return `<div class="ov" data-act="closeDlg"></div><div class="dlg wide">
     <div class="mid" style="font-size:20px">${kzName(ins, it)} ${again ? '다시 고쳤어요' : '고쳤어요'}</div>
     <div class="small">${ins.date} 지킴이 점검${again ? ` → ${last.at} 지킴이 확인에서 안 고쳐짐${last.reason ? ` (${esc(last.reason)})` : ''}` : ''}</div>
-    <div class="lbl">고친 뒤 사진</div>
+    <div class="lbl">고친 뒤 사진 (꼭 올려 주세요)</div>
     <div class="ofxup">${ph.map((p, j) => `<span class="ofxut"><img src="${p.src}" alt=""><button data-act="dlgDrop" data-v="${j}" aria-label="사진 빼기">${I('close', 16)}</button></span>`).join('')}
       ${UI.dlg.busy ? `<span class="ofxut wait">올리는 중</span>` : ''}
       ${ph.length + (UI.dlg.busy || 0) < FIX_MAX ? `<button class="ofxut add" data-act="dlgPhoto">${I('camera', 26)}사진 올리기</button>` : ''}</div>
     <div class="lbl">어떻게 고쳤나요? (안 써도 돼요)</div>
     <input class="input" id="fixNote" placeholder="예: 부품 받아서 벗겨진 전선 교체함">
     <div class="warn">보내면 지킴이 앱에 사진과 함께 알림이 가요. 지킴이 확인 전까지는 취소할 수 있어요.</div>
-    <div class="row" style="justify-content:flex-end"><button class="btn ghost inl" data-act="closeDlg">취소</button><button class="btn inl" data-act="saveFix"${UI.dlg.busy ? ' disabled' : ''}>고쳤어요 보내기</button></div>
+    <div class="row" style="justify-content:flex-end"><button class="btn ghost inl" data-act="closeDlg">취소</button><button class="btn inl${ph.length ? '' : ' glocked'}" data-act="saveFix"${UI.dlg.busy ? ' disabled' : ''}>${ph.length ? '' : I('lock', 16) + ' '}고쳤어요 보내기</button></div>
   </div>`;
 }
 // 사진 고르기 창 — 폰이면 카메라 · 사진첩, PC면 파일
@@ -213,12 +213,16 @@ const ACTS = {
   closeDlg() { UI.dlg = null; render(); },
   saveFix() {
     if (!UI.dlg || UI.dlg.type || UI.dlg.busy) return;
+    // 고친 뒤 사진은 꼭, 글은 안 써도 된다 (2026-10-28 사용자 지시 — 전에는 둘 다 없이도 보내졌다. 지킴이는 이 사진을 보고 판정한다)
+    if (!UI.dlg.photos.length) { toast('고친 뒤 사진을 올려 주세요'); return; }
     const d = UI.dlg, note = $('#fixNote').value.trim();
     UI.dlg = null;
     DB.act((s) => {
       const it = s.inspections.find((i) => i.id === d.ins).items.find((x) => x.id === d.id);
       if (d.photos.length) it.after = [...(it.after || []), ...d.photos];  // 지킴이 앱 개선 후 칸 (2026-10-26)
-      it.log.push({ t: 'fix', at: '9/17', tm: hm(s.clock), note, photo: d.photos.length > 0, n: d.photos.length });
+      // 다시 보낸 사진은 지킴이가 새로 판정한다 — 지난 판정(반려 · 보류)을 비워 지킴이 앱에 보류로(판정 전이면 "새 사진", 판정이 끝났으면 결과 제출 개선내역에서 다시 고름). 취소하면 되돌린다 (2026-10-30)
+      const was = it.st; delete it.st;
+      it.log.push({ t: 'fix', at: '9/17', tm: hm(s.clock), note, photo: d.photos.length > 0, n: d.photos.length, ...(was ? { st: was } : {}) });
       if (!s.visits[FID]) s.visits[FID] = null;
       DB.log(`박대표 고쳤어요 · ${it.text}`);
     });
@@ -227,7 +231,7 @@ const ACTS = {
   unfix({ ins, id }) {
     DB.act((s) => {
       const it = s.inspections.find((i) => i.id === ins).items.find((x) => x.id === id);
-      if (itemState(it) === 'claimed') { const l = it.log.pop(); if (l.n) it.after = (it.after || []).slice(0, -l.n); }  // 그때 올린 사진도 뺀다
+      if (itemState(it) === 'claimed') { const l = it.log.pop(); if (l.n) it.after = (it.after || []).slice(0, -l.n); if (l.st) it.st = l.st; }  // 그때 올린 사진도 뺀다
       DB.log(`박대표 고쳤어요 표시 취소 · ${it.text}`);
     });
     toast('취소했어요 · 지킴이 판정 목록에서 빠졌어요');

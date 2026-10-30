@@ -23,10 +23,12 @@ const ICONS = {
   expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
   calendar: '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',
+  calendarPlus: '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4M12 12.5v5M9.5 15h5"/>',  // 기업 보기 캘린더 추가 (2026-10-29)
   camera: '<path d="M4 8h3.5l1.5-2.5h6L16.5 8H20v11H4z"/><circle cx="12" cy="13.2" r="3.3"/>',
   clipboard: '<rect x="5" y="4.5" width="14" height="16" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8.5 10h7M8.5 13.5h7M8.5 17h4"/>',
   folder: '<path d="M3.5 6.5a1 1 0 0 1 1-1h5l2 2h8a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M8 13h8"/>',
   factory: '<path d="M3 20V10l5 3V10l5 3V10l5 3V4h3v16z"/><path d="M7 16.5h2M12 16.5h2"/>',
+  excl: '<path d="M12 5.5v8.5"/><circle cx="12" cy="18.2" r=".6" fill="currentColor"/>',  // 주의 — 노란 원 안 느낌표만 (2026-10-30, 경고 세모와 나눔)
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".5" fill="currentColor"/>',
   sparkle: '<path d="M12 3.5c.6 3.8 2.3 5.6 6 6.3-3.7.7-5.4 2.5-6 6.3-.6-3.8-2.3-5.6-6-6.3 3.7-.7 5.4-2.5 6-6.3z"/><path d="M18.5 15.5c.2 1.4.8 2 2 2.3-1.2.3-1.8.9-2 2.3-.2-1.4-.8-2-2-2.3 1.2-.3 1.8-.9 2-2.3z"/>',
   flag: '<path d="M5 21V4"/><path d="M5 4.5h11l-2 3.5 2 3.5H5"/>',

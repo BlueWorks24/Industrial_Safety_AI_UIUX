@@ -31,9 +31,7 @@ function tasks(s) {
 const topIcons = () => { const n = notiUnseen(DB.s);
   return `<span class="gtopi"><button class="gti" data-act="search" aria-label="공장 찾기">${I('search', 23)}</button>`
     + `<button class="gti" data-act="noti" aria-label="알림${n ? ` 새 소식 ${n}개` : ''}">${I('bell', 23)}${n ? `<em>${n}</em>` : ''}</button></span>`; };
-// 점검 중 머리 오른쪽은 찾기 · 알림 대신 [임시저장] (2026-10-27 사용자 지시 — 시안 A, 단추 5, 누른 뒤 바).
-// 적는 대로 이미 저장되니 단추는 "저장됐다"를 보여 주는 일 — 누르면 그 자리에서 초록 ✓ 저장됨(낸 뒤 그림을 작게)으로 2초, 다시 돌아온다
-const tmpBtn = () => `<button class="gtmp" data-act="tmpSave">${I('save', 17)}임시저장</button>`;
+// 점검 중 머리 오른쪽은 비운다 — [임시저장](2026-10-27 사용자 지시, 찾기 · 알림 대신)을 걷었다 (2026-10-30 사용자 지시). 적는 대로 이미 저장된다
 const gband = (title, back, end) => `<div class="head">${back != null ? `<button class="back" data-go="${back}" aria-label="뒤로">${I('back', 22)}</button>` : ''}`
   + `<button class="hm hipa" data-go="" aria-label="홈"><img src="hipa-logo.svg" alt="HIPA"></button><span class="crumb">${title}</span><span class="end">${end}</span></div>`;
 const head = (title, go = '', end = topIcons()) => `<div class="apptop">${gband(title, go, end)}</div>`;
@@ -144,8 +142,27 @@ function fcard(s, x) {
 // 판정 · 시정 탭을 재점검 하나로 합치고 안을 "판정 필요 · 시정 중"으로 나눴다 (2026-10-19 사용자 지시). 센서 경보 탭은 같은 날 뺌.
 // 2026-10-26 사용자 지시로 재점검 탭을 "개선 관리"로 바꾸고(초안) 맨 앞에 "보낼 것"(지적을 정리해 공장에 보내기 전)을 더했다
 // 같은 날 저녁 사용자 지시로 개선완료 → 제출할 것 (판정 뒤 개선을 위한 조언을 적어 제출하는 마지막 단계. 끝난 점검은 홈 점검 결과에서 본다)
-const RSUB = [['send', '보낼 것'], ['fix', '시정 중'], ['judge', '판정 필요'], ['sub', '제출할 것']];
-const TD = [['all', '전체'], ['visit', '점검'], ['rck', '개선 관리']];
+// 2026-10-29 사용자 지시로 개선 관리 안 탭(보낼 것 · 시정 중 · 판정 필요 · 제출할 것)을 다 걷었다 — 개선 관리는 시정 중인 점검 카드 한 목록 (todoScreen)
+// 카드 차례는 기업등록 · 점검하기 / 개선 관리 · 점검 결과 (2026-10-29 사용자 지시 — 전엔 점검하기 · 개선 관리 / 기업등록 · 점검 결과)
+const TD = [['all', '전체'], ['visit', '점검'], ['rck', '개선 관리'], ['sub', '결과 제출']];
+// 점검하기는 우리 조 공장 전부 + 위 거르기 줄 (2026-10-29 사용자 지시). [열쇠, 이름, 맞나]
+// 개선 관리는 시정 중인 공장만, 결과 제출은 제출할 것만 (2026-10-30 사용자 지시 — 10-29에 셋 다 우리 조 공장 전부로 했던 것을 되돌림).
+// 개선 관리 거르기에서 "시정 중"은 전체와 같아져 뺐고, 결과 제출은 거르기 줄이 없다
+// 공장이 고친 사진을 보냈는데 아직 승인 · 반려 안 한 것
+const rckNew = (ins) => toFix(ins).filter((it) => rckFix(it) && kzJd(it) === 'ing').length;
+const TDF = {
+  // 이름은 짧게 (2026-10-30 사용자 지시 — 전엔 방문일 정함 · 방문일 없음 · 아직 안 감)
+  // 점검하기는 [전체]를 뺐다 (같은 날 사용자 지시) — 처음엔 맨 앞 [예정]
+  visit: [['date', '예정', (s, x) => !!s.visits[x.fid]], ['nodate', '미정', (s, x) => !s.visits[x.fid]], ['never', '미방문', (s, x) => !facLast(s, x.fid)]],
+  // 개선 관리도 같은 날 짧게 — 새 사진 → 회신(공장주 회신과 같은 말), 기한 지남 → 기한초과
+  rck: [['all', '전체'], ['photo', '회신', (s, x) => rckNew(x.ins) > 0], ['late', '기한초과', (s, x) => x.kind === 'recheck' && overdue(x.ins)]],
+};
+const teamFids = () => Object.keys(FACTORIES).filter((fid) => TEAM.areas.includes(FACTORIES[fid].area));  // 우리 조 공장 전부
+function tdAll(s, tab, J) {
+  if (tab === 'rck') return sortTasks(s, J.rck, UI.sort);
+  const fids = teamFids().filter(inAreas);
+  return sortTasks(s, fids.map((fid) => ({ fid, kind: 'visit', prev: openIssues(s, fid).length })), UI.sort);
+}
 // 공장이 고칠 것 — 보낼 때 개선완료(현장에서 바로 고침)로 둔 것은 뺀다 (2026-10-26)
 const toFix = (ins) => ins.items.filter(TRACKED).filter((it) => itemState(it) !== 'fixed' || rckFix(it));
 const rckGot = (ins) => toFix(ins).filter((it) => rckFix(it)).length;
@@ -154,14 +171,16 @@ const overdue = (ins) => daysLeft(recheckDue(ins)) < 0;
 const toJudge = (ins) => rckGot(ins) > 0 || overdue(ins);
 // 할 일을 넷으로 — 판정: 재점검 중 고친 사진이 한 장이라도 온 곳과 기한이 지난 곳. 시정: 나머지 재점검(기한을 지켜볼 곳, 판정과 안 겹침)
 function todoJobs(s, t = tasks(s)) {
-  const re = t.filter((x) => x.kind === 'recheck'), send = t.filter((x) => x.kind === 'send');
-  // 제출할 것 — 우리 조가 낸 점검 중 판정이 끝났거나 개선사항이 없어 조언을 적어 제출할 것 (2026-10-26 사용자 지시, 그 전엔 개선완료 목록)
+  const re = t.filter((x) => x.kind === 'recheck');
+  // 제출할 것 — 우리 조가 낸 점검 중 판정이 끝났거나 개선사항이 없어 조언을 적어 제출할 것 (2026-10-26 사용자 지시, 그 전엔 개선완료 목록).
+  // 2026-10-29부터 개선 관리 목록에 안 넣고 홈 결과 제출 카드 목록으로
   const sub = s.inspections.filter((i) => TEAM.members.includes(i.by) && toSub(i) && TEAM.areas.includes(FACTORIES[i.fid].area))
     .sort((a, b) => mdNum(b.date) - mdNum(a.date)).map((ins) => ({ fid: ins.fid, kind: 'sub', ins }));
-  return { all: t, visit: t.filter((x) => x.kind === 'visit'), rck: [...send, ...re, ...sub], send, judge: re.filter((x) => toJudge(x.ins)), fix: re.filter((x) => !toJudge(x.ins)), sub };
+  // 개선사항이 없던 점검(kzWait)도 개선 관리에 — 시정 중 다음에 (2026-10-30 사용자 지시)
+  const none = s.inspections.filter((i) => TEAM.members.includes(i.by) && i.kzWait && APPROVED(i) && TEAM.areas.includes(FACTORIES[i.fid].area))
+    .sort((a, b) => mdNum(b.date) - mdNum(a.date)).map((ins) => ({ fid: ins.fid, kind: 'none', ins }));
+  return { all: t, visit: t.filter((x) => x.kind === 'visit'), rck: [...re, ...none], sub };  // 개선 관리는 시정 중(판정 필요 포함)만 (2026-10-29)
 }
-// 이번 주(9/14 월 ~ 이야기 속 오늘 9/17) 우리 조가 낸 점검 수 — 홈 점검 결과 카드
-const weekDone = (s) => s.inspections.filter((i) => TEAM.members.includes(i.by) && mdNum(i.date) >= 914 && mdNum(i.date) <= 917).length;
 // 홈 찾기 — 공장 탭으로 넘기지 않고 홈 자리에서 바로 결과를 보인다 (2026-10-19 사용자 지시).
 // 글자를 넣으면 오늘 방문 · 카드 넷 자리를 결과 목록이 차지하고, 지우면 돌아온다. 우리 조 공장 전체에서 이름으로 찾는다(권역 · 기간 거르기는 안 탄다)
 function homeFind(s) {
@@ -177,10 +196,12 @@ function home(s) {
   const today = J.visit.filter((x) => (s.visits[x.fid] || '').startsWith('오늘')).sort((a, b) => whenKey(s.visits[a.fid]) - whenKey(s.visits[b.fid]));
   // 카드 아래 한 줄 안내(오늘 10:00 대성정밀 등)는 걷었다 (2026-10-19 사용자 지시) — 이름과 곳 수만
   // 카드 이름 옆 아이콘 (2026-10-19 사용자 지시) — 바탕 네모 없이 선 아이콘만
-  const HKI = { visit: 'clipboard', rck: 'checkCircle', firms: 'factory', result: 'list' };
-  // 점검 결과 칸은 할 일이 아니라 점검 결과 탭으로 간다 — 숫자도 곳 수가 아니라 이번 주 낸 점검 수
-  const card = ([k, w]) => `<button class="hkc" ${k === 'result' ? 'data-go="factories"' : k === 'firms' ? 'data-go="firms"' : 'data-act="todo"'} data-v="${k}"><b>${I(HKI[k], 22)}${w}</b>
-    <span class="hkb"><span class="hpill">${k === 'result' ? `이번 주 ${weekDone(s)}건` : k === 'firms' ? `${firmAll(s).length}곳` : `${J[k].length}곳`}</span><span class="hkgo">보기${I('chevron', 15)}</span></span></button>`;
+  const HKI = { visit: 'clipboard', rck: 'checkCircle', firms: 'factory', sub: 'send' };
+  // 점검하기 카드 곳 수는 목록 전체와 같게 우리 조 공장 수 (2026-10-30 사용자 지시 — 전엔 할 일이 있는 곳 수)
+  // 넷째 칸 점검 결과(점검 결과 탭으로, 이번 주 낸 점검 수) → 결과 제출 (2026-10-29 사용자 지시) — 개선 관리에 있던 제출할 것을 여기로.
+  // 판정을 마친(또는 개선사항이 없던) 점검 목록 → 고르면 제출 전 확인. 점검 결과 탭은 하단바에 그대로
+  const card = ([k, w]) => `<button class="hkc" ${k === 'firms' ? 'data-go="firms"' : 'data-act="todo"'} data-v="${k}"><b>${I(HKI[k], 22)}${w}</b>
+    <span class="hkb"><span class="hpill">${k === 'firms' ? `${firmAll(s).length}곳` : k === 'visit' ? `${teamFids().length}곳` : `${J[k].length}곳`}</span><span class="hkgo">보기${I('chevron', 15)}</span></span></button>`;
   const going = (fid) => s.draft && s.draft.kind === 'first' && s.draft.fid === fid;
   // 오늘 방문 한 곳 — 시간 · 공장 · 점검 시작(글자 단추 — 동그란 재생 단추가 AI스럽다, 2026-10-19 사용자), 길찾기 · 전화(2026-10-19 사용자 지시), AI 요약 두 줄.
   // 길찾기는 네이버 지도 모바일 길찾기 주소(가설 — 실제 서비스에서는 앱 연결), 좌표는 시제품의 가짜 좌표
@@ -204,12 +225,12 @@ function home(s) {
     <div id="hmain" class="hmain">${UI.hq.trim() ? homeFind(s) : `${unsentN(s) ? `<div class="warnbar"><span class="ic">${I('clock', 22)}</span><div><div class="mid">아직 안 올라간 점검 ${unsentN(s)}건</div><div class="small">전파가 잡히면 저절로 올라가요</div></div></div>` : ''}
     <div class="htd"><div class="htdh"><b>오늘 방문</b>${today.length ? `<span class="htdn">${today.length}곳</span>` : ''}<button class="hcal" data-act="calToday">${I('calendar', 15)}캘린더 ${I('chevron', 14)}</button></div>
       ${slides || '<div class="hnone">오늘 잡힌 방문이 없어요</div>'}</div>
-    <div class="hkg">${[['visit', '점검하기'], ['rck', '개선 관리'], ['firms', '기업등록'], ['result', '점검 결과']].map(card).join('')}</div>
+    <div class="hkg">${[['firms', '기업등록'], ['visit', '점검하기'], ['rck', '개선 관리'], ['sub', '결과 제출']].map(card).join('')}</div>
     <div class="proto">가상 데이터로 만든 시제품이에요</div>`}</div>
   </div></div>${UI.sheet && UI.sheet.type === 'brief' ? briefSheet(s) : ''}`;
 }
 const hpill = (t, c = '') => `<span class="hpill${c ? ' ' + c : ''}">${t}</span>`;
-// 할 일 카드 — 이름 · 지도를 누르면 공장 창, 아래 단추는 그 일(점검 시작 · 판정하기 · 공장에 다시 알리기).
+// 할 일 카드 — 이름 · 지도를 누르면 공장 창, 아래 단추는 그 일(점검 시작 · 판정하기 · 전화).
 // 단추는 홈처럼 글자로 (2026-10-19 사용자: 홈과 비슷하게 — 동그란 재생 · 화살표 단추가 AI스럽다). 오늘 갈 곳만 남색 채움, 나머지는 옅은 남색
 function todoRow(s, x, tab) {
   const f = FACTORIES[x.fid];
@@ -217,9 +238,9 @@ function todoRow(s, x, tab) {
   // 시정 기한이 있는 카드(시정 중 · 판정 필요)는 이름 줄 오른쪽에 D-n을 크게 (같은 날 사용자 시안 F — 그 전엔 회색 이름표 칸 표 시안 E).
   // 기한 칸은 채움 없는 얇은 테두리 "도장" — 머리 띠 "시정 기한", D-n, ~날짜 (같은 날 사용자 시안 E — 옅은 색 칸에 큰 D-n이 AI스러웠다). 이름을 누르면 공장 창
   const kv = (k, val, c = '') => `<div><em>${k}</em><b${c ? ` class="${c}"` : ''}>${val}</b></div>`;
-  // end — 이름 줄 오른쪽에 둘 것(점검 카드의 일정 변경, 2026-10-26 사용자 지시)
-  const card = (rows, btns, due, end = '') => { const n = due && daysLeft(due);
-    return `<div class="fcard tdc"><div class="fbody"><div class="tdhd"><div><div class="fnm"><button class="fname" data-go="pre/${x.fid}">${f.name}</button></div>
+  // end — 이름 줄 오른쪽에 둘 것(점검 카드의 일정 변경, 2026-10-26 사용자 지시). mark — 이름 바로 옆 표시(개선 관리 새 사진, 2026-10-29)
+  const card = (rows, btns, due, end = '', mark = '') => { const n = due && daysLeft(due);
+    return `<div class="fcard tdc"><div class="fbody"><div class="tdhd"><div><div class="fnm"><button class="fname" data-go="pre/${x.fid}">${f.name}</button>${mark}</div>
       <div class="tdloc"><span>${I('pin', 16)}화성시 ${f.dong}</span><span>${kmTo(f.ll).toFixed(1)}km</span></div></div>
       ${due ? `<div class="tddue${n < 0 ? ' warn' : ''}"><small>시정 기한</small><b>${dWord(n)}</b><em>~${due}</em></div>` : end}</div><div class="tdgt">${rows}</div>${btns}</div></div>`; };
   const go = I('chevron', 16);
@@ -236,23 +257,24 @@ function todoRow(s, x, tab) {
       + (fs.length ? kv('개선완료', `${ok}건`) + kv('미개선', `${fs.length - ok}건`, fs.length - ok ? 'warn' : '') : kv('개선사항', '없음', 'soft')),
       `<button class="fbtn tdgo" data-go="sub/${x.ins.id}">조언 쓰고 제출 ${go}</button>`);
   }
-  if (x.kind === 'recheck' && toJudge(x.ins)) {
-    // 판정 — 사진은 카드에 넣지 않는다(같은 날 사용자 지시). 판정하기를 누르면 재점검 화면에서 사진을 본다
-    const bad = toFix(x.ins), got = bad.filter((it) => rckFix(it)), due = recheckDue(x.ins);
-    const last = got.map((it) => rckFix(it).at).sort((a, b) => mdNum(b) - mdNum(a))[0];
-    return card(kv('점검일', `${x.ins.date} ${esc(x.ins.by)}`)
-      + kv('고친 사진', `${bad.length}개 중 ${got.length}개 받음`) + (last ? kv('받은 날', last) : ''),
-      `<button class="fbtn tdgo" data-go="send/${x.ins.id}">판정하기 ${go}</button>`, due);
-  }
+  // 개선사항이 없던 점검 — 시정 기한 없이 점검일 · 개선사항 없음. 안에서 [저장]하면 결과 제출로 (2026-10-30 사용자 지시)
+  if (x.kind === 'none') return card(kv('점검일', `${x.ins.date} ${esc(x.ins.by)}`) + kv('개선사항', '없음', 'soft'),
+    `<button class="fbtn tdgo" data-go="send/${x.ins.id}">개선사항 보기 ${go}</button>`);
   if (x.kind === 'recheck') {
     // 시정 — 공장이 고친 사진을 올리길 기다리는 곳 (2026-10-19 사용자 지시 시안 A, 지적 항목 목록은 빼고).
-    // 공장 알림은 점검을 낸 날 저절로 가고, "공장에 다시 알리기"로 또 보낼 수 있다(가설 — 공장 웹 · 문자로 가는 알림)
+    // 공장에 다시 알리기는 걷었다 (2026-10-28 사용자 지시 — 따로 기능이 필요 없고 전화로 하면 된다). 그와 함께 "공장 알림 … 보냄" 줄도 뺐다
+    // 2026-10-29 사용자 지시로 판정 필요 카드(고친 사진 n개 중 m개 받음 · 받은 날 · 판정하기)와 합쳤다 — 공장이 개선사항을 하나씩 고쳐 올리니
+    // 지킴이도 하나씩 보고, 그 결과를 목록에서 바로 본다. 지적 수 옆에 승인 · 반려 · 보류 꼬리표(0이면 회색).
+    // 안쪽 판정 화면은 나중에 고치므로 그때까지 개선여부로 센다 — 개선완료 = 승인, 미개선 = 반려, 나머지 = 보류 (가설 — 보류의 뜻은 아직 안 정함)
+    // 공장이 고친 사진을 보냈는데 아직 승인 · 반려를 안 한 건은 이름 옆 "새 사진 n" (같은 날 사용자 지시 — 탭을 합쳐 사진이 온 곳이 따로 안 보이게 되어서)
     const bad = toFix(x.ins), due = recheckDue(x.ins), tel = firmOf(s, x.fid).tel;
+    const n = (v) => bad.filter((it) => kzJd(it) === v).length;
+    const cnt = [['ok', '승인', 's-ok'], ['no', '반려', 'bad'], ['ing', '보류', '']].map(([k, w, c]) => tg(`${w} ${n(k)}`, n(k) ? c : '')).join('');
+    const fresh = rckNew(x.ins);
     return card(kv('점검일', `${x.ins.date} ${esc(x.ins.by)}`)
-      + kv('지적', `${bad.length}건`) + kv('공장 알림', `${x.ins.nudged || x.ins.date} 보냄`),
-      `<div class="fbtns tdsub"><button class="fbtn line fsub" data-act="nudge" data-id="${x.ins.id}">${I('bell', 15)} 다시 알리기</button>
-      <a class="fbtn line fsub" href="tel:${tel}" aria-label="${f.name}에 전화 ${tel}">${I('phone', 15)} 전화</a></div>
-      <button class="fbtn tdgo" data-go="send/${x.ins.id}">개선사항 보기 ${go}</button>`, due);
+      + kv('개선사항', `${bad.length}건 <span class="tdjd">${cnt}</span>`),  // 이름표 지적 → 개선사항 (2026-10-29 사용자 지시)
+      `<div class="fbtns tdsub"><a class="fbtn line fsub" href="tel:${tel}" aria-label="${f.name}에 전화 ${tel}">${I('phone', 15)} 전화</a></div>
+      <button class="fbtn tdgo" data-go="send/${x.ins.id}">개선사항 보기 ${go}</button>`, due, '', fresh ? tg(`${I('image', 14)}새 사진 ${fresh}`, 'now tdmk') : '');
   }
   // 점검 — 방문 · 지난 점검(날짜와 결과) · 지난번 미흡 · 센서 이상 · 업종과 인원
   const v = s.visits[x.fid], going = s.draft && s.draft.kind === 'first' && s.draft.fid === x.fid;
@@ -263,7 +285,7 @@ function todoRow(s, x, tab) {
     + (hist.length ? kv('센서 이상', `최근 ${hist.length}건`) : '')
     + kv('업종', `${esc(f.type)} ${f.workers}명`);
   // 일정 변경은 이름 줄 오른쪽 위, 점검 시작 · 이어서 점검은 아래 카드 폭 긴 단추 (2026-10-26 사용자 지시 — 둘이 나란히 아래에 있었다).
-  // 개선 관리 카드도 같은 날 같은 꼴 — 주 단추는 맨 아래 긴 단추, 시정 중의 다시 알리기 · 전화는 그 위 반반
+  // 개선 관리 카드도 같은 날 같은 꼴 — 주 단추는 맨 아래 긴 단추, 시정 중의 전화는 그 위
   return card(rows, `<button class="fbtn tdgo" data-act="newDraft" data-fid="${x.fid}">${going ? '이어서 점검' : '점검 시작'} ${go}</button>`, null,
     `<button class="fbtn line fsub tdsch" data-act="date" data-fid="${x.fid}">${I('calendar', 15)} ${v ? '일정 변경' : '방문일 정하기'}</button>`);
 }
@@ -302,7 +324,10 @@ function fgMatch(x, f = UI.fgf || fgF0()) {
 // 목록은 기존 웹처럼 세 칸 표 — 기업명 · 행정구역 · 최종점검 (2026-10-26 사용자 시안 D — 카드 하나에 정보가 너무 많았다). 줄을 누르면 기업 보기
 function firmsScreen(s) {
   const all = firmAll(s), list = all.filter((x) => fgMatch(x)), shown = UI.fgMore || 10, n = fgN(UI.fgf || fgF0()), sc = UI.fgs || 'team';
-  const row = (x) => `<tr data-go="firm/${x.id}"><td>${esc(x.name)}${x.isNew ? '<span class="fgnw">새로</span>' : ''}</td><td>${x.dong}</td><td${x.last ? '' : ' class="none"'}>${x.last || '없음'}</td></tr>`;
+  // 최종점검 칸은 가장 최근 일 하나 — 가장 늦은 거부가 최종점검일보다 늦으면 거부날짜 + 점검거부를 빨강으로, 아니면 최종점검일 (2026-10-30 사용자 지시)
+  const ref = (x) => ((s.refuse || {})[x.id] || []).reduce((a, g) => (!a || g.date > a.date ? g : a), null);
+  const last = (x, g = ref(x)) => (g && (!x.last || g.date > isoOf(x.last)) ? `<td class="ref">${g.date.slice(5).replace('-', '.')}<small>점검거부</small></td>` : `<td${x.last ? '' : ' class="none"'}>${x.last || '없음'}</td>`);
+  const row = (x) => `<tr data-go="firm/${x.id}"><td>${esc(x.name)}${x.isNew ? '<span class="fgnw">새로</span>' : ''}</td><td>${x.dong}</td>${last(x)}</tr>`;
   return `${sbar('지킴이')}<div class="scr gtodo"><div class="bd">
     ${head('기업등록', '')}
     ${ltitle('기업등록')}
@@ -337,10 +362,11 @@ function firmView(s, id) {
   const soft = '<span class="gfte">비어 있음</span>', v = (y, unit = '') => (y || y === 0 ? esc(y) + unit : soft);
   const r = (k, val, end = '') => `<div class="gftr"><span><em>${k}</em></span><b>${val}</b>${end}</div>`;
   const link = (href, ic, label, y) => (y ? `<a href="${href}${y}" aria-label="${label} ${esc(y)}">${I(ic, 18)}</a>` : '');
+  const refs = (s.refuse || {})[id] || [];
   const inj = x.injuries ? Object.entries(x.injuries).filter(([, n]) => n !== '').map(([y, n]) => `${y}년 ${esc(n)}건`).join('<br>') : x.injury != null ? `2025년 ${x.injury}건` : '';
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
     ${head(esc(x.name), 'firms')}
-    ${ltitle(esc(x.name))}
+    <div class="ltrow">${ltitle(esc(x.name))}<div class="ltbtns"><button class="fbtn line fsub ltref" data-act="refOpen" data-id="${id}">점검거부</button>${ours ? `<button class="fbtn line ltcal" data-act="date" data-fid="${id}" aria-label="${s.visits[id] ? '일정 변경' : '캘린더 추가'}">${I('calendarPlus', 22)}</button>` : ''}</div></div>
     <div class="gftb"><div class="gfth"><b>1. 기업정보</b>${x.isNew ? tg('새로 등록', 'now') : ''}</div>
       ${r('기업코드', v(x.code))}${r('기업명', esc(x.name))}${r('사업자등록번호', v(x.biz))}${r('대표자명', v(x.ceo))}
       ${r('회사 전화번호', v(x.tel), link('tel:', 'phone', '회사 전화', x.tel))}${r('회사 팩스번호', v(x.fax))}${r('회사 주대표 메일', v(x.mail), link('mailto:', 'send', '대표 메일', x.mail))}
@@ -349,8 +375,19 @@ function firmView(s, id) {
       ${r('상시 근로자수', v(x.workers, '명'))}${r('외국인 근로자수', v(x.foreign, '명'))}${r('소유형태', v(x.own))}${r('기업종류', v(x.kind))}
       ${r('안전담당자 성명', v(x.mgr))}${r('안전담당자 전화번호', v(x.mgrTel), link('tel:', 'phone', '담당자 전화', x.mgrTel))}${r('안전담당자 이메일', v(x.mgrMail))}
       ${r('재해건수 이력', inj || soft)}${r('등록사유', v(x.why))}${r('기업등록일자', v(x.regDate))}${r('최종점검일자', x.last ? x.last : soft)}</div>
+    ${refs.length ? `<div class="gftb"><div class="gfth"><b>점검거부 기록</b>${tg(`${refs.length}건`)}</div>
+      ${refs.slice().reverse().map((g) => r(g.date.replace(/-/g, '.'), `${esc(g.why)}<small>방문/연락 ${esc(g.who)}</small>`)).join('')}</div>` : ''}
     ${ours ? `<button class="btn ghost" data-act="facInfo" data-fid="${id}">${I('factory', 20)}공장 창 보기</button>` : `<div class="cnone">${x.why === '점검거부' ? '점검거부 기업' : '다른 조 구역'}<br>점검 목록에 없음</div>`}
-  </div></div>`;
+  </div></div>${UI.sheet && UI.sheet.type === 'ref' ? refSheet(x) : ''}${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}`;
+}
+// 점검거부 창 — 거부날짜(처음 오늘) · 거부사유 · 방문하거나 연락한 사람(처음 나 — 내 판단). 적는 글은 기업 정보 고치기 창처럼 UI.sheet.vals에 담는다
+function refSheet(x) {
+  const v = UI.sheet.vals;
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet fsheet"><div class="grip"></div><div class="mid">${esc(x.name)} 점검거부</div>
+    <label class="fform"><span class="lbl">거부날짜</span><input class="input" type="date" data-fv="date" value="${v.date}"></label>
+    <label class="fform"><span class="lbl">거부사유</span><textarea class="input" data-fv="why" placeholder="예: 대표 부재로 점검 거절">${esc(v.why)}</textarea></label>
+    <label class="fform"><span class="lbl">방문하거나 연락한 사람</span><input class="input" data-fv="who" value="${esc(v.who)}" autocomplete="off"></label>
+    <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="refSave">저장</button></div></div>`;
 }
 // 기업등록 — 기존 웹 등록 칸과 차례 그대로(1. 기업정보 한 묶음). 칸에 적는 값은 UI.fgr에 두어 다시 그려도 남는다(DB는 등록하기 때만)
 const fgR0 = () => ({ name: '', biz: '', ceo: '', tel: '', fax: '', mail: '', zip: '', road: '', addr2: '', dong: '', ksic: '', product: '', workers: '', foreign: '',
@@ -411,22 +448,33 @@ function todoScreen(s) {
   locate();
   if (UI.td === 'judge' || UI.td === 'fix') UI.td = 'rck';  // 옛 탭 이름
   const J = todoJobs(s, tasks(s).filter((x) => inAreas(x.fid))), tab = TD.some(([k]) => k === UI.td) ? UI.td : 'all';
-  const l = sortTasks(s, J[tab], UI.sort);
-  // 개선 관리 탭 안은 위아래 묶음 대신 거리순 · 일정순 같은 고르기 칸으로 보낼 것 · 판정 필요 · 시정 중을 바꿔 본다 (2026-10-19 사용자 지시, 보낼 것은 10-26)
-  const rsub = RSUB.some(([k]) => k === UI.rsub) ? UI.rsub : J.send.length ? 'send' : 'judge';
+  J.sub = J.sub.filter((x) => inAreas(x.fid)); J.rck = J.rck.filter((x) => inAreas(x.fid));
+  // 결과 제출(2026-10-29)은 권역만 거르고 점검일 최신순 그대로 — 거리순 · 일정순은 안 둔다
+  // 점검하기 · 개선 관리 · 결과 제출은 우리 조 공장 전부, 위 거르기 줄로 필요한 것만 (2026-10-29 사용자 지시). 처음엔 맨 앞 칸(개선 관리는 전체, 점검하기는 예정), 탭마다 고른 것을 기억
+  const F = TDF[tab], fk = F && F.some(([k]) => k === (UI.tdf || {})[tab]) ? UI.tdf[tab] : F ? F[0][0] : 'all';
+  const every = F ? tdAll(s, tab, J) : null, pass = (x, k) => k === 'all' || F.find(([y]) => y === k)[2](s, x);
+  const l = F ? every.filter((x) => pass(x, fk)) : tab === 'sub' ? J.sub : sortTasks(s, J[tab], UI.sort);  // 결과 제출은 점검일 최신순 그대로
+  const fbar = F ? `<div class="fst tdfst" role="group" aria-label="거르기">${F.map(([k, w]) => `<button class="${fk === k ? 'on' : ''}" aria-pressed="${fk === k}" data-act="tdf" data-v="${k}">${w}<em>${every.filter((x) => pass(x, k)).length}</em></button>`).join('')}</div>` : '';
+  // 개선 관리 안 탭(보낼 것 · 시정 중 · 판정 필요 · 제출할 것)은 걷었다 (2026-10-29 사용자 지시) — 보낼 것은 점검하기 [저장]으로 없어졌고,
+  // 시정 중 · 판정 필요는 한 카드로 합쳤고, 제출할 것은 같은 날 홈 결과 제출 카드로 옮겼다
   // 위 탭 줄(전체 · 점검 · 개선 관리)은 걷었다 (2026-10-26 사용자 지시) — 홈 카드(점검하기 · 개선 관리)로 들어온 탭 그대로 본다
   const sort = `<div class="hsort" role="group" aria-label="정렬">${SORTS.map(([k, w]) => `<button class="${UI.sort === k ? 'on' : ''}" aria-pressed="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>`;
   const grp = (w, g) => (g.length ? `<div class="hgrp">${w} ${g.length}곳</div>${g.map((x) => todoRow(s, x, tab)).join('')}` : '');
+  // 결과 제출 줄 — 간결하게 (같은 날 사용자 지시): 기업 이름, 점검일 · 점검자, 점검 결과 꼬리표. 줄을 누르면 제출 전 확인
+  const subRow = (x) => `<button class="sbrow" data-go="sub/${x.ins.id}"><span class="sbrb"><b>${FACTORIES[x.fid].name}</b>
+    <small>${x.ins.date} ${esc(x.ins.by)}${tg(x.ins.result || RESULTS[0])}${tg('제출할 것', 'now')}</small></span>${I('chevron', 18)}</button>`;
+  const title = tab === 'sub' ? '결과 제출' : '할 일';
   return `${sbar('지킴이')}<div class="scr gtodo"><div class="bd">
-    ${head('할 일', '')}
-    ${ltitle('할 일')}
-    <div class="tdtool"><button class="harea${UI.areas.length ? ' on' : ''}" data-act="areaOpen" data-v="home">${areaWord()} ${I('chevron', 14)}</button>${sort}</div>
-    ${tab === 'rck' ? `<div class="hsort rsub" role="group" aria-label="개선 관리 나누기">${RSUB.map(([k, w]) => `<button class="${rsub === k ? 'on' : ''}" aria-pressed="${rsub === k}" data-act="rsub" data-v="${k}">${w} <em>${J[k].length}</em></button>`).join('')}</div>` : ''}
+    ${head(title, '')}
+    ${ltitle(title)}
+    <div class="tdtool"><button class="harea${UI.areas.length ? ' on' : ''}" data-act="areaOpen" data-v="home">${areaWord()} ${I('chevron', 14)}</button>${tab === 'sub' ? '' : sort}</div>
+    ${fbar}
     <div class="hlist">${tab === 'visit' ? l.map((x) => todoRow(s, x, tab)).join('')
-      : tab === 'rck' ? l.filter((x) => J[rsub].includes(x)).map((x) => todoRow(s, x, tab)).join('') || `<div class="stat"><div class="mid">${RSUB.find(([k]) => k === rsub)[1]} 없음</div></div>`
+      : tab === 'sub' ? l.map(subRow).join('')
+      : tab === 'rck' ? l.map((x) => todoRow(s, x, tab)).join('')
       : grp('보낼 것', l.filter((x) => x.kind === 'send')) + grp('판정 필요', l.filter((x) => x.kind === 'recheck' && toJudge(x.ins))) + grp('시정 중', l.filter((x) => x.kind === 'recheck' && !toJudge(x.ins)))
         + grp('점검', l.filter((x) => x.kind === 'visit'))}
-      ${l.length ? '' : `<div class="stat"><div class="mid">${UI.areas.length ? '조건에 맞는 할 일이 없어요' : '할 일이 없어요'}</div></div>`}</div>
+      ${l.length ? '' : `<div class="stat"><div class="mid">${F && fk !== 'all' ? '조건에 맞는 공장이 없어요' : UI.areas.length ? '조건에 맞는 할 일이 없어요' : tab === 'sub' ? '제출할 점검이 없어요' : '할 일이 없어요'}</div></div>`}</div>
   </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
 }
 
@@ -520,7 +568,7 @@ function notis(s) {
   s.inspections.filter((i) => inRecheck(i) && TEAM.members.includes(i.by) && !s.outbox.guard.some((m) => m.data.insId === i.id)).forEach((ins) => {
     const f = FACTORIES[ins.fid], fx = toFix(ins).map(rckFix).filter(Boolean);  // 개선 관리 (2026-10-26) — 공장이 고칠 것 중 사진이 온 것, 누르면 판정 화면
     if (fx.length) { const last = fx.sort((a, b) => mdNum(b.at) - mdNum(a.at))[0];
-      l.push({ id: `fix-${ins.id}-${fx.length}`, ic: 'camera', t: `${f.name}에서 고친 사진을 보냈어요`, sub: `개선사항 ${toFix(ins).length}개 중 ${fx.length}개`, at: last.at, tm: last.tm, go: `send/${ins.id}` }); }
+      l.push({ id: `fix-${ins.id}-${fx.length}-${last.at}-${last.tm}`, ic: 'camera', t: `${f.name}에서 고친 사진을 보냈어요`, sub: `개선사항 ${toFix(ins).length}개 중 ${fx.length}개`, at: last.at, tm: last.tm, go: `send/${ins.id}` }); }
     const due = recheckDue(ins), n = daysLeft(due);
     if (n <= 3) l.push({ id: `due-${ins.id}`, ic: 'clock', tone: n < 0 ? 'warn' : '', t: n < 0 ? `${f.name} 시정 기한이 ${-n}일 지났어요` : `${f.name} 시정 기한이 ${dWord(n)}예요`, sub: `${due}까지`, at: n < 0 ? due : '9/17', go: `send/${ins.id}` });
   });
@@ -553,6 +601,8 @@ function visitDay(v) {
 }
 function calScreen(s) {
   const y = TODAY.y, m = UI.calM, t = tasks(s);
+  // 할 일에 없는 우리 조 공장도 방문일을 잡았으면 캘린더에 (2026-10-29 — 기업 보기 [캘린더 추가]로 잡은 곳. 점검 예정 꼬리표 isDue와 같은 기준)
+  Object.keys(s.visits).filter((fid) => s.visits[fid] && FACTORIES[fid] && !t.some((x) => x.fid === fid)).forEach((fid) => t.push({ fid, kind: 'visit', prev: openIssues(s, fid).length }));
   const byDay = {};
   t.forEach((x) => { const v = visitDay(s.visits[x.fid]); if (v && v.m === m) (byDay[v.d] = byDay[v.d] || []).push(x); });
   Object.values(byDay).forEach((l) => l.sort((a, b) => whenKey(s.visits[a.fid]) - whenKey(s.visits[b.fid])));
@@ -970,31 +1020,24 @@ function nvFacMount() {
   NVF.fid = UI.nvFac; NVF.full = !!UI.mapFull;
 }
 // 지난번 미흡 항목 한 줄 설명 — 언제 문제였고, 그 뒤 공장주가 무엇을 했나
-// 미흡 항목이 지나온 일 — 날짜(·시간) 순 세로 줄. 점검에서 발견 → 공장주 고쳤어요(메모) / 점검에서 안 고쳐짐 → 이번 점검에서 확인 (2026-09-22 사용자 지시)
-function prevTimeline(e) {
+// 점검 이력 타임라인 — 공장마다 하나, 간단한 것만 날짜 차례로 (2026-10-30 사용자 지시): 언제 누가 점검했나("점검완료 - 이상 없음" / "… - 개선사항 n건 발견" + 점검자),
+// 공장주가 언제 고쳤나(그날 고쳤어요를 보낸 건 수). 판정 줄 · 공장주 메모 · "아직 안 고침" · "이번 점검" 줄은 넣지 않는다.
+// 그 전엔 지난번 미흡 항목마다 카드 하나에 그 항목이 지나온 일을 적었다(2026-09-22 사용자 지시) — 같은 날 점검 줄을 끼우고 제목을 빼다 보니 카드끼리 구분이 안 되어 하나로 합침
+function facLine(s, fid) {
+  const list = facInsp(s, fid);
+  if (!list.length) return `<div class="cnone">아직 점검한 적이 없어요</div>`;
   const row = (when, what, sub = '', cls = '') => `<li class="${cls}"><span class="gtlw">${when}</span><span class="gtlx"><b>${what}</b>${sub ? `<small>${sub}</small>` : ''}</span></li>`;
-  const at = (l) => `${l.at}${l.tm ? `<i>${l.tm}</i>` : ''}`;
-  const rows = [row(e.ins.date, '점검에서 불량 발견', esc(e.ins.by))];
-  (e.it.log || []).forEach((l) => rows.push(l.t === 'fix'
-    ? row(at(l), '공장주가 고쳤다고 알림', l.note ? `"${esc(l.note)}"` : '', 'fix')
-    : row(at(l), l.result === 'fixed' ? '점검에서 고쳐짐 확인' : '점검에서 안 고쳐짐', l.reason ? esc(l.reason) : '', l.result === 'fixed' ? 'fix' : 'bad')));
-  if (!(e.it.log || []).length) rows.push(row('', '공장주가 아직 안 고침', '', 'none'));
-  rows.push(row('이번 점검', '고쳐졌는지 확인', '', 'next'));
-  return `<ol class="gtl">${rows.join('')}</ol>`;
+  const fix = {};  // 날짜마다 공장주가 고쳤어요를 보낸 건 수
+  list.forEach((i) => i.items.forEach((it) => (it.log || []).filter((l) => l.t === 'fix').forEach((l) => { fix[l.at] = (fix[l.at] || 0) + 1; })));
+  const ev = [...list.map((i) => { const n = kzList(i).length;
+      return [mdNum(i.date), 0, row(i.date, `${i.result || RESULTS[0]} - ${n ? `개선사항 ${n}건 발견` : '이상 없음'}`, esc(i.by), n ? '' : 'visit')]; }),
+    ...Object.entries(fix).map(([d, n]) => [mdNum(d), 1, row(d, `공장주가 ${n > 1 ? `${n}건 ` : ''}고쳤다고 알림`, '', 'fix')])];
+  return `<div class="q"><ol class="gtl">${ev.sort((x, y) => x[0] - y[0] || x[1] - y[1]).map((x) => x[2]).join('')}</ol></div>`;  // 같은 날이면 점검 먼저
 }
 function prevNote(e) {
   const last = (e.it.log || []).slice(-1)[0];
   const next = last ? (last.t === 'fix' ? `${last.at} 공장주 "고쳤어요"${last.note ? `<br>"${esc(last.note)}"` : ''}` : last.result === 'not' ? `${last.at} 점검에서 안 고쳐짐` : '') : '공장주가 아직 안 고침';
   return `${e.ins.date} 불량${next ? '<br>' + next : ''}`;
-}
-// 공장 창의 점검 이력 — 최근 3건을 한 줄씩, 누르면 이 공장 점검 결과 화면 (2026-09-22 사용자 지시)
-function insHist(s, fid, all) {
-  const list = facInsp(s, fid);
-  if (!list.length) return `<div><div class="lbl">점검 이력</div><div class="cnone">아직 점검한 적이 없어요</div></div>`;
-  return `<div><div class="lbl">점검 이력 ${list.length}건</div>
-    <div class="ghist">${(all ? list : list.slice(0, 3)).map((i) => { const b = i.items.filter((x) => x.answer === 'bad').length;
-      return `<button class="ghr" data-go="records/${fid}/pre"><span class="ghd">${i.date}</span><span class="ghn"><b>${i.result || RESULTS[0]}</b><small>${i.by}</small></span>${b ? tg(`불량 ${b}`, 'warn') : ''}</button>`; }).join('')}
-      <button class="ghall" data-go="records/${fid}/pre">점검 결과 전체 보기 ${I('chevron', 16)}</button></div></div>`;
 }
 // 기업 정보 — 기존 화성 웹의 기업정보 항목을 묶어 보인다 (2026-09-23 사용자 요청).
 // 회사 → 연락처 → 위치 → 업종과 인원. 전화·메일은 눌러서 바로 걸고 쓰게, 주소 아래에 지도 앱 단추
@@ -1043,9 +1086,12 @@ function paperTable(s, fid, secs) {
     const kind = CELL[k].kind, opts = Array.isArray(kind) && kind;
     if (cur === k && !opts) {
       const type = kind ? ` type="${kind === 'number' ? 'text' : kind}" inputmode="${kind === 'number' ? 'numeric' : kind}"` : '';
-      return `<div class="gftr ed"><span><em>${label}</em></span><b>${pre ? `<small>${pre}</small>` : ''}<span class="gfin"><input id="cellIn" value="${esc(UI.cell.v)}"${type} enterkeyhint="done" autocomplete="off" aria-label="${CELL[k].label}">${unit ? `<i>${unit}</i>` : ''}</span></b><button class="gftok" data-act="cellSave" aria-label="저장">${I('check', 20)}</button></div>`;
+      return `<div class="gftr ed" id="pf-${k}"><span><em>${label}</em></span><b>${pre ? `<small>${pre}</small>` : ''}<span class="gfin"><input id="cellIn" value="${esc(UI.cell.v)}"${type} enterkeyhint="done" autocomplete="off" aria-label="${CELL[k].label}">${unit ? `<i>${unit}</i>` : ''}</span></b><button class="gftok" data-act="cellSave" aria-label="저장">${I('check', 20)}</button></div>`;
     }
-    const row = `<div class="gftr${cur === k ? ' op' : ''}"><span><em>${label}</em></span><b class="gftv" data-act="cellEdit" data-k="${k}" role="button" tabindex="0"><span>${shown}</span>${I('pen', 16)}</b>${end}</div>`;
+    // 연필은 늘 줄 맨 오른쪽 — 전화 · 메일 · 지도 칸이 있는 줄은 그 칸 오른쪽에 연필 칸을 따로 둔다 (2026-10-29 사용자 지시 — 전엔 연필이 값 칸 안, 전화 칸 왼쪽)
+    // 고치기는 연필을 눌러야만 (같은 날 사용자 지시 — 전엔 값 칸 아무 데나 눌러도 고쳐졌다)
+    const row = `<div class="gftr${cur === k ? ' op' : ''}" id="pf-${k}"><span><em>${label}</em></span><b class="gftv"><span>${shown}</span>${end ? '' : `<button class="gftvpen" data-act="cellEdit" data-k="${k}" aria-label="${CELL[k].label} 고치기">${I('pen', 16)}</button>`}</b>
+      ${end ? `${end}<button class="gftpen" data-act="cellEdit" data-k="${k}" aria-label="${CELL[k].label} 고치기">${I('pen', 16)}</button>` : ''}</div>`;
     return cur === k ? row + `<div class="gfopt">${opts.map((o) => `<button class="${x[k] === o ? 'on' : ''}" data-act="cellPick" data-v="${o}" aria-pressed="${x[k] === o}">${o}</button>`).join('')}</div>` : row;
   };
   const link = (href, ic, label, y) => (y ? `<a href="${href}${y}" aria-label="${label} ${esc(y)}">${I(ic, 18)}</a>` : '');
@@ -1077,15 +1123,15 @@ function firmSheet(s) {
 }
 // 공장 창 탭 (2026-09-23 사용자 결정) — 기업 정보가 늘어 센서 기록·점검 이력이 너무 아래로 밀려서 나눴다.
 // 처음 여는 탭은 기업 정보, 차례도 기업 정보 → 점검 준비 → 기록 (같은 날 사용자 지시로 바꿈)
-const FTABS = [['info', '기업 정보'], ['prep', '점검 준비'], ['log', '기록']];
-// 공장 창과 AI 요약 창이 같이 쓰는 칸 — 센서 이상 기록, 지난번 미흡 항목
-const senBlock = (hist) => `<div class="gpv"><div class="gpvh sen">${I('bell', 18)}<b>센서 이상 기록</b><em>${hist.length}건</em></div>
-  <div class="rlist">${hist.map((a) => `<div class="vrow"><span class="gsw">${a.day}<i>${hm(a.start)}</i></span><div class="rtx"><div class="t">${esc(SIM.title(a))}</div>
-    <small>${a.acks[0] ? `울린 뒤 ${a.acks[0].at - a.start}분 만에 조치` : SIM.endWord(a)}</small></div></div>`).join('')}</div></div>`;
-const prevBlock = (q) => `<div class="gpv"><div class="gpvh">${I('alert', 18)}<b>지난번 미흡 항목</b><em>${q.length}개</em></div>
-  ${q.map((e) => `<div class="q gpvq"><div class="t">${esc(e.it.text)}</div>${prevTimeline(e)}</div>`).join('')}</div>`;
+// 탭 이름 점검 준비 → 점검 이력, 기록 → 센서 이력 (2026-10-30 사용자 지시). 점검 이력 탭: 방문 · 점검 이력 타임라인(facLine). 센서 이력 탭: 센서 이상 기록만
+const FTABS = [['info', '기업 정보'], ['prep', '점검 이력'], ['log', '센서 이력']];
+// 센서 이력 탭 — 점검 이력 탭과 같은 타임라인(카드 하나, 오래된 것부터, 머리 띠 없음) (2026-10-30 사용자 지시 — 전엔 "센서 이상 기록 n건" 띠 + 날짜 · 시각 줄 목록, 2026-09-22).
+// 줄마다 날짜 | 무슨 센서 + 울린 시각과 어떻게 끝났나
+const senLine = (hist) => (hist.length ? `<div class="q"><ol class="gtl">${[...hist].sort((a, b) => mdNum(a.day) - mdNum(b.day) || a.start - b.start).map((a) =>
+    `<li><span class="gtlw">${a.day}</span><span class="gtlx"><b>${esc(SIM.title(a))}</b><small>${hm(a.start)} 울림, ${a.acks[0] ? `${a.acks[0].at - a.start}분 만에 조치` : SIM.endWord(a)}</small></span></li>`).join('')}</ol></div>`
+  : `<div class="cnone">센서 이상 기록이 없어요</div>`);
 function pre(s, fid) {
-  const f = FACTORIES[fid], q = openIssues(s, fid);
+  const f = FACTORIES[fid];
   const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid);
   const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
   // 아래 단추 둘 — 방문일 | 점검 시작. 점검 시작은 늘 열려 있다 (2026-10-07 사용자 지시로 예약·공장주 승인을 걷음 — 불시에 가기도 한다)
@@ -1094,13 +1140,12 @@ function pre(s, fid) {
     ${head(f.name, UI.preBack[fid] || '')}
     ${ltitle(f.name)}
     ${miniMap(fid)}
-    <div class="gtabs gftabs" role="tablist">${FTABS.map(([k, w]) => { const n = k === 'prep' ? q.length : k === 'log' ? hist.length + facInsp(s, fid).length : 0;
-      return `<button class="gtab${tab === k ? ' on' : ''}" role="tab" aria-selected="${tab === k}" data-act="ftab" data-fid="${fid}" data-v="${k}">${w}${n ? `<em class="${k === 'prep' ? 'warn' : ''}">${n}</em>` : ''}</button>`; }).join('')}</div>
+    <div class="gtabs gftabs" role="tablist">${FTABS.map(([k, w]) => { const n = k === 'log' ? hist.length : 0;  // 점검 이력 탭 옆 지난번 미흡 수는 뺐다 (2026-10-30 사용자 지시)
+      return `<button class="gtab${tab === k ? ' on' : ''}" role="tab" aria-selected="${tab === k}" data-act="ftab" data-fid="${fid}" data-v="${k}">${w}${n ? `<em>${n}</em>` : ''}</button>`; }).join('')}</div>
     ${tab === 'info' ? firmInfo(s, fid) : tab === 'log' ? `
-    ${hist.length ? senBlock(hist) : `<div><div class="lbl">센서 이상 기록</div><div class="cnone">센서 이상 기록이 없어요</div></div>`}
-    ${insHist(s, fid, true)}` : `
+    ${senLine(hist)}` : `
     ${kv([['방문', s.visits[fid] || '안 정함']])}
-    ${q.length ? prevBlock(q) : `<div><div class="lbl">지난번 미흡 항목</div><div class="cnone">고칠 게 남은 항목이 없어요</div></div>`}`}
+    ${facLine(s, fid)}`}
   </div><div class="ft">
     <div class="gft2"><button class="btn ghost" data-act="date" data-fid="${fid}">${s.visits[fid] ? '일정 변경' : '방문일 정하기'}</button>
     <button class="btn" data-act="newDraft" data-fid="${fid}">${going ? '이어서 점검하기' : '점검 시작'}</button></div>
@@ -1227,7 +1272,7 @@ function meetScreen(s, st) {
     : `<div class="clist">${d.items.map((y, i) => [y, i]).filter(([y]) => y.area === 'a1').map(([y, i], j) => ckRow(d, y, i, j + 1)).join('')}</div>`;
   const last = st === MEET.length;
   return `${sbar(f.name)}<div class="scr"><div class="bd geqbd">
-    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, tmpBtn())}
+    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, '')}
     ${insTabs(d, 'meet')}
     <div class="cph"><span class="cpn">${st} / ${MEET.length}</span><b>${MEET[st - 1][0]}</b></div>
     ${body}
@@ -1270,7 +1315,7 @@ function pickScreen(s) {
   const nPrev = openIssues(s, d.fid).length, total = nBase - nOff + nAi + d.self.length;  // 지난번 미흡은 문항이 아니라 주안점 (2026-10-23)
   const answered = d.items.some((x) => x.answer && !x.auto);
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">
-    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, tmpBtn())}
+    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, '')}
     ${insTabs(d, 'ck')}
     ${nPrev ? `<div class="grp">지난번 미흡 항목 — 이번 주안점으로<span class="must">${nPrev}개</span></div>
     ${openIssues(s, d.fid).map((e) => `<div class="item"><div class="bul">!</div><div><div class="t">${esc(e.it.text)}</div><div class="why">${prevNote(e)}</div></div></div>`).join('')}` : ''}
@@ -1344,10 +1389,20 @@ function findPump() {
     UI.fT[f.id] = setTimeout(() => { delete UI.fT[f.id]; findDone(f.id); }, 2500 + (f.ai.rep % 3) * 700);
   });
 }
+// 진짜 사진(가상기기 카메라로 찍은 것 등)은 정해 둔 답이 없어 18가지 중 셋을 아무렇게나 고른다 (2026-10-28 사용자 지시 — 전에는 흉내 답 없음).
+// 사진 주소로 고르므로 같은 사진은 다시 봐도, 다른 기기에서도 같은 셋이다
+function realRisks(src) {
+  let h = 0;
+  for (const c of src) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
+  const l = [...RISKS], out = [];
+  while (out.length < 3) { h = (Math.imul(h, 1103515245) + 12345) >>> 0; out.push(l.splice(h % l.length, 1)[0]); }
+  return RISKS.filter((r) => out.includes(r));
+}
 function findDone(id) {
   const f0 = DB.s.draft && findOf(DB.s.draft, id);
   if (!f0 || !f0.ai || f0.ai.st !== 'wait' || !DB.s.net.guard) return;
-  const recs = realOf(DB.s.draft, f0.ai.rep) ? [] : photoOf(f0.ai.rep).risks, sh = UI.sheet;  // 시제품은 대표 사진마다 정해 둔 것 (PHOTOS risks, 없을 수도 있다). 진짜 사진은 흉내 답이 없다
+  const real = realOf(DB.s.draft, f0.ai.rep), sh = UI.sheet;
+  const recs = real ? realRisks(real.src) : photoOf(f0.ai.rep).risks;  // 시험 사진은 사진마다 정해 둔 것 (PHOTOS risks, 없을 수도 있다)
   // 그 건의 위험요인 창이 열려 있고 아직 안 만졌으면 창에도 넣는다
   if (!DB.s.aiDown && sh && sh.type === 'frisk' && sh.id === id && !sh.touched && !f0.own) sh.risks = [...recs];
   DB.act((s) => {
@@ -1400,6 +1455,12 @@ function ftxSave() {
     if (!o2 || v === advOf(o2)[k2]) { render(); return; }
     DB.act((s) => { const g = kzIns(s, id); if (g) g.adv = { ...advOf(g), [k2]: v }; }); return;
   }
+  if (type === 'score') {  // 평가 점수 직접 고치기 (2026-10-30) — 0~100 정수로 맞추고, 비우면 AI 점수로 되돌린다
+    const o2 = kzIns(DB.s, id), n = v === '' ? null : Math.max(0, Math.min(100, Math.round(Number(v))));
+    UI.scoreEdit = null;  // 저장하면 입력 칸을 닫는다
+    if (!o2 || Number.isNaN(n) || n === (o2.score ?? null)) { render(); return; }
+    DB.act((s) => { const g = kzIns(s, id); if (!g) return; if (n == null) delete g.score; else g.score = n; }); return;
+  }
   if (type === 'kzpre' || type === 'kzpost') {  // 개선 관리 — 낸 점검의 개선사항 (2026-10-26)
     const k2 = type === 'kzpre' ? 'memo' : 'post', o2 = kzItem(DB.s, id);
     if (!o2 || v === (o2[k2] || '')) { render(); return; }
@@ -1410,8 +1471,7 @@ function ftxSave() {
   if (!o || v === (o[key] || '')) { render(); return; }
   DB.act((s) => { const g = pick(ckDoc(s)); if (g) g[key] = v; });
 }
-document.addEventListener('input', (e) => { const k = e.target.dataset && e.target.dataset.tx; if (!k) return; if (UI.ftx && UI.ftx.k !== k) ftxSave(); UI.ftx = { k, v: e.target.value };
-  if (k.startsWith('advver:') && $('#advCode')) $('#advCode').textContent = advCode({ ...advOf(kzIns(DB.s, k.slice(7))), ver: e.target.value }); });  // 조언 앞 코드도 같이
+document.addEventListener('input', (e) => { const k = e.target.dataset && e.target.dataset.tx; if (!k) return; if (UI.ftx && UI.ftx.k !== k) ftxSave(); UI.ftx = { k, v: e.target.value }; });
 // 그 단추가 하는 일보다 먼저 저장한다 (사전 확인 표 칸과 같은 방식). 적던 칸 안을 누르면 그대로
 document.addEventListener('click', (e) => { if (!UI.ftx && !UI.ftxWait) return; const t = e.target.closest('[data-tx]'); if (!t || !UI.ftx || t.dataset.tx !== UI.ftx.k) ftxSave(); }, true);  // 판 번호 칸(.input)도 (2026-10-26 저녁)
 addEventListener('hashchange', () => { if (UI.ftx) ftxSave(); });
@@ -1429,7 +1489,7 @@ function fixScreen(s) {
   // 점선 칸은 카메라 아래 "개선사항 n 찍기" 한 줄(같은 날 사용자 지시 — 위 [사진 추가]와 달리 새 건이 생긴다는 것을 번호로)
   const shot = (more) => `<button class="gfempty${more ? ' more' : ''}" data-act="fcam"><span class="gfei">${I('camera', 34)}</span><b>${more ? `${FIND_WORD.bad} ${bad.length + 1} 찍기` : '개선할 곳을 찾으면<br>한 건씩 더해 주세요'}</b></button>`;
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:10px">
-    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, tmpBtn())}
+    ${head(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, '')}
     ${insTabs(d, 'fix')}
     ${fs.length ? `${sum}${bad.length ? `<div class="gfrs0">${bad.map(row).join('')}</div>` : ''}${shot(true)}
       ${good.length ? `<div class="gfsec">잘된 사항</div><div class="gfrs0">${good.map(row).join('')}</div>` : ''}` : shot(false)}
@@ -1710,7 +1770,7 @@ function checkList(s) {
   const n = (v) => vis.filter((x) => x.answer === v).length;
   const done = ANS_ORDER.reduce((a, v) => a + n(v), 0);
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
-  const top = `<div class="apptop">${gband(f.name + ' 점검', 'pick', tmpBtn())}
+  const top = `<div class="apptop">${gband(f.name + ' 점검', 'pick', '')}
     <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${n('bad') ? `<b class="pbad">불량 ${n('bad')}</b>` : ''}<b>${done}</b> / ${vis.length} 답함</span></div>
     <div class="prog">${ANS_ORDER.map((v) => `<i class="${ansCls(v)}" style="width:${(n(v) / vis.length) * 100}%"></i>`).join('')}</div></div></div>`;
   const tab = UI.ckTab === 'list' ? 'list' : 'prev';
@@ -1731,10 +1791,13 @@ function checkList(s) {
   // 마무리 — 점검 결과 · 시정 기한과 [점검 마치기]만 (2026-10-26 사용자 지시 — 안 본 것 · 불량 항목 목록 · 안내 상자는 뺐다.
   // 같은 날 저녁 [점검 결과 내기] → [점검 마치기]: 진짜 제출은 개선 관리 맨 끝 "제출할 것"에서, 그 전까지 체크리스트는 제출 전 확인(#/sub)에서 고친다
   // 안 본 수는 맨 위 진행 막대에, 불량 항목은 나중에 다른 탭에서). 다 안 봐도 낼 수 있다 (2026-10-14 사용자 지시)
+  // [점검 마치기] → [저장] (2026-10-29 사용자 지시) — 공장에 따로 보내지 않고 저장하면 개선사항 · 체크리스트 결과가 바로 공장에 보인다.
+  // [저장] → [완료] (2026-10-30 사용자 지시)
+  // 적는 대로 저장되니 현장에서는 그대로 두고, 개선사항 정리 · 체크리스트를 마친 뒤 여기서 올린다 ([임시저장]은 2026-10-30 걷음)
   // 점검 결과는 고르지 않는다 — 불량이 있으면 재점검, 없으면 점검완료 (2026-10-13 사용자 결정)
   const res = findItems(d).length ? '재점검' : '점검완료';  // 현장점검 개선사항으로만 정한다 (10-26 개선 관리)
   const end = `<div class="ckend">${kv([['점검 결과', `<b>${res}</b>`], res === '재점검' && ['시정 기한', `${recheckDue({ date: '9/17' })}까지 (2주)`]])}
-    <button class="btn" data-act="submitFirst">점검 마치기</button></div>`;
+    <button class="btn" data-act="submitFirst">완료</button></div>`;
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:8px">${top}
     ${insTabs(d, 'ck')}
     ${sub}
@@ -1798,13 +1861,16 @@ const beforeArt = (it, p = 0) => (it.photos && it.photos[p] ? `<img class="rphar
    개선 후 사진을 보고 개선여부를 정한 뒤 점검 결과를 골라 저장한다(옛 판정 화면 rckScreen을 걷었다) */
 const afterArt = (it, p = 0) => `<img class="rphart rphimg" src="${it.after[p].src}" alt="" decoding="async">`;
 // 개선여부 — 종이 10번 그대로. 처음은 개선 중 (2026-10-26 사용자 지시)
-const KZ_ST = [['ok', '개선완료', 'ok'], ['ing', '개선 중', 'amid'], ['no', '미개선', 'bad'], ['etc', '기타', 'na']];
-const kzWord = (it) => KZ_ST.find(([k]) => k === (it.st || 'ing'))[1];
+// 2026-10-29 사용자 지시로 개선완료 · 개선 중 · 미개선 · 기타 → 승인 · 반려 · 보류. 값은 그대로 둬 옛 기록도 읽힌다 —
+// ok 승인(= 고쳐짐), no 반려, 나머지(처음 값 ing · 옛 기타 etc)는 보류. 보류의 뜻은 아직 안 정함(가설: 승인도 반려도 아직 안 한 것)
+const KZ_ST = [['ok', '승인', 'ok'], ['no', '반려', 'bad'], ['ing', '보류', 'na']];
+const kzJd = (it) => (it.st === 'ok' || it.st === 'no' ? it.st : 'ing');
+const kzWord = (it) => KZ_ST.find(([k]) => k === kzJd(it))[1];
 const kzIns = (s, id) => s.inspections.find((i) => i.id === id);
 const kzItem = (s, id) => { const ins = kzIns(s, UI.kzIns); return ins && ins.items.find((x) => x.id === id); };
 // 정리 화면 — 현장점검 탭과 같은 꼴: 위 요약 칸, 접힌 줄(사진 · 개선여부 · 지도유형), 누른 줄만 남색 머리로 펼친다.
 // 펼친 줄은 종이 10번 칸 그대로 — 개선 전 · 개선 후 사진을 좌우로 크게(3:4, 사용자 시안 B), 개선여부, 지도유형(유해위험요인), 개선 전 · 개선 후 내용.
-// 현장에서 바로 고친 건은 지킴이가 개선 후 사진을 찍고 개선완료로 둔다. 다 개선완료면 [공장에 전송] 대신 [개선완료로 저장] (2026-10-26 사용자 지시)
+// 현장에서 바로 고친 건은 지킴이가 개선 후 사진을 찍고 개선완료로 둔다. 다 개선완료면 [공장에 전송] 대신 [저장] (2026-10-26 사용자 지시, 2026-10-30 사용자 지시로 [개선완료로 저장] → [저장])
 // 개선사항 줄 — 위 요약 칸 + 접힌 줄 · 펼친 줄 하나. 정리 · 시정 중 · 판정 화면과 제출 전 확인 개선사항 탭(mode 'sub')이 같이 쓴다 (2026-10-26 저녁 sendScreen에서 뗌)
 function kzRows(ins, mode) {
   const fs = kzList(ins);
@@ -1820,13 +1886,13 @@ function kzRows(ins, mode) {
     return l.length ? `<span class="kzpt">${side === 'after' ? afterArt(x) : beforeArt(x)}<em class="${side}">${w}</em>${l.length > 1 ? `<b>${I('image', 14)}+${l.length - 1}</b>` : ''}</span>`
       : `<span class="kzpt wait"><span>${I('camera', 30)}${side === 'before' ? '사진 없음' : x.st === 'ok' ? '개선 후 사진 없음<br>현장에서 고쳤으면 추가' : '개선 후 사진<br>공장이 보내면 여기에'}</span></span>`; };
   const row = (x) => (x !== on ? `<button class="gfr" data-act="kzOn" data-id="${x.id}"><span class="gfrt">${thumb(x)}</span>
-      <span class="gfrb"><b>${kzName(ins, x)}</b><span class="gfrs">${mode === 'judge' && rckFix(x) && x.st !== 'ok' ? '<em class="kzw got">사진 옴</em> · ' : ''}<em class="kzw ${x.st || 'ing'}">${kzWord(x)}</em>${(x.risks || []).length ? ` · ${x.risks.map(esc).join(', ')}` : ''}</span></span>
+      <span class="gfrb"><b>${kzName(ins, x)}</b><span class="gfrs">${mode === 'judge' && itemState(x) === 'claimed' && x.st !== 'ok' ? '<em class="kzw got">사진 옴</em> · ' : ''}<em class="kzw ${kzJd(x)}">${kzWord(x)}</em>${(x.risks || []).length ? ` · ${x.risks.map(esc).join(', ')}` : ''}</span></span>
       <span class="gfrc">${I('camera', 14)}${(x.photos || []).length + (x.after || []).length}</span></button>`
     : `<section class="gfr on"><div class="gfrh"><b>${kzName(ins, x)}</b><span class="gfrn">${kzWord(x)}</span></div>
       <div class="kzpair">${tile(x, 'before')}${tile(x, 'after')}</div>
       ${rckFix(x) ? kzFx(x) : ''}
       <div class="kzadd"><button class="gfpmore" data-act="kzGal" data-id="${x.id}" data-v="before">${I('image', 17)}개선 전 추가</button><button class="gfpmore" data-act="kzGal" data-id="${x.id}" data-v="after">${I('image', 17)}개선 후 추가</button></div>
-      <div class="gfrk"><div class="gfrkh"><b>개선여부</b></div><div class="cans c4 kzst">${KZ_ST.map(([k, w, c]) => `<button class="${(x.st || 'ing') === k ? 'on ' + c : ''}" data-act="kzSt" data-id="${x.id}" data-v="${k}" aria-pressed="${(x.st || 'ing') === k}">${w}</button>`).join('')}</div></div>
+      <div class="gfrk"><div class="gfrkh"><b>개선여부</b></div><div class="cans kzst">${KZ_ST.map(([k, w, c]) => `<button class="${kzJd(x) === k ? 'on ' + c : ''}" data-act="kzSt" data-id="${x.id}" data-v="${k}" aria-pressed="${kzJd(x) === k}">${w}</button>`).join('')}</div></div>
       <div class="gfrk"><div class="gfrkh"><b>지도유형 (유해위험요인)</b></div>
         <div class="gfchips">${(x.risks || []).map((r) => `<span class="gfchip"><i>${RISKS.indexOf(r) + 1}</i>${r}<button data-act="kzRiskDel" data-id="${x.id}" data-v="${r}" aria-label="${r} 빼기">${I('close', 15)}</button></span>`).join('')}
         <button class="gfchip gfplus" data-act="kzRiskOpen" data-id="${x.id}">${I('plus', 15)}추가</button></div></div>
@@ -1846,23 +1912,24 @@ function kzMiniCheck() {
 document.addEventListener('scroll', kzMiniCheck, { capture: true, passive: true });
 function sendScreen(s, id) {
   const ins = kzIns(s, id);
-  if (!ins || !(toSend(ins) || inRecheck(ins))) { R.go('todo'); return ''; }
-  if (UI.kzIns !== id) { UI.kzIns = id; UI.kzOn = null; UI.kzRes = null; }
+  if (!ins || !(toSend(ins) || inRecheck(ins) || ins.kzWait)) { R.go('todo'); return ''; }
+  if (UI.kzIns !== id) { UI.kzIns = id; UI.kzOn = null; }
   // 화면 셋 — 보낼 것(send) · 시정 중(fix) · 판정 필요(judge). 옛 기록은 체크리스트 불량이 공장에 갔다 — 그것도 같은 줄로 보인다
-  const mode = toSend(ins) ? 'send' : toJudge(ins) ? 'judge' : 'fix';  // 기한이 지나면 사진이 없어도 판정 (2026-10-26)
+  // 넷째 none — 개선사항이 없던 점검(kzWait). 시정 기한 없이 [저장]만 (2026-10-30 사용자 지시)
+  const mode = toSend(ins) ? 'send' : ins.kzWait ? 'none' : toJudge(ins) ? 'judge' : 'fix';  // 기한이 지나면 사진이 없어도 판정 (2026-10-26)
   const f = FACTORIES[ins.fid], fs = kzList(ins);
   const nOk = fs.filter((x) => x.st === 'ok').length, allOk = fs.length && nOk === fs.length;
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:10px">
-    ${head(`${f.name} ${{ send: '개선 관리', fix: '시정 중', judge: '판정' }[mode]}`, 'todo')}
+    ${head(`${f.name} ${{ send: '개선 관리', none: '개선 관리', fix: '시정 중', judge: '판정' }[mode]}`, 'todo')}
     ${ltitle(f.name)}
-    <div class="tdgt">${[['점검일', `${ins.date} ${ins.by === ME ? `${ins.by} (나)` : esc(ins.by)}`], mode !== 'send' && ['보낸 날', ins.toFac || ins.date],  // "공장에 보냄" → 보낸 날 (2026-10-26 사용자 지시)
-      // 시정 기한 — 알약 대신 글자 (같은 날 사용자: AI스럽다). 남은 날은 남색, 지나면 빨강
-      ['시정 기한', mode === 'send' ? (allOk ? '없음 (모두 개선완료)' : '보낸 날부터 2주') : `~${recheckDue(ins)}<span class="kzdl${daysLeft(recheckDue(ins)) < 0 ? ' warn' : ''}">${dWord(daysLeft(recheckDue(ins)))}</span>`]]
-      .filter(Boolean).map(([k, v]) => `<div><em>${k}</em><b>${v}</b></div>`).join('')}</div>
-    ${kzRows(ins, mode)}
-    ${mode === 'judge' ? `<div class="gfrk kzres"><div class="gfrkh"><b>점검 결과</b></div><div class="seg">${FINAL_RESULTS.map((r) => `<button class="${UI.kzRes === r ? 'on' : ''}" data-act="kzRes" data-v="${r}">${r}</button>`).join('')}</div></div>` : ''}
-  </div><div class="ft">${mode === 'judge' ? `<button class="btn${UI.kzRes ? '' : ' glocked'}" data-act="kzJudge" data-id="${id}">판정 저장</button>`
-    : `<button class="btn" data-act="sendFac" data-id="${id}">${allOk ? '개선완료로 저장' : mode === 'fix' ? '저장' : '공장에 전송'}</button>`}</div></div>
+    <div class="tdgt">${[['점검일', `${ins.date} ${ins.by === ME ? `${ins.by} (나)` : esc(ins.by)}`], mode !== 'send' && mode !== 'none' && ['보낸 날', ins.toFac || ins.date],  // "공장에 보냄" → 보낸 날 (2026-10-26 사용자 지시)
+      // 시정 기한 — 알약 대신 글자 (같은 날 사용자: AI스럽다). 남은 날은 남색, 지나면 빨강.
+      // 날짜는 왼쪽, D-n은 줄 오른쪽 끝에 따로 (2026-10-29 사용자 지시 — 전엔 날짜 바로 옆)
+      ['시정 기한', mode === 'none' ? '없음 (개선사항 없음)' : mode === 'send' ? (allOk ? '없음 (모두 개선완료)' : '보낸 날부터 2주') : `<span>~${recheckDue(ins)}</span><span class="kzdl${daysLeft(recheckDue(ins)) < 0 ? ' warn' : ''}">${dWord(daysLeft(recheckDue(ins)))}</span>`, mode !== 'send' && mode !== 'none' && 'kzdue']]
+      .filter(Boolean).map(([k, v, c]) => `<div><em>${k}</em><b${c ? ` class="${c}"` : ''}>${v}</b></div>`).join('')}</div>
+    ${fs.length ? kzRows(ins, mode) : `<div class="cknone">${I('checkCircle', 30)}<b>개선사항 없음</b><span>현장점검에서 찍은 개선사항이 없던 점검</span></div>`}
+  </div><div class="ft">${mode === 'judge' ? `<button class="btn" data-act="kzJudge" data-id="${id}">판정 저장</button>`
+    : `<button class="btn" data-act="sendFac" data-id="${id}">${allOk || mode === 'fix' || mode === 'none' ? '저장' : '공장에 전송'}</button>`}</div></div>
   ${UI.sheet && UI.sheet.type === 'kzrisk' ? kzRiskSheet(s) : ''}`;
 }
 // 공장주 회신 — 공장이 [고쳤어요]로 보낸 날 · 고친 내용 · 사진 수. 한 줄로 이어 쓰지 않고 접어 두었다가 누르면 표로 펼친다 (2026-10-26 사용자 지시).
@@ -1898,29 +1965,69 @@ function kzPut(k, p) {
 const ADV_CLS = ['일반', 'WOW', 'BOB'];
 const advOf = (ins) => ({ cls: '일반', ver: '', text: '', ...(ins.adv || {}) });  // 기업 구분은 일반이 기본 (내 판단 — 대부분 일반)
 const advCode = (a) => [a.cls, a.ver].filter(Boolean).join(' ');
-const SUB_TABS = [['meet', '사전점검'], ['ck', '분야별 안전점검'], ['kz', '개선사항'], ['end', '제출']];
-// 제출 전 확인 줄 — [맞나, 글, 고치러 갈 탭]
-function subCheck(ins) {
-  const ck = ins.items.filter((x) => x.src !== 'find' && !x.ref), a = advOf(ins);
-  const none = ck.filter((x) => !x.answer).length;
-  // 체크리스트 불량 수와 개선사항 수는 맞추지 않는다 — 체크리스트에 없는 개선사항도 있어 둘은 따로다 (2026-10-27 사용자 지시)
-  return [[!none, none ? `답 없는 문항 ${none}개` : '답 없는 문항 없음', 'ck'],
-    [!!a.text.trim(), a.text.trim() ? '개선을 위한 조언 씀' : '개선을 위한 조언 안 씀', '']];
+// 위험도 등급 — 조언 카드 밑(2026-10-30부터 그 사이에 기업 구분 카드), 상 · 중 · 하 하나 (2026-10-29 사용자 지시). 지킴이와 운영자만 보고 공장주 웹에는 안 그린다.
+// → 2026-10-30 사용자 지시로 평가 점수 0~100(높을수록 위험). AI가 여러 근거로 내고 지킴이가 직접 고칠 수 있다(ins.score — 고치기 전엔 없음, 제출할 때 AI 점수로 채움).
+// 실제 서비스에서는 AI가 낸다. 시제품은 이 점검의 기록으로 규칙대로 지어 보인다 — 근거와 무게는 가설(아직 안 정함). 옛 기록의 grade(상 · 중 · 하)는 그대로 읽힌다
+function aiScore(s, ins) {
+  const fx = firmOf(s, ins.fid), shown = ckShown(s, ins), seen = (x) => x.area === 'a1' || shown(x);
+  const bad = ins.items.filter((x) => x.answer === 'bad' && seen(x)), mid = ins.items.filter((x) => x.answer === 'mid' && seen(x));
+  const left = kzList(ins).filter((it) => itemState(it) !== 'fixed'), chem = (fx.chem || []).filter((c) => c !== CHEM[3]);
+  const kit = fx.kit || [], al = s.alarms.filter((a) => alarmFid(a) === ins.fid);
+  const areas = [...new Set(bad.map((x) => (CHECKLIST.areas.find((a) => a.key === x.area) || {}).name).filter(Boolean))];
+  const risks = [...new Set(left.flatMap((it) => it.risks || []))];
+  // [점수, 근거 글] — 0점인 것은 뺀다
+  const why = [[Math.min(bad.length * 8, 32), `체크리스트 불량 ${bad.length}문항${areas.length ? ` (${areas.join(', ')})` : ''}`],
+    [Math.min(left.length * 10, 30), `안 고쳐진 개선사항 ${left.length}건${risks.length ? ` (${risks.join(', ')})` : ''}`],
+    [chem.some((c) => c.startsWith('유해화학물질')) ? 12 : chem.length ? 5 : 0, `위험물질 ${chem.join(', ')}`],
+    [Math.min(al.length * 4, 12), `최근 센서 이상 ${al.length}건`],
+    [Math.min(kit.length * 2, 10), `유해위험기구 ${kit.length}종 보유`],
+    [Math.min(mid.length * 2, 10), `체크리스트 보통 ${mid.length}문항`]].filter(([p]) => p > 0).sort((a, b) => b[0] - a[0]);
+  const score = Math.min(100, 5 + why.reduce((t, [p]) => t + p, 0)), top = why.length && why[0][1].replace(/ \(.*\)$/, '');
+  const c = top && top.charCodeAt(top.length - 1), ga = c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가';  // 받침 따라 이 / 가
+  // 설명 글 — 점수대 한 마디 + 가장 큰 근거 (AI가 쓰는 글 흉내)
+  const say = !top ? '큰 위험 근거가 없어요.' : `${score >= 60 ? '위험 근거가 많아요.' : score >= 30 ? '위험 근거가 몇 가지 있어요.' : '위험 근거가 적어요.'} ${top}${ga} 가장 크게 반영됐어요.`;
+  return { score, say, why: [...why, [5, '기본']] };
 }
+// 탭 이름 사전점검 | 분야별 안전점검 | 개선사항 → 기업정보 | 점검내역 | 개선내역 (2026-10-29 사용자 지시, 안 화면은 그대로)
+const SUB_TABS = [['meet', '기업정보'], ['ck', '점검내역'], ['kz', '개선내역'], ['end', '제출']];
+// 제출 전 확인 줄 — [맞나, 글, 고치러 갈 탭]
+// 체크리스트는 점검 마칠 때는 비워 둘 수 있지만 제출 전에는 다 채운다 (2026-10-28 사용자 지시 — 전에는 답 없는 문항이 있어도 제출됐다).
+// 세는 것은 화면에 보이는 문항(01은 사전점검 탭, 02~05는 분야별 안전점검 탭) — 고르지 않은 기구 문항(auto 해당 없음)은 이미 답이 있다.
+// 보유현황을 안 골랐으면 05 기구 문항이 감춰져 답할 수 없으니 그것부터 고르게 한다
+function subCheck(ins) {
+  const s = DB.s, shown = ckShown(s, ins), a = advOf(ins), fx = firmOf(s, ins.fid), noKit = !fx.kit, noChem = !(fx.chem || []).length;
+  const none = ins.items.filter((x) => !x.answer && (x.area === 'a1' || shown(x)));
+  // 체크리스트 불량 수와 개선사항 수는 맞추지 않는다 — 체크리스트에 없는 개선사항도 있어 둘은 따로다 (2026-10-27 사용자 지시)
+  // 넷째 칸은 그 빈 곳의 요소 id — 누르면 탭만 열지 않고 그 칸까지 내려 준다 (2026-10-30 사용자 지시). 답 없는 문항은 탭 차례대로 맨 앞 것
+  const gap = none.find((x) => x.area === 'a1') || none[0];
+  // 다섯째 칸 true = 주의(노랑) — 비어 있어도 제출은 된다. 나머지 빨간 줄은 경고 — 채워야 제출 (2026-10-30 사용자 지시)
+  // 기업정보 빈 칸 = 1~3절에서 연필로 고칠 수 있는 칸(CELL) 가운데 빈 것. 7. 위험물질은 6. 보유현황처럼 해당없음까지 골라야 제출
+  // 기타정보(etc)는 비어 있어도 주의를 안 띄운다 (같은 날 사용자 지시)
+  const blank = Object.keys(CELL).filter((k) => k !== 'etc' && (fx[k] == null || fx[k] === ''));
+  // 줄 글은 짧게, 개수는 안 알린다 (같은 날 사용자 지시 — 전엔 "기업정보 빈 칸 6개" "유해위험기구 보유현황 안 고름")
+  return [...(blank.length ? [[false, '기업정보 빈 칸 있음', 'meet', 'pf-' + blank[0], true]] : []),
+    ...(noKit ? [[false, '유해위험기구 안 고름', 'meet', 'sbj-kit']] : []),
+    ...(noChem ? [[false, '위험물질 안 고름', 'meet', 'sbj-chem']] : []),
+    // "모든 문항 답함"은 빈 칸 · 안 고른 것이 하나도 없을 때만 (같은 날 사용자 지시 — 빈 칸이 있는데 초록 줄이 섞여 헷갈렸다)
+    ...(none.length ? [[false, '답 없는 문항 있음', gap.area !== 'a1' ? 'ck' : 'meet', 'ev-' + gap.id]] : blank.length || noKit || noChem ? [] : [[true, '모든 문항 답함']]),
+    [!!a.text.trim(), a.text.trim() ? '조언 씀' : '조언 안 씀', '', 'advTx']];
+}
+const subGap = (id, t, el) => { UI.jump = el; if (R.path()[2] !== t) R.go(`sub/${id}/${t}`); else render(); };
 // 개선사항 옛 기록(체크리스트 불량이 공장에 간 것)은 체크리스트에서 답을 못 바꾼다 — 개선사항 탭의 개선여부로
 const ckLock = (n) => { const d = ckDoc(); if (!d || d === DB.s.draft) return false; const it = d.items[n];
-  if (it && kzList(d).includes(it)) { toast('개선사항 탭에서 개선여부로 정해요'); return true; } return false; };
+  if (it && kzList(d).includes(it)) { toast('개선내역 탭에서 개선여부로 정해요'); return true; } return false; };
 function subScreen(s, id, tab) {
   const ins = kzIns(s, id);
   if (!ins || !toSub(ins)) { R.go('todo'); return ''; }
-  if (UI.kzIns !== id) { UI.kzIns = id; UI.kzOn = null; UI.kzRes = null; }
+  if (UI.kzIns !== id) { UI.kzIns = id; UI.kzOn = null; }
+  UI.td = 'sub';  // 뒤로(할 일 화면)는 결과 제출 목록 (2026-10-29)
   tab = SUB_TABS.some(([k]) => k === tab) ? tab : 'meet';
-  const f = FACTORIES[ins.fid], x = firmOf(s, ins.fid), fs = kzList(ins), a = advOf(ins), can = !!a.text.trim();
+  const f = FACTORIES[ins.fid], x = firmOf(s, ins.fid), fs = kzList(ins), a = advOf(ins), can = subCheck(ins).every(([y, , , , soft]) => y || soft);
   const tabs = `<div class="gtabs gins sbtabs" role="tablist">${SUB_TABS.map(([k, w]) => `<button class="gtab${tab === k ? ' on' : ''}" role="tab" aria-selected="${tab === k}" data-go="sub/${id}/${k}">${w}</button>`).join('')}</div>`;
-  const cph = (t) => `<div class="cph"><b>${t}</b></div>`;
+  const cph = (t, k) => `<div class="cph"${k ? ` id="sbj-${k}"` : ''}><b>${t}</b></div>`;
   let body;
   // 사전점검 — 점검 중 다섯 단계(종이 1~7번 · 01)를 한 쪽에 차례로
-  if (tab === 'meet') body = paperTable(s, ins.fid, [1, 2, 3, 4, 5]) + cph('6. 유해위험기구 보유현황') + kitPicker(x) + cph('7. 위험물질/유해화학물질 취급여부') + chemPicker(x)
+  if (tab === 'meet') body = paperTable(s, ins.fid, [1, 2, 3, 4, 5]) + cph('6. 유해위험기구 보유현황', 'kit') + kitPicker(x) + cph('7. 위험물질/유해화학물질 취급여부', 'chem') + chemPicker(x)
     + cph('01 산업안전 일반') + `<div class="clist">${ins.items.map((y, i) => [y, i]).filter(([y]) => y.area === 'a1').map(([y, i], j) => ckRow(ins, y, i, j + 1)).join('')}</div>`;
   // 분야별 안전점검 — 점검 중 체크리스트 탭과 같은 줄(답 넷 · 평가 내용 · 점검 포인트), 위에 답 수
   else if (tab === 'ck') { const shown = ckShown(s, ins), vis = ins.items.filter(shown), n = (v) => vis.filter((y) => y.answer === v).length;
@@ -1928,51 +2035,46 @@ function subScreen(s, id, tab) {
   // 개선사항 — 개선 관리 정리 화면과 같은 줄(개선 전 | 개선 후 사진, 개선여부, 지도유형, 내용)
   else if (tab === 'kz') body = fs.length ? kzRows(ins, 'sub') : `<div class="cknone">${I('checkCircle', 30)}<b>개선사항 없음</b><span>현장점검에서 찍은 개선사항이 없던 점검</span></div>`;
   else {
-    const ok = fs.filter((it) => itemState(it) === 'fixed').length;
+    const ok = fs.filter((it) => itemState(it) === 'fixed').length, ai = aiScore(s, ins);
+    // 평가 점수 — 큰 숫자 / 100 + 막대(2026-10-30 사용자가 고른 시안 2). 고친 점수면 막대에 AI 점수 자리 표시. 연필을 누르면 그 줄이 입력 칸 + ✓
+    const sc = ins.score ?? ai.score, mine = ins.score != null && ins.score !== ai.score;
+    // 조언 옆 코드(일반 26ver01)는 뺐다 — 위 기업 구분 · 판 번호에서 보인다 (2026-10-30 사용자 지시)
+    // 기업 구분은 조언 카드 안에서 꺼내 위험도 등급 바로 위 카드로 (같은 날 사용자 지시). 차례: 조언(판 번호 · 조언) → 기업 구분 → 위험도 등급 → 제출 전 확인
     const top = [['점검일', `${ins.date} ${ins.by === ME ? `${ins.by} (나)` : esc(ins.by)}`], ['점검 결과', ins.result || RESULTS[0]],
       ...(fs.length ? [['개선완료', `${ok}건`], ['미개선', `${fs.length - ok}건`]] : [['개선사항', '없음']])];
     body = `<div class="tdgt">${top.map(([k, v]) => `<div><em>${k}</em><b>${v}</b></div>`).join('')}</div>
     <section class="sbc"><div class="sbh"><b>개선을 위한 조언</b></div>
-      <div class="sbl">기업 구분</div><div class="seg">${ADV_CLS.map((c) => `<button class="${a.cls === c ? 'on' : ''}" data-act="advCls" data-id="${id}" data-v="${c}" aria-pressed="${a.cls === c}">${c}</button>`).join('')}</div>
       <label class="sbver"><span class="sbl">판 번호</span><input class="input" id="advVer" data-tx="advver:${id}" value="${esc(txVal('advver:' + id, a.ver))}" placeholder="예: 26ver01" autocomplete="off"></label>
-      <div class="sbl">조언<span class="sbcode" id="advCode">${esc(advCode({ ...a, ver: txVal('advver:' + id, a.ver) }))}</span></div>
+      <div class="sbl">조언</div>
       <textarea class="gftxa" id="advTx" data-tx="advtx:${id}" placeholder="여기에 개선을 위한 조언 입력">${esc(txVal('advtx:' + id, a.text))}</textarea></section>
+    <section class="sbc"><div class="sbh"><b>기업 구분</b></div>
+      <div class="seg">${ADV_CLS.map((c) => `<button class="${a.cls === c ? 'on' : ''}" data-act="advCls" data-id="${id}" data-v="${c}" aria-pressed="${a.cls === c}">${c}</button>`).join('')}</div></section>
+    <section class="sbc"><div class="sbh"><b>평가 점수</b></div>
+      <div class="sbsc">${UI.scoreEdit === id
+        ? `<input class="input" type="number" inputmode="numeric" min="0" max="100" id="subScore" data-tx="score:${id}" value="${esc(txVal('score:' + id, String(sc)))}" aria-label="평가 점수"><span>/ 100</span><button class="sbok" data-act="scoreOk" aria-label="점수 저장">${I('check', 18)}</button>`
+        : `<b>${sc}</b><span>/ 100</span><em>${mine ? '직접 고침' : 'AI 산출'}</em><button class="sbpen" data-act="scoreEdit" data-id="${id}" aria-label="점수 고치기">${I('pen', 19)}</button>`}</div>
+      <div class="sbbar${mine ? ' sbmine' : ''}"><i style="width:${sc}%"></i>${mine ? `<u style="left:${ai.score}%"><em>AI ${ai.score}</em></u>` : ''}</div>
+      <div class="sbwhy${UI.scoreWhy ? ' on' : ''}"><button class="sbwh" data-act="scoreWhy" aria-expanded="${!!UI.scoreWhy}"><b>AI 판단 근거</b><span>${ai.why.length > 1 ? `${ai.why.length - 1}가지` : ''}</span>${I('chevron', 16)}</button>
+        <div class="kzfxw"><div><div class="sbwhyb"><p>${ai.say}</p>
+          ${ai.why.map(([p, t]) => `<div><span>${esc(t)}</span><b>+${p}점</b></div>`).join('')}</div></div></div></div></section>
     <section class="sbc"><div class="sbh"><b>제출 전 확인</b></div>
-      <div class="sbck">${subCheck(ins).map(([y, w, t]) => (!y && t ? `<button class="n" data-go="sub/${id}/${t}"><i>${I('alert', 15)}</i>${w}${I('chevron', 16)}</button>`
+      <div class="sbck">${subCheck(ins).map(([y, w, t, el, soft]) => (!y && t ? `<button class="${soft ? 'w' : 'n'}" data-act="subGap" data-id="${id}" data-t="${t}" data-el="${el}"><i>${I(soft ? 'excl' : 'alert', 15)}</i>${w}${I('chevron', 16)}</button>`
         : `<div class="${y ? 'y' : 'n'}"><i>${I(y ? 'check' : 'alert', 15)}</i>${w}</div>`)).join('')}</div></section>`;
   }
   // 쪽 맨 아래 다음 탭으로 — 끝까지 내려 본 뒤 다시 위로 올라가 탭을 누르지 않게 (같은 날 사용자 지시). 주 단추 [제출]과 헷갈리지 않게 보조 단추
+  // [제출]은 늘 보이는 아래 단추에서 마지막 제출 탭 맨 아래로만 (2026-10-30 사용자 지시)
   const ti = SUB_TABS.findIndex(([k]) => k === tab), nx = SUB_TABS[ti + 1];
-  const next = nx ? `<button class="btn ghost cnext sbnext" data-go="sub/${id}/${nx[0]}"><span class="cnl">다음: ${nx[1]}</span>${I('chevron', 18)}</button>` : '';
+  const next = nx ? `<button class="btn ghost cnext sbnext" data-go="sub/${id}/${nx[0]}"><span class="cnl">다음: ${nx[1]}</span>${I('chevron', 18)}</button>`
+    : `<button class="btn sbnext${can ? '' : ' glocked'}" data-act="subGo" data-id="${id}">${can ? '' : I('lock', 17) + ' '}제출</button>`;
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:10px">
     ${head(`${f.name} 제출 전 확인`, 'todo')}
     ${ltitle(f.name)}
     ${tabs}
     ${body}
     ${next}
-  </div><div class="ft"><button class="btn${can ? '' : ' glocked'}" data-act="subGo" data-id="${id}">${can ? '' : I('lock', 17) + ' '}제출</button></div></div>
+  </div></div>
   ${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'kit' ? kitSheet(x) : ''}${UI.sheet && UI.sheet.type === 'kitEtc' ? kitEtcSheet(x) : ''}${UI.sheet && UI.sheet.type === 'kzrisk' ? kzRiskSheet(s) : ''}${UI.shot ? shotViewer() : ''}`;
 }
-/* ---------- 낸 뒤 ---------- */
-// 낸 뒤 — AI 기다리기처럼 머리글을 달고 가운데로 모은다 (2026-09-28 사용자 지시). 막 냈을 때만 표시가 튀어나오고 체크가 그려진다
-function sent(s, kind, fid) {
-  const wait = unsentN(s), first = kind === 'first', sub = kind === 'sub', f = FACTORIES[fid], fresh = UI.sentFresh;  // sub — 개선 관리 최종 제출 (2026-10-27 사용자 지시, 같은 낸 뒤 화면)
-  const ns = first && !wait && s.inspections.find((i) => i.fid === fid && toSend(i) && TEAM.members.includes(i.by));  // 공장에 보내기 전 (10-26 개선 관리)
-  const nb = !ns && !wait && !sub && s.inspections.find((i) => i.fid === fid && toSub(i) && TEAM.members.includes(i.by));  // 제출 전 — 개선사항이 없었거나 판정이 끝남 (같은 날 저녁)
-  if (fresh) setTimeout(() => { UI.sentFresh = false; }, 50);
-  return `${sbar(s.net.guard ? '지킴이' : '📶 전파 없음')}<div class="scr"><div class="bd">${head(f ? f.name + (sub ? ' 제출' : kind === 'recheck' ? ' 재점검' : ' 점검') : '점검 결과', '')}
-    <div class="gaiw gsent${fresh ? ' fresh' : ''}" role="status">
-      <div class="gdmark${wait ? ' wait' : ''}"><i></i><span>${wait ? I('clock', 40) : I('check', 44)}</span></div>
-      <div class="center big">${wait ? '휴대폰에 저장됐어요' : sub ? '제출했어요' : '올라갔어요'}</div>
-      <div class="center small ink">${wait ? '전파가 없어요. <b>연결되면 저절로 올라가요.</b><br>앱을 지우거나 로그아웃하지 마세요.'
-        : ns ? `개선사항 ${ns.items.filter(TRACKED).length}건은 아직 공장에 안 감<br>개선 관리에서 정리해 보내 주세요`
-        : nb ? '아직 제출 전<br>개선을 위한 조언을 적어 제출해 주세요' : sub ? '점검 확정<br>공장주와 운영자가 지금 볼 수 있어요.' : '공장주와 운영자가 지금 볼 수 있어요.'}</div>
-    </div>
-  </div><div class="ft">${ns ? `<button class="btn" data-go="send/${ns.id}">개선 관리로</button><button class="btn ghost" data-go="">홈으로</button>`
-    : nb ? `<button class="btn" data-go="sub/${nb.id}">조언 쓰고 제출</button><button class="btn ghost" data-go="">홈으로</button>`
-    : sub && s.inspections.some((i) => toSub(i) && TEAM.members.includes(i.by)) ? '<button class="btn" data-go="todo">제출할 것으로</button><button class="btn ghost" data-go="">홈으로</button>' : '<button class="btn" data-go="">홈으로</button>'}</div></div>`;
-}
-
 // 불량 항목 하나의 재점검 판정 (마지막 것)
 const rckWord = (x) => { const l = [...(x.log || [])].reverse().find((y) => y.t === 'recheck'); return l ? `재점검(${l.at}): ${l.result === 'fixed' ? '고쳐짐' : '안 고쳐짐'}` : ''; };
 // 점검 기록에 붙는 재점검 줄 (2026-10-13) — 진행 중이면 기한, 끝났으면 판정한 날과 고쳐진 수
@@ -1987,7 +2089,7 @@ function recCard(i, byFac, from = '') {
   const how = Object.entries(cnt).map(([w, n]) => `${w} ${n}개`).join('<br>');
   const mine = i.by === ME;
   return `<div class="q"><div class="rowx"><span class="t">${byFac ? `${i.date} 점검` : FACTORIES[i.fid].name}</span></div>
-    ${kv([!byFac && ['점검일', i.date], byFac && ['점검자', mine ? `${i.by} (나)` : i.by], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['항목', `${i.items.length}개`], ['불량', `${bad.length}개`], how && ['처리', how], ...rckRows(i)])}
+    ${kv([!byFac && ['점검일', i.date], byFac && ['점검자', mine ? `${i.by} (나)` : i.by], ['결과', `${i.result || RESULTS[0]}${i.ver ? ' ' + tg(i.ver) : ''}`], ['항목', `${i.items.filter((x) => !x.auto).length}개`], ['불량', `${bad.length}개`], how && ['처리', how], ...rckRows(i)])}
     ${(inRecheck(i) || toSend(i)) && TEAM.members.includes(i.by) ? `<button class="btn ghost sm" data-go="send/${i.id}">개선 관리</button>` : ''}
     <button class="ginsp" data-go="insp/${i.id}${from ? '/' + from : ''}">${I('list', 16)} 점검 내용 보기 ${I('chevron', 16)}</button></div>`;
 }
@@ -1996,12 +2098,13 @@ function recCard(i, byFac, from = '') {
 function inspView(s, id, from) {
   const i = s.inspections.find((x) => x.id === id);
   if (!i) return records(s);
-  const f = FACTORIES[i.fid], n = (v) => i.items.filter((x) => x.answer === v).length;
+  // 고르지 않은 기구의 05 문항(auto 해당 없음)은 기록에만 있고 보이지 않는다 (2026-10-28 사용자 지시)
+  const f = FACTORIES[i.fid], its = i.items.filter((x) => !x.auto), n = (v) => its.filter((x) => x.answer === v).length;
   // 제출 전이면 고칠 곳(제출 전 확인)으로 가는 줄 (2026-10-26 저녁 — 그 전엔 낸 점검은 고칠 수 없었다)
   const pend = i.sub === false && TEAM.members.includes(i.by);
   // 묶음마다 흰 칸 하나에 줄로 — 왼쪽 색 띠·옅은 바탕 대신 오른쪽 답 글자와 아이콘으로 (2026-09-22 사용자: 색 띠가 너무 AI스럽다)
   const groups = [];
-  i.items.forEach((x, k) => {
+  its.forEach((x, k) => {
     const g = gkey(x) || 'base';
     if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g, l: [] });
     groups[groups.length - 1].l.push([x, k]);
@@ -2021,7 +2124,7 @@ function inspView(s, id, from) {
     }).join('')}</div>`; }).join('');
   // 머리 — 기업 이름 큰 제목 + 할 일 카드와 같은 줄 표 (같은 날 사용자 지시 — 개선 관리 화면과 같게). 시정 기한은 알약 없이 글자
   const due = inRecheck(i) && recheckDue(i), dn = due && daysLeft(due);
-  const top = [['점검일', i.date], ['점검자', i.by === ME ? `${i.by} (나)` : esc(i.by)], ['결과', `${i.result || RESULTS[0]}${i.ver ? `<span class="ivver">${i.ver}</span>` : ''}`],
+  const top = [['점검일', i.date], ['점검자', i.by === ME ? `${i.by} (나)` : esc(i.by)], ['결과', `${i.result || RESULTS[0]}${i.ver ? `<span class="ivver">${i.ver}</span>` : ''}`], i.score != null ? ['평가 점수', `${i.score}점`] : i.grade && ['위험도 등급', i.grade],  // 평가 점수 (2026-10-30, 옛 기록은 위험도 등급)
     due && ['시정 기한', `~${due}<span class="kzdl${dn < 0 ? ' warn' : ''}">${dWord(dn)}</span>`], i.final && ['재점검', `${i.final.at} ${esc(i.final.by)}<br>고쳐짐 ${i.final.total}개 중 ${i.final.fixed}개`],
     i.sub && ['제출', `${i.sub.at} ${esc(i.sub.by)}`]].filter(Boolean);
   // 제출한 개선을 위한 조언 — 코드 + 글 (같은 날 저녁)
@@ -2361,7 +2464,7 @@ function render() {
   else if (p[0] === 'rck') { R.go('send/' + p[1]); return; }  // 옛 판정 화면 — 개선 관리 한 화면으로 합쳤다 (2026-10-26)
   else if (p[0] === 'send') html = sendScreen(s, p[1]);
   else if (p[0] === 'sub') html = subScreen(s, p[1], p[2]);
-  else if (p[0] === 'sent') html = sent(s, p[1], p[2]);
+  else if (p[0] === 'sent') { R.go(''); return; }  // 옛 낸 뒤 화면 — 걷었다 (2026-10-30)
   else if (p[0] === 'weekly') html = weekly(s);
   else if (p[0] === 'noti') html = notiScreen(s);
   else if (p[0] === 'records') html = records(s, p[1], p[2]);
@@ -2397,6 +2500,11 @@ function render() {
   if (NV.st === 'ready') { nvMount(); nvFacMount(); }
   if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
   if (UI.focusQ && $('#fq')) { UI.focusQ = false; $('#fq').focus(); }
+  // 제출 전 확인의 빈 곳으로 — 탭을 바꾸면 맨 위로 올리는 것(hashchange) 뒤에 내린다. 그 칸이 그려진 뒤에만 쓴다
+  if (UI.jump && document.getElementById(UI.jump)) { const j = UI.jump; UI.jump = null;
+    // 그 칸의 머리(문항 줄 · 조언 카드 · 보유현황 제목)가 위 머리글 바로 밑에 오게
+    requestAnimationFrame(() => { const e = document.getElementById(j), el = e && (e.closest('.crow') || e.closest('.sbc') || e);
+      if (el) { el.style.scrollMarginTop = '76px'; el.scrollIntoView({ block: 'start' }); } }); }
   ltCheck(); kzMiniCheck();
   if (keep && $('#' + keep)) { const el = $('#' + keep); el.value = val; el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
 }
@@ -2436,6 +2544,16 @@ const ACTS = {
   firmSeg({ k, v }) {  // 다시 그리면 창이 새로 올라와 깜빡여서 표시만 바꾼다
     UI.sheet.vals[k] = v;
     document.querySelectorAll(`.fsheet [data-act="firmSeg"][data-k="${k}"]`).forEach((b) => { const on = b.dataset.v === v; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  },
+  // 점검거부 (2026-10-29 사용자 지시) — 기업마다 기록을 쌓는다(s.refuse). 우리 조 공장 · 다른 조 기업 · 새로 등록한 기업 모두. 점검 목록 · 등록사유는 안 바꾼다
+  refOpen({ id }) { sheet({ type: 'ref', id, vals: { date: isoOf(`${TODAY.m}/${TODAY.d}`), why: '', who: ME } }); },
+  refSave() {
+    const { id, vals } = UI.sheet, v = Object.fromEntries(Object.entries(vals).map(([a, b]) => [a, String(b).trim()]));
+    const miss = [['date', '거부날짜를 골라 주세요'], ['why', '거부사유를 적어 주세요'], ['who', '방문하거나 연락한 사람을 적어 주세요']].find(([k]) => !v[k]);
+    if (miss) { toast(miss[1]); return; }
+    const name = (firmAll(DB.s).find((y) => y.id === id) || {}).name || id;
+    DB.act((s) => { s.refuse = s.refuse || {}; (s.refuse[id] = s.refuse[id] || []).push({ ...v, at: '9/17', by: ME }); DB.log(`지킴이 점검거부 기록 · ${name}`); });
+    sheet(null); toast('점검거부를 기록했어요');
   },
   firmSave() {
     const { fid, k, vals } = UI.sheet, clean = Object.fromEntries(Object.entries(vals).map(([a, b]) => [a, String(b).trim()]));
@@ -2618,6 +2736,7 @@ const ACTS = {
   gu({ v }) { UI.gu = v || null; UI.pin = null; render(); },
   sort({ v }) { UI.sort = v; render(); },
   todo({ v }) { UI.td = v; R.go('todo'); },
+  tdf({ v }) { (UI.tdf ||= {})[UI.td] = v; render(); },  // 할 일 화면 거르기 줄 (2026-10-29)
   // 기업등록 (2026-10-26)
   fgScope({ v }) { UI.fgs = v; UI.fgMore = 10; render(); },
   fgMore() { UI.fgMore = (UI.fgMore || 10) + 10; render(); },
@@ -2642,13 +2761,7 @@ const ACTS = {
     toast(TEAM_DONGS.includes(rec.dong) && rec.why !== '점검거부' ? '등록했어요. 점검하기 목록에 올렸어요' : '등록했어요');
     R.go('firm/' + id);
   },
-  rsub({ v }) { UI.rsub = v; render(); },
   facInfo({ fid }) { UI.ftab[fid] = 'info'; R.go('pre/' + fid); },  // 기업등록 기업 보기 → 공장 창 기업 정보 탭
-  // 시정 — 공장에 사진을 올려 달라고 다시 알린다 (2026-10-19, 가설: 공장 웹 · 문자로 감). 시제품은 보낸 날만 남긴다
-  nudge({ id }) {
-    DB.act((s) => { const ins = s.inspections.find((i) => i.id === id); ins.nudged = '9/17'; DB.log(`지킴이 공장에 시정 사진 다시 알림 · ${FACTORIES[ins.fid].name}`); });
-    toast('공장에 다시 알렸어요');
-  },
   facLog({ fid }) { UI.ftab[fid] = 'log'; R.go('pre/' + fid); },
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
@@ -2715,10 +2828,11 @@ const ACTS = {
   },
   submitFirst() {
     const d = DB.s.draft;
-    // 현장점검 개선사항 — 맨 앞에. 결과는 개선사항으로만 정한다: 있으면 재점검(개선 관리에서 정리해 보냄), 없으면 점검완료.
+    // 현장점검 개선사항 — 맨 앞에. 결과는 개선사항으로만 정한다: 있으면 재점검(저장하면 바로 공장에 보임 — 2026-10-29, 전엔 개선 관리에서 정리해 보냄), 없으면 점검완료.
     // 체크리스트 불량은 공장에 따로 안 간다(noFix) — 지킴이가 개선사항으로도 올린다 (2026-10-26 사용자 지시)
     const fi = findItems(d);
-    const data = { kind: 'first', fid: d.fid, by: ME, team: TEAM.name, ver: CHECKLIST.ver, result: fi.length ? '재점검' : '점검완료',
+    // 개선사항이 없어도 결과 제출로 바로 가지 않고 개선 관리에 오른다(kzWait) — 거기서 [저장]하면 결과 제출 (2026-10-30 사용자 지시)
+    const data = { kind: 'first', fid: d.fid, by: ME, team: TEAM.name, ver: CHECKLIST.ver, result: fi.length ? '재점검' : '점검완료', ...(fi.length ? {} : { kzWait: true }),
       items: [...fi, ...d.items.map((x) => ({ id: x.id, text: x.text, src: x.src, area: x.area, answer: x.answer, memo: x.memo || '', eval: x.eval || '', log: [], ...(x.answer === 'bad' && !x.ref ? { noFix: true } : {}), ...(x.auto ? { auto: true } : {}),
         ...(x.eq ? { eq: x.eq } : {}), ...(x.shot && !x.ref ? { shot: true, pics: picsOf(x) } : {}), ...((x.risks || []).length ? { risks: x.risks } : {}),
         ...(x.ref ? { ref: x.ref, note: x.note, reason: x.reason || '', shot: !!x.shot, ...(x.shot ? { pics: picsOf(x) } : {}) } : {}) }))] };
@@ -2728,8 +2842,9 @@ const ACTS = {
       DB.log(`지킴이 점검 냄 · ${FACTORIES[d.fid].name}`);
       s.draft = null;
     });
-    UI.sentFresh = true;
-    R.go('sent/first/' + d.fid);
+    // [완료] 뒤 저장 완료 화면 없이 바로 홈 (2026-10-30 사용자 지시). 전파가 없을 때는 홈 위 "아직 안 올라간 점검" 띠가 알린다.
+    // 아래 검은 알림("저장했어요")도 같은 날 사용자 지시로 뺐다가, 같은 날 다시 "~완료되었습니다"로 넣음(점검 · 판정 · 제출만, 몇 초 뒤 사라짐)
+    R.go(''); toast('점검이 완료되었습니다');
   },
   // 재점검 (2026-10-13) — 같은 답을 다시 누르면 푼다
   // 개선 관리 (2026-10-26) — 정리 화면
@@ -2742,7 +2857,10 @@ const ACTS = {
   kzSt({ id, v }) { DB.act((s) => { const it = kzItem(s, id); if (!it) return; it.st = v;
     // 제출 전 확인에서 바꾸면 판정 기록(마지막 재점검 줄 · 고쳐진 수)도 같이 (2026-10-26 저녁)
     const ins = kzIns(s, UI.kzIns); if (!toSub(ins)) return;
-    const l = [...(it.log || [])].reverse().find((y) => y.t === 'recheck'); if (l) l.result = v === 'ok' ? 'fixed' : 'not';
+    // 판정 뒤 공장이 다시 고쳐 보낸 건(마지막 기록이 고쳤어요)은 새 판정 줄을 더한다 (2026-10-30 — 판정은 늘 끝나 결과 제출로 오니)
+    const last = (it.log || [])[(it.log || []).length - 1];
+    if (last && last.t === 'fix') it.log.push({ t: 'recheck', at: '9/17', result: v === 'ok' ? 'fixed' : 'not', by: ME });
+    else { const l = [...(it.log || [])].reverse().find((y) => y.t === 'recheck'); if (l) l.result = v === 'ok' ? 'fixed' : 'not'; }
     if (ins.final) ins.final.fixed = kzList(ins).filter((y) => itemState(y) === 'fixed').length; }); },
   kzGal({ id, v }) { const it = kzItem(DB.s, id), l = it && ((v === 'after' ? it.after : it.photos) || []);
     if (!it) return; if (l.length >= FIND_MAX) { toast(`사진은 ${FIND_MAX}장까지예요`); return; }
@@ -2752,44 +2870,52 @@ const ACTS = {
   kzRiskSave() { const { id, risks } = UI.sheet; UI.sheet = null; DB.act((s) => { const it = kzItem(s, id); if (it) it.risks = RISKS.filter((r) => risks.includes(r)); }); },
   // 공장에 전송 — 개선완료로 둔 건은 고쳐진 것으로 적고 나머지만 공장이 고친다. 다 개선완료면 보내지 않고 개선완료로 끝낸다
   sendFac({ id }) {
-    let all = false; const was = toSend(DB.s.inspections.find((i) => i.id === id));  // 보낼 것이면 전송, 시정 중이면 고친 것 저장
+    let all = false;
     DB.act((s) => { const ins = s.inspections.find((i) => i.id === id); if (!ins) return;
+      if (ins.kzWait) { delete ins.kzWait; DB.log(`지킴이 개선사항 없음 저장 · ${FACTORIES[ins.fid].name}`); return; }  // 개선사항이 없던 점검 → 결과 제출로 (2026-10-30)
       const fs = ins.items.filter((x) => x.src === 'find'); all = fs.length > 0 && fs.every((x) => x.st === 'ok');
       fs.filter((x) => x.st === 'ok' && itemState(x) !== 'fixed').forEach((x) => x.log.push({ t: 'recheck', at: '9/17', result: 'fixed', by: ME, onSite: true }));
       if (ins.toFac === false) ins.toFac = '9/17';
       if (all) { ins.result = '점검완료'; ins.final = { from: '개선 관리', at: '9/17', by: ME, fixed: fs.length, total: fs.length }; }
       DB.log(`지킴이 ${all ? '개선완료 저장' : '개선 요청 보냄'} · ${FACTORIES[ins.fid].name}`); });
-    toast(all ? '개선완료로 저장했어요' : was ? '공장에 보냈어요' : '저장했어요'); UI.td = 'rck'; UI.rsub = all ? 'sub' : 'fix'; UI.kzOn = null; R.go('todo');
+    UI.td = 'rck'; UI.kzOn = null; R.go('todo');  // 알림 없음 (2026-10-30 사용자 지시 — 전엔 "개선완료로 저장했어요" 등)
   },
   // 판정 — 점검 결과(점검완료 · 패트롤 · 기타)를 고르고 저장. 공장이 고칠 것마다 개선여부 개선완료면 고쳐짐, 나머지는 안 고쳐짐 (2026-10-26)
-  kzRes({ v }) { UI.kzRes = UI.kzRes === v ? null : v; render(); },
   kzJudge({ id }) {
-    const ins = DB.s.inspections.find((i) => i.id === id), res = UI.kzRes;
-    if (!res) { toast('점검 결과를 골라 주세요'); return; }
+    // 판정 화면의 점검 결과(점검완료 · 패트롤 · 기타) 고르기를 뺐다 (2026-10-30 사용자 지시 — 나중에 최종 제출로 옮길 예정).
+    // 그때까지 판정하면 결과는 점검완료로 둔다(모두 승인일 때 [저장]과 같은 값)
+    const ins = DB.s.inspections.find((i) => i.id === id), res = FINAL_RESULTS[0];
     const data = { kind: 'recheck', insId: id, fid: ins.fid, by: ME, result: res,
       results: toFix(ins).map((it) => ({ itemId: it.id, result: it.st === 'ok' ? 'fixed' : 'not', photo: !!((it.after || []).length || (rckFix(it) || {}).photo) })) };
+    // 반려 · 보류가 남아도 판정은 끝나고 결과 제출로 (2026-10-30 사용자 지시 — 같은 날 개선 관리에 남게 했던 것을 되돌림).
+    // 보류는 반려로 바꾸지 않고 고른 그대로 둔다
     DB.act((s) => {
-      const i2 = s.inspections.find((i) => i.id === id);  // 개선완료로 안 둔 것은 판정하면 미개선 (2026-10-26 — 기한이 지나 사진 없이 판정하는 것도)
-      toFix(i2).filter((it) => it.st !== 'ok').forEach((it) => { it.st = 'no'; });
       if (s.net.guard) applyInspection(s, data); else s.outbox.guard.push({ type: 'inspection', data });
       DB.log(`지킴이 재점검 판정 · ${FACTORIES[ins.fid].name} ${res}`);
     });
-    UI.kzRes = null; UI.kzOn = null; UI.sentFresh = true;
-    R.go('sent/recheck/' + ins.fid);
+    // 판정 저장 뒤 저장 완료 화면 없이 바로 홈 (2026-10-30 사용자 지시 — 점검 [완료]와 같이). 알림은 뺐다가 같은 날 "판정이 완료되었습니다"로 다시
+    UI.kzOn = null; R.go(''); toast('판정이 완료되었습니다');
   },
   // 제출할 것 (2026-10-26 저녁) — 기업 구분 고르기, 제출. 조언을 안 적었으면 잠긴 단추 — 누르면 까닭
   advCls({ id, v }) { DB.act((s) => { const g = kzIns(s, id); if (g) g.adv = { ...advOf(g), cls: v }; }); },
-  tmpSave(_, el) {
-    const b = $('.gtmp') || el; if (!b) return;
-    clearTimeout(UI.tmpT);
-    b.classList.add('done'); b.innerHTML = `<span class="c">${I('check', 13)}</span>저장됨`;
-    UI.tmpT = setTimeout(() => { const x = $('.gtmp.done'); if (x) { x.classList.remove('done'); x.innerHTML = `${I('save', 17)}임시저장`; } }, 2000);
-  },
+  // 평가 점수 AI 판단 근거 펼치기 · 접기 (2026-10-30 사용자 지시 — 드롭다운). 다시 그리지 않고 칸만 여닫는다 (공장주 회신 칸과 같은 방식)
+  scoreWhy() { UI.scoreWhy = !UI.scoreWhy; const el = document.querySelector('.sbwhy'); if (!el) { render(); return; }
+    el.classList.toggle('on', UI.scoreWhy); el.querySelector('.sbwh').setAttribute('aria-expanded', UI.scoreWhy); },
+  // 평가 점수 연필 — 그 줄이 입력 칸 + ✓. 적은 값은 칸 밖을 누르거나 ✓를 누르면 저장된다(ftxSave 'score')
+  scoreEdit({ id }) { UI.scoreEdit = id; render(); const el = $('#subScore'); if (el) { el.focus(); el.select(); } },
+  scoreOk() { UI.scoreEdit = null; render(); },
+  subGap({ id, t, el }) { subGap(id, t, el); },
   subGo({ id }) {
     const ins = kzIns(DB.s, id); if (!ins || !toSub(ins)) return;
-    if (!advOf(ins).text.trim()) { toast('개선을 위한 조언을 적어 주세요'); if (R.path()[2] !== 'end') R.go(`sub/${id}/end`); return; }
-    DB.act((s) => { const g = kzIns(s, id); if (!g) return; g.adv = advOf(g); g.sub = { at: '9/17', by: ME }; DB.log(`지킴이 제출 · ${FACTORIES[g.fid].name}`); });
-    UI.td = 'rck'; UI.rsub = 'sub'; UI.sentFresh = true; R.go('sent/sub/' + ins.fid);  // 점검 마치기 · 판정 저장과 같은 낸 뒤 화면 (2026-10-27 사용자 지시 — 전엔 알림 띠만)
+    // 막힌 까닭을 하나씩 — 보유현황 · 답 없는 문항 · 조언 차례 (2026-10-28 사용자 지시 — 체크리스트를 다 채워야 제출)
+    const miss = subCheck(ins).find(([y, , , , soft]) => !y && !soft);
+    if (miss) { const [, , t, el] = miss;
+      toast({ 'sbj-kit': '유해위험기구 보유현황을 골라 주세요', 'sbj-chem': '위험물질/유해화학물질 취급여부를 골라 주세요', advTx: '개선을 위한 조언을 적어 주세요' }[el] || '답 없는 문항에 답해 주세요');
+      subGap(id, t || 'end', el); return; }
+    // 평가 점수를 고치지 않았으면 그때의 AI 점수로 남긴다 (2026-10-30) — 운영자 웹 · 점검 내용 보기는 이 값을 보인다
+    DB.act((s) => { const g = kzIns(s, id); if (!g) return; g.adv = advOf(g); if (g.score == null) g.score = aiScore(s, g).score; g.sub = { at: '9/17', by: ME }; DB.log(`지킴이 제출 · ${FACTORIES[g.fid].name}`); });
+    // 제출했어요 화면 없이 바로 결과 제출 목록 (2026-10-30 사용자 지시). 알림은 뺐다가 같은 날 "제출이 완료되었습니다"로 다시
+    UI.td = 'sub'; R.go('todo'); toast('제출이 완료되었습니다');
   },
   pickReason({ v }) { keepSheetText(); UI.sheet.reason = UI.sheet.reason === v ? null : v; render(); },
 };

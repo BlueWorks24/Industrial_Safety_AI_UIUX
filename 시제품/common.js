@@ -250,7 +250,8 @@ const APPROVED = (ins) => (ins.st || 'ok') === 'ok' && ins.toFac !== false;
 const toSend = (ins) => (ins.st || 'ok') === 'ok' && ins.toFac === false;
 // 제출할 것 (2026-10-26 사용자 지시) — 판정까지 끝난(또는 개선사항이 없던) 점검은 지킴이가 개선을 위한 조언을 적어 [제출]해야 끝난다(sub: false → {at, by}).
 // sub가 없는 옛 기록은 제출한 것으로 읽는다. 운영자 검사(승인 · 반려)는 없다 — 제출하면 바로 확정 (2026-10-14 사용자 지시)
-const toSub = (ins) => ins.sub === false && APPROVED(ins) && !inRecheck(ins);
+// 개선사항이 없던 점검도 먼저 개선 관리에 오르고(kzWait), 거기서 [저장]해야 제출할 것이 된다 (2026-10-30 사용자 지시 — 전엔 바로 결과 제출)
+const toSub = (ins) => ins.sub === false && APPROVED(ins) && !inRecheck(ins) && !ins.kzWait;
 // 지난번 미흡 항목 — 다음에 그 공장을 점검할 때 이 항목들이 체크리스트에 붙는다 (2026-09-22).
 // 2026-10-13부터는 재점검에서 "안 고쳐짐"으로 남은 항목이 여기로 온다
 // 새 점검에 다시 붙은 복사본(ref가 있는 것)은 원래 항목 하나로만 센다 — 같은 문제를 두 번 세지 않게
@@ -402,8 +403,9 @@ function flushOutbox(s, who) {
 function applyInspection(s, d) {
   if (d.kind === 'first') {
     // 낸 점검은 바로 확정된다 (2026-10-14 사용자 지시 — 운영자 제출 검사는 아직 정해진 게 아니라 뺐다. 전에는 st 'wait'로 들어가 운영자가 승인·반려했다)
+    // 2026-10-29 사용자 지시: 공장에 보내기(toFac: false → 개선 관리 보낼 것)를 거치지 않는다 — 저장하면 바로 공장에 보이고 시정 중이 된다
     const ins = { id: 'i' + Date.now().toString(36), fid: d.fid, date: '9/17', by: d.by || '김지킴', team: d.team, ver: d.ver,
-      result: d.result, st: 'ok', sentAt: '9/17', locked: true, items: d.items, sub: false, ...(d.result === '재점검' ? { toFac: false } : {}) };
+      result: d.result, st: 'ok', sentAt: '9/17', locked: true, items: d.items, sub: false, ...(d.kzWait ? { kzWait: true } : {}) };
     s.inspections.unshift(ins); settlePrev(s, ins);
   } else if (d.kind === 'recheck') {
     // 재점검 판정 (2026-10-13) — 항목마다 고쳐짐·안 고쳐짐을 원래 항목에 적고, 점검 결과를 지킴이가 고른 것으로 바꾼다
@@ -413,6 +415,8 @@ function applyInspection(s, d) {
       const it = ins.items.find((x) => x.id === r.itemId);
       if (it) (it.log = it.log || []).push({ t: 'recheck', at: '9/17', result: r.result, by: d.by, photo: !!r.photo, ...(r.why ? { why: r.why } : {}) });
     });
+    // 반려 · 보류가 남아도 판정은 끝나고 결과 제출로 간다 (2026-10-30 사용자 지시 — 같은 날 개선 관리에 남게 했던 것을 되돌림.
+    // 그 뒤 공장이 다시 고쳐 보내면 지킴이가 결과 제출의 제출 전 확인 개선내역에서 고친다)
     ins.final = { from: '재점검', at: '9/17', by: d.by, fixed: d.results.filter((r) => r.result === 'fixed').length, total: d.results.length };
     ins.result = d.result;
     ins.sub = false;  // 판정 뒤에는 제출할 것으로 (2026-10-26)
