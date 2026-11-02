@@ -2,30 +2,74 @@
 // 화면 속 공장·설비·사례는 모두 설명용 예시다.
 
 // 실증 사이트 3곳 × 센서 5개 안팎 (2026-09-17 사용자: "3개 사이트에 5개 센서씩"). 사이트 = 공장 하나.
+// → 2026-11-02 사용자 지시로 이 제약을 지우고 예시 공장 열 곳 모두에 센서를 단다(지킴이 앱 센서 이력을 공장마다 보이려고). 새로 단 일곱 곳은 3~5개
 // type: 센서 종류 (아이콘·번역) · short: 좁은 칸에 쓰는 이름
 const SENSORS = {
   // 대성정밀 (금속가공)
-  press2: { fid: 'daesung', type: 'vib', title: '2번 프레스', short: '2번 프레스', what: '진동 · 온도', where: 'A동 2라인', kind: 'ratio', ratio: 2.0, word: '커요' },
+  press2: { fid: 'daesung', type: 'vib', eq: '프레스', title: '2번 프레스', short: '2번 프레스', what: '진동 · 온도', where: 'A동 2라인', kind: 'ratio', ratio: 2.0, word: '커요' },
   gas:    { fid: 'daesung', type: 'gas', title: '가스', short: '가스', sub: '공기 중 가스 농도', where: '우리 공장', kind: 'ratio', ratio: 3.0, word: '높아요' },
   power:  { fid: 'daesung', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.5, word: '많아요', extra: '벗어난 값: 전류 · 고조파' },
   leak:   { fid: 'daesung', type: 'leak', title: '누수 또는 단선', short: '누수', sub: '누수 선 1m가 깔린 자리', where: '냉각수 배관 밑', kind: 'state' },
   th:     { fid: 'daesung', type: 'th', title: '온습도', short: '온습도', sub: '작업장 온도 · 습도', where: 'B동 도장 부스 옆', kind: 'ratio', ratio: 1.6, word: '높아요' },
   // 한빛화학 (화학)
-  hb_mixer: { fid: 'hanbit', type: 'vib', title: '1번 교반기', short: '1번 교반기', what: '진동 · 온도', where: '반응동 1층', kind: 'ratio', ratio: 1.8, word: '커요' },
+  hb_mixer: { fid: 'hanbit', type: 'vib', eq: '배합기·밀링·혼합기', title: '1번 교반기', short: '1번 교반기', what: '진동 · 온도', where: '반응동 1층', kind: 'ratio', ratio: 1.8, word: '커요' },
   hb_gas:   { fid: 'hanbit', type: 'gas', title: '가스', short: '가스', sub: '공기 중 가연성 가스 농도', where: '원료 창고', kind: 'ratio', ratio: 2.5, word: '높아요' },
   hb_power: { fid: 'hanbit', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.4, word: '많아요' },
   hb_leak:  { fid: 'hanbit', type: 'leak', title: '누수 또는 단선', short: '누수', sub: '누수 선 1m가 깔린 자리', where: '냉각탑 배관 밑', kind: 'state' },
   hb_th:    { fid: 'hanbit', type: 'th', title: '온습도', short: '온습도', sub: '보관실 온도 · 습도', where: '약품 보관실', kind: 'ratio', ratio: 1.5, word: '높아요' },
   // 동방금속 (금속가공)
-  db_comp:  { fid: 'dongbang', type: 'vib', title: '컴프레서', short: '컴프레서', what: '진동 · 온도', where: '기계실', kind: 'ratio', ratio: 1.7, word: '커요' },
+  db_comp:  { fid: 'dongbang', type: 'vib', eq: '기타 설비', title: '컴프레서', short: '컴프레서', what: '진동 · 온도', where: '기계실', kind: 'ratio', ratio: 1.7, word: '커요' },
   db_gas:   { fid: 'dongbang', type: 'gas', title: '가스', short: '가스', sub: '공기 중 가스 농도', where: '용접 작업장', kind: 'ratio', ratio: 2.2, word: '높아요' },
   db_power: { fid: 'dongbang', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.3, word: '많아요' },
   db_leak:  { fid: 'dongbang', type: 'leak', title: '누수 또는 단선', short: '누수', sub: '누수 선 1m가 깔린 자리', where: '세척조 밑', kind: 'state' },
   db_th:    { fid: 'dongbang', type: 'th', title: '온습도', short: '온습도', sub: '작업장 온도 · 습도', where: '도금 라인', kind: 'ratio', ratio: 1.4, word: '높아요' },
+  // 태광기계 (기계)
+  tg_cnc:   { fid: 'taegwang', type: 'vib', eq: '선반·밀링·CNC 절삭장비', title: '2번 CNC 선반', short: '2번 CNC', what: '진동 · 온도', where: '가공동', kind: 'ratio', ratio: 1.9, word: '커요' },
+  tg_gas:   { fid: 'taegwang', type: 'gas', title: '가스', short: '가스', sub: '공기 중 가스 농도', where: '용접 작업장', kind: 'ratio', ratio: 2.4, word: '높아요' },
+  tg_power: { fid: 'taegwang', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.4, word: '많아요' },
+  tg_leak:  { fid: 'taegwang', type: 'leak', title: '누수 또는 단선', short: '누수', sub: '누수 선 1m가 깔린 자리', where: '절삭유 탱크 밑', kind: 'state' },
+  tg_th:    { fid: 'taegwang', type: 'th', title: '온습도', short: '온습도', sub: '작업장 온도 · 습도', where: '조립동', kind: 'ratio', ratio: 1.5, word: '높아요' },
+  // 새한테크 (전자부품)
+  sh_comp:  { fid: 'saehan', type: 'vib', eq: '기타 설비', title: '공기 압축기', short: '압축기', what: '진동 · 온도', where: '기계실', kind: 'ratio', ratio: 1.8, word: '커요' },
+  sh_gas:   { fid: 'saehan', type: 'gas', title: '가스', short: '가스', sub: '공기 중 가스 농도', where: '세척실', kind: 'ratio', ratio: 2.0, word: '높아요' },
+  sh_power: { fid: 'saehan', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.3, word: '많아요' },
+  sh_th:    { fid: 'saehan', type: 'th', title: '온습도', short: '온습도', sub: '작업장 온도 · 습도', where: 'SMT 라인', kind: 'ratio', ratio: 1.7, word: '높아요' },
+  // 우진산업 (플라스틱)
+  uj_inj:   { fid: 'ujin', type: 'vib', eq: '사출성형기', title: '3번 사출기', short: '3번 사출기', what: '진동 · 온도', where: '사출동', kind: 'ratio', ratio: 2.1, word: '커요' },
+  uj_power: { fid: 'ujin', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.4, word: '많아요' },
+  uj_leak:  { fid: 'ujin', type: 'leak', title: '누수 또는 단선', short: '누수', sub: '누수 선 1m가 깔린 자리', where: '금형 냉각수 배관 밑', kind: 'state' },
+  uj_th:    { fid: 'ujin', type: 'th', title: '온습도', short: '온습도', sub: '건조실 온도 · 습도', where: '원료 건조실', kind: 'ratio', ratio: 1.6, word: '높아요' },
+  // 성원금속 (금속가공)
+  sw_press1: { fid: 'seongwon', type: 'vib', eq: '프레스', title: '1번 프레스', short: '1번 프레스', what: '진동 · 온도', where: '프레스동', kind: 'ratio', ratio: 2.0, word: '커요' },
+  sw_press4: { fid: 'seongwon', type: 'vib', eq: '프레스', title: '4번 프레스', short: '4번 프레스', what: '진동 · 온도', where: '프레스동', kind: 'ratio', ratio: 1.9, word: '커요' },
+  sw_gas:    { fid: 'seongwon', type: 'gas', title: '가스', short: '가스', sub: '공기 중 가스 농도', where: '용접 작업장', kind: 'ratio', ratio: 2.8, word: '높아요' },
+  sw_power:  { fid: 'seongwon', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.5, word: '많아요' },
+  sw_leak:   { fid: 'seongwon', type: 'leak', title: '누수 또는 단선', short: '누수', sub: '누수 선 1m가 깔린 자리', where: '세척조 밑', kind: 'state' },
+  // 동화정공 (기계)
+  dh_mct:   { fid: 'donghwa', type: 'vib', eq: '선반·밀링·CNC 절삭장비', title: 'MCT 가공기', short: 'MCT', what: '진동 · 온도', where: '가공실', kind: 'ratio', ratio: 1.7, word: '커요' },
+  dh_power: { fid: 'donghwa', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.4, word: '많아요' },
+  dh_th:    { fid: 'donghwa', type: 'th', title: '온습도', short: '온습도', sub: '작업장 온도 · 습도', where: '가공실', kind: 'ratio', ratio: 1.5, word: '높아요' },
+  // 한결화성 (화학)
+  hg_mixer: { fid: 'hangyeol', type: 'vib', eq: '배합기·밀링·혼합기', title: '2번 교반기', short: '2번 교반기', what: '진동 · 온도', where: '배합실', kind: 'ratio', ratio: 1.8, word: '커요' },
+  hg_gas:   { fid: 'hangyeol', type: 'gas', title: '가스', short: '가스', sub: '공기 중 가연성 가스 농도', where: '용제 창고', kind: 'ratio', ratio: 3.1, word: '높아요' },
+  hg_power: { fid: 'hangyeol', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.3, word: '많아요' },
+  hg_leak:  { fid: 'hangyeol', type: 'leak', title: '누수 또는 단선', short: '누수', sub: '누수 선 1m가 깔린 자리', where: '원료 탱크 밑', kind: 'state' },
+  hg_th:    { fid: 'hangyeol', type: 'th', title: '온습도', short: '온습도', sub: '창고 온도 · 습도', where: '완제품 창고', kind: 'ratio', ratio: 1.6, word: '높아요' },
+  // 미래이엔지 (기계)
+  mr_robot: { fid: 'mirae', type: 'vib', eq: '산업용로봇', title: '용접 로봇', short: '용접 로봇', what: '진동 · 온도', where: '조립동 1라인', kind: 'ratio', ratio: 2.0, word: '커요' },
+  mr_gas:   { fid: 'mirae', type: 'gas', title: '가스', short: '가스', sub: '공기 중 가스 농도', where: '용접 작업장', kind: 'ratio', ratio: 2.3, word: '높아요' },
+  mr_power: { fid: 'mirae', type: 'power', title: '전기', short: '전기', sub: '공장에 들어오는 전기 전체', where: '우리 공장', kind: 'ratio', ratio: 1.4, word: '많아요' },
+  mr_leak:  { fid: 'mirae', type: 'leak', title: '누수 또는 단선', short: '누수', sub: '누수 선 1m가 깔린 자리', where: '도장 부스 배수로', kind: 'state' },
 };
 const OWNER_NAME = { daesung: '박대표', hanbit: '최대표', dongbang: '정대표', taegwang: '윤대표' };
 const SITE_SENSORS = (fid) => Object.keys(SENSORS).filter((k) => SENSORS[k].fid === fid);
 const HAS_SENSORS = (fid) => SITE_SENSORS(fid).length > 0;
+// 감시 대상 (2026-11-02 — 위험도 평가 엔진 구성안 M4 결정 4: 구역 + 대상 종류(설비 15종 중 하나 / 기타 설비 / 공간 / 공장 전체) + 대상 이름).
+// 기계 센서는 eq(보유현황 6번 이름), 전기와 "우리 공장"에 단 것은 공장 전체, 나머지는 공간. 컴프레서 · 공기 압축기는 15종에 딱 맞는 칸이 없어 기타 설비(가설)
+const SEN_TARGET = (k) => SENSORS[k].eq || (SENSORS[k].type === 'power' || SENSORS[k].where === '우리 공장' ? '공장 전체' : '공간');
+// 심각도 — IoT 룰의 severity 세 값 info · warn · critical(IoT 설계 11 §3.4). 경보는 그 센서 룰의 값을 받는다. 종류마다 어느 값인지는 가설
+const SEV_OF = { gas: 'critical', leak: 'warn', vib: 'warn', power: 'warn', th: 'info' };
+const alarmSev = (a) => a.sev || SEV_OF[SENSORS[a.key].type];
 const alarmFid = (a) => SENSORS[a.key].fid;
 
 const SNOOZE_LIMIT = 2;      // 미루기 한도 — 경보 하나에 2번 (가설)
@@ -37,7 +81,7 @@ const FACTORIES = {
   hanbit:   { name: '한빛화학', area: '향남', dong: '향남읍', ll: [126.93302, 37.11831], type: '화학', workers: 18 , roman: 'Hanbit Chemical' },
   dongbang: { name: '동방금속', area: '봉담', dong: '봉담읍', ll: [126.9341, 37.2072], type: '금속가공', workers: 11 , roman: 'Dongbang Metal' },
   taegwang: { name: '태광기계', area: '우정', dong: '우정읍', ll: [126.79918, 37.07409], type: '기계', workers: 9 , roman: 'Taegwang Machinery' },
-  // 지킴이 "공장" 목록을 채우려고 더한 가상 공장 (2026-09-22) — 센서 없음, 할 일 없음. 좌표는 그 읍·면·동 안쪽의 가짜
+  // 지킴이 "공장" 목록을 채우려고 더한 가상 공장 (2026-09-22) — 센서 없음, 할 일 없음. 좌표는 그 읍·면·동 안쪽의 가짜 (2026-11-02부터 센서 있음)
   saehan:   { name: '새한테크', area: '동탄', dong: '동탄5동', ll: [127.1256, 37.21133], type: '전자부품', workers: 23, roman: 'Saehan Tech' },
   ujin:     { name: '우진산업', area: '동탄', dong: '동탄8동', ll: [127.10885, 37.15597], type: '플라스틱', workers: 14, roman: 'Ujin Industry' },
   seongwon: { name: '성원금속', area: '향남', dong: '향남읍', ll: [126.90702, 37.10231], type: '금속가공', workers: 12, roman: 'Seongwon Metal' },
@@ -477,14 +521,150 @@ const SEED = {
       acks: [ { by: '김근로', at: 9 * 60 + 15 } ], snoozes: 0, endedAt: 10 * 60 + 3, endKind: 'ended' },
     { id: 'h2', key: 'leak', day: '9/02', start: 10 * 60 + 5, status: 'ended', abnormal: false,
       acks: [ { by: '이현장', at: 10 * 60 + 13 } ], snoozes: 0, endedAt: 10 * 60 + 25, endKind: 'ended' },
-    { id: 'h3', key: 'press2', day: '8/28', start: 14 * 60, status: 'ended', abnormal: false, ratio: 1.4, title: '컴프레서',
+    { id: 'h3', key: 'press2', day: '8/28', start: 14 * 60, status: 'ended', abnormal: false, ratio: 1.4,
       acks: [], snoozes: 0, endedAt: 14 * 60 + 9, endKind: 'noack' },
-    { id: 'h4', key: 'press2', day: '8/21', start: 11 * 60, status: 'ended', abnormal: false, ratio: 1.3, title: '컴프레서',
+    { id: 'h4', key: 'press2', day: '8/21', start: 11 * 60, status: 'ended', abnormal: false, ratio: 1.3,
       acks: [], snoozes: 0, endedAt: 11 * 60 + 6, endKind: 'noack' },
     { id: 'h5', key: 'hb_gas', day: '9/11', start: 15 * 60 + 20, status: 'ended', abnormal: false, ratio: 2.1,
       acks: [ { by: '최반장', at: 15 * 60 + 24 } ], snoozes: 0, endedAt: 15 * 60 + 41, endKind: 'ended' },
     { id: 'h6', key: 'db_comp', day: '9/08', start: 7 * 60 + 50, status: 'ended', abnormal: false, ratio: 1.6,
       acks: [], snoozes: 0, endedAt: 7 * 60 + 58, endKind: 'noack' },
+    // 예시 공장 열 곳 모두의 지난 경보 (2026-11-02 사용자 지시) — 조치함 · 아무도 안 누름 · 수리로 닫힘을 섞고, 지난 점검 앞뒤로 나눠 둔다. 이름은 모두 가상
+    { id: 'h7', key: 'hb_mixer', day: '8/19', start: 10 * 60 + 40, status: 'ended', abnormal: false, ratio: 1.9,
+      acks: [ { by: '한주임', at: 10 * 60 + 46 } ], snoozes: 0, endedAt: 11 * 60 + 15, endKind: 'ended' },
+    { id: 'h8', key: 'hb_leak', day: '7/23', start: 6 * 60 + 20, status: 'ended', abnormal: false,
+      acks: [], snoozes: 0, endedAt: 6 * 60 + 34, endKind: 'noack' },
+    { id: 'h9', key: 'db_gas', day: '8/12', start: 13 * 60 + 5, status: 'ended', abnormal: false, ratio: 2.4,
+      acks: [ { by: '정반장', at: 13 * 60 + 7 } ], snoozes: 0, endedAt: 13 * 60 + 27, endKind: 'ended' },
+    { id: 'h10', key: 'db_th', day: '9/14', start: 14 * 60 + 30, status: 'ended', abnormal: false, ratio: 1.5,
+      acks: [], snoozes: 0, endedAt: 15 * 60 + 10, endKind: 'noack' },
+    { id: 'h11', key: 'tg_cnc', day: '9/09', start: 8 * 60 + 45, status: 'ended', abnormal: false, ratio: 2.2,
+      acks: [ { by: '윤반장', at: 8 * 60 + 49 } ], snoozes: 0, endedAt: 9 * 60 + 15, endKind: 'ended' },
+    { id: 'h12', key: 'tg_leak', day: '7/28', start: 16 * 60 + 10, status: 'ended', abnormal: false,
+      acks: [], snoozes: 0, endedAt: 17 * 60 + 45, endKind: 'repair' },
+    { id: 'h13', key: 'tg_cnc', day: '6/17', start: 10 * 60 + 20, status: 'ended', abnormal: false, ratio: 1.6,
+      acks: [], snoozes: 0, endedAt: 10 * 60 + 27, endKind: 'noack' },
+    { id: 'h14', key: 'sh_th', day: '8/07', start: 13 * 60 + 40, status: 'ended', abnormal: false, ratio: 1.7,
+      acks: [ { by: '한대리', at: 13 * 60 + 49 } ], snoozes: 0, endedAt: 14 * 60 + 30, endKind: 'ended' },
+    { id: 'h15', key: 'sh_comp', day: '9/04', start: 9 * 60 + 30, status: 'ended', abnormal: false, ratio: 1.8,
+      acks: [], snoozes: 0, endedAt: 9 * 60 + 42, endKind: 'noack' },
+    { id: 'h16', key: 'uj_inj', day: '9/12', start: 11 * 60 + 15, status: 'ended', abnormal: false, ratio: 2.6,
+      acks: [ { by: '오반장', at: 11 * 60 + 18 } ], snoozes: 0, endedAt: 11 * 60 + 33, endKind: 'ended' },
+    { id: 'h17', key: 'uj_inj', day: '8/26', start: 15 * 60 + 50, status: 'ended', abnormal: false, ratio: 1.5,
+      acks: [], snoozes: 0, endedAt: 15 * 60 + 58, endKind: 'noack' },
+    { id: 'h18', key: 'uj_leak', day: '8/03', start: 7 * 60 + 5, status: 'ended', abnormal: false,
+      acks: [ { by: '오반장', at: 7 * 60 + 17 } ], snoozes: 0, endedAt: 7 * 60 + 45, endKind: 'ended' },
+    { id: 'h19', key: 'sw_press1', day: '8/14', start: 10 * 60, status: 'ended', abnormal: false, ratio: 2.1,
+      acks: [ { by: '서주임', at: 10 * 60 + 5 } ], snoozes: 0, endedAt: 10 * 60 + 27, endKind: 'ended' },
+    { id: 'h20', key: 'sw_press4', day: '9/10', start: 14 * 60 + 20, status: 'ended', abnormal: false, ratio: 1.9,
+      acks: [ { by: '서주임', at: 14 * 60 + 22 } ], snoozes: 0, endedAt: 14 * 60 + 35, endKind: 'ended' },
+    { id: 'h21', key: 'sw_gas', day: '9/16', start: 16 * 60 + 45, status: 'ended', abnormal: false, ratio: 2.8,
+      acks: [ { by: '서주임', at: 16 * 60 + 46 } ], snoozes: 0, endedAt: 16 * 60 + 57, endKind: 'ended' },
+    { id: 'h22', key: 'dh_mct', day: '7/30', start: 9 * 60 + 10, status: 'ended', abnormal: false, ratio: 1.7,
+      acks: [], snoozes: 0, endedAt: 9 * 60 + 15, endKind: 'noack' },
+    { id: 'h23', key: 'dh_power', day: '9/01', start: 13 * 60 + 25, status: 'ended', abnormal: false, ratio: 1.4,
+      acks: [ { by: '신대표', at: 13 * 60 + 45 } ], snoozes: 0, endedAt: 14 * 60 + 25, endKind: 'ended' },
+    { id: 'h24', key: 'hg_gas', day: '8/22', start: 8 * 60 + 30, status: 'ended', abnormal: false, ratio: 3.1,
+      acks: [ { by: '장반장', at: 8 * 60 + 32 } ], snoozes: 0, endedAt: 8 * 60 + 55, endKind: 'ended' },
+    { id: 'h25', key: 'hg_mixer', day: '9/13', start: 15 * 60, status: 'ended', abnormal: false, ratio: 1.8,
+      acks: [], snoozes: 0, endedAt: 15 * 60 + 10, endKind: 'noack' },
+    { id: 'h26', key: 'hg_th', day: '7/16', start: 14 * 60, status: 'ended', abnormal: false, ratio: 1.6,
+      acks: [ { by: '장반장', at: 14 * 60 + 15 } ], snoozes: 0, endedAt: 15 * 60 + 10, endKind: 'ended' },
+    { id: 'h27', key: 'mr_robot', day: '9/05', start: 10 * 60 + 30, status: 'ended', abnormal: false, ratio: 2.0,
+      acks: [ { by: '조반장', at: 10 * 60 + 37 } ], snoozes: 0, endedAt: 10 * 60 + 52, endKind: 'ended' },
+    { id: 'h28', key: 'mr_gas', day: '8/18', start: 13 * 60 + 50, status: 'ended', abnormal: false, ratio: 2.3,
+      acks: [], snoozes: 0, endedAt: 13 * 60 + 59, endKind: 'noack' },
+    // 같은 날 사용자 지시로 공장마다 2~3건씩 더함(h29~h57) — 센서 · 날짜 · 끝난 방식을 섞고, 최근(9/14~9/16)에 점검한 곳도 그 뒤 경보가 보이게
+    { id: 'h29', key: 'gas', day: '9/09', start: 13 * 60 + 20, status: 'ended', abnormal: false, ratio: 2.6,
+      acks: [ { by: '김근로', at: 13 * 60 + 22 } ], snoozes: 0, endedAt: 13 * 60 + 38, endKind: 'ended' },
+    { id: 'h30', key: 'power', day: '8/14', start: 10 * 60 + 45, status: 'ended', abnormal: false, ratio: 1.6,
+      acks: [], snoozes: 0, endedAt: 10 * 60 + 57, endKind: 'noack' },
+    { id: 'h31', key: 'th', day: '9/16', start: 15 * 60 + 30, status: 'ended', abnormal: false, ratio: 1.7,
+      acks: [ { by: '이현장', at: 15 * 60 + 36 } ], snoozes: 0, endedAt: 16 * 60 + 10, endKind: 'ended' },
+    { id: 'h32', key: 'hb_gas', day: '8/27', start: 9 * 60 + 40, status: 'ended', abnormal: false, ratio: 2.8,
+      acks: [ { by: '최반장', at: 9 * 60 + 41 } ], snoozes: 0, endedAt: 9 * 60 + 56, endKind: 'ended' },
+    { id: 'h33', key: 'hb_mixer', day: '9/15', start: 14 * 60 + 5, status: 'ended', abnormal: false, ratio: 2.2,
+      acks: [ { by: '한주임', at: 14 * 60 + 9 } ], snoozes: 0, endedAt: 14 * 60 + 30, endKind: 'ended' },
+    { id: 'h34', key: 'hb_th', day: '6/24', start: 13 * 60, status: 'ended', abnormal: false, ratio: 1.5,
+      acks: [], snoozes: 0, endedAt: 13 * 60 + 35, endKind: 'noack' },
+    { id: 'h35', key: 'db_power', day: '9/11', start: 16 * 60 + 10, status: 'ended', abnormal: false, ratio: 1.5,
+      acks: [ { by: '정반장', at: 16 * 60 + 18 } ], snoozes: 0, endedAt: 16 * 60 + 40, endKind: 'ended' },
+    { id: 'h36', key: 'db_leak', day: '8/05', start: 5 * 60 + 50, status: 'ended', abnormal: false,
+      acks: [], snoozes: 0, endedAt: 6 * 60 + 10, endKind: 'noack' },
+    { id: 'h37', key: 'db_comp', day: '9/16', start: 8 * 60 + 15, status: 'ended', abnormal: false, ratio: 1.9,
+      acks: [ { by: '정반장', at: 8 * 60 + 18 } ], snoozes: 0, endedAt: 8 * 60 + 29, endKind: 'ended' },
+    { id: 'h38', key: 'tg_gas', day: '8/21', start: 11 * 60 + 30, status: 'ended', abnormal: false, ratio: 2.5,
+      acks: [ { by: '윤반장', at: 11 * 60 + 32 } ], snoozes: 0, endedAt: 11 * 60 + 50, endKind: 'ended' },
+    { id: 'h39', key: 'tg_th', day: '7/09', start: 14 * 60 + 40, status: 'ended', abnormal: false, ratio: 1.6,
+      acks: [], snoozes: 0, endedAt: 15 * 60 + 5, endKind: 'noack' },
+    { id: 'h40', key: 'tg_power', day: '9/14', start: 17 * 60 + 5, status: 'ended', abnormal: false, ratio: 1.5,
+      acks: [ { by: '윤반장', at: 17 * 60 + 15 } ], snoozes: 0, endedAt: 17 * 60 + 37, endKind: 'ended' },
+    { id: 'h41', key: 'sh_gas', day: '9/15', start: 10 * 60 + 25, status: 'ended', abnormal: false, ratio: 2.2,
+      acks: [ { by: '한대리', at: 10 * 60 + 28 } ], snoozes: 0, endedAt: 10 * 60 + 44, endKind: 'ended' },
+    { id: 'h42', key: 'sh_power', day: '7/21', start: 15 * 60 + 15, status: 'ended', abnormal: false, ratio: 1.4,
+      acks: [], snoozes: 0, endedAt: 15 * 60 + 24, endKind: 'noack' },
+    { id: 'h43', key: 'sh_th', day: '9/02', start: 13 * 60 + 55, status: 'ended', abnormal: false, ratio: 1.8,
+      acks: [ { by: '한대리', at: 13 * 60 + 62 } ], snoozes: 0, endedAt: 14 * 60 + 39, endKind: 'ended' },
+    { id: 'h44', key: 'uj_th', day: '9/16', start: 6 * 60 + 40, status: 'ended', abnormal: false, ratio: 1.7,
+      acks: [], snoozes: 0, endedAt: 7 * 60 + 8, endKind: 'noack' },
+    { id: 'h45', key: 'uj_power', day: '8/11', start: 14 * 60 + 30, status: 'ended', abnormal: false, ratio: 1.5,
+      acks: [ { by: '오반장', at: 14 * 60 + 35 } ], snoozes: 0, endedAt: 14 * 60 + 51, endKind: 'ended' },
+    { id: 'h46', key: 'uj_inj', day: '7/14', start: 9 * 60 + 5, status: 'ended', abnormal: false, ratio: 2.4,
+      acks: [ { by: '오반장', at: 9 * 60 + 7 } ], snoozes: 0, endedAt: 9 * 60 + 22, endKind: 'ended' },
+    { id: 'h47', key: 'sw_press1', day: '9/16', start: 11 * 60 + 40, status: 'ended', abnormal: false, ratio: 2.3,
+      acks: [ { by: '서주임', at: 11 * 60 + 42 } ], snoozes: 0, endedAt: 11 * 60 + 56, endKind: 'ended' },
+    { id: 'h48', key: 'sw_leak', day: '8/24', start: 7 * 60 + 30, status: 'ended', abnormal: false,
+      acks: [], snoozes: 0, endedAt: 9 * 60 + 5, endKind: 'repair' },
+    { id: 'h49', key: 'sw_power', day: '7/28', start: 15 * 60 + 50, status: 'ended', abnormal: false, ratio: 1.6,
+      acks: [], snoozes: 0, endedAt: 15 * 60 + 58, endKind: 'noack' },
+    { id: 'h50', key: 'dh_th', day: '9/16', start: 13 * 60 + 10, status: 'ended', abnormal: false, ratio: 1.6,
+      acks: [], snoozes: 0, endedAt: 13 * 60 + 40, endKind: 'noack' },
+    { id: 'h51', key: 'dh_mct', day: '8/20', start: 10 * 60 + 35, status: 'ended', abnormal: false, ratio: 2.0,
+      acks: [ { by: '신대표', at: 10 * 60 + 47 } ], snoozes: 0, endedAt: 11 * 60 + 15, endKind: 'ended' },
+    { id: 'h52', key: 'hg_gas', day: '9/16', start: 16 * 60 + 20, status: 'ended', abnormal: false, ratio: 3.4,
+      acks: [ { by: '장반장', at: 16 * 60 + 21 } ], snoozes: 0, endedAt: 16 * 60 + 35, endKind: 'ended' },
+    { id: 'h53', key: 'hg_leak', day: '8/09', start: 4 * 60 + 45, status: 'ended', abnormal: false,
+      acks: [], snoozes: 0, endedAt: 5 * 60 + 11, endKind: 'noack' },
+    { id: 'h54', key: 'hg_power', day: '7/02', start: 12 * 60 + 30, status: 'ended', abnormal: false, ratio: 1.4,
+      acks: [ { by: '장반장', at: 12 * 60 + 39 } ], snoozes: 0, endedAt: 13 * 60 + 3, endKind: 'ended' },
+    { id: 'h55', key: 'mr_robot', day: '9/16', start: 14 * 60 + 50, status: 'ended', abnormal: false, ratio: 2.4,
+      acks: [ { by: '조반장', at: 14 * 60 + 53 } ], snoozes: 0, endedAt: 15 * 60 + 10, endKind: 'ended' },
+    { id: 'h56', key: 'mr_leak', day: '8/29', start: 6 * 60 + 10, status: 'ended', abnormal: false,
+      acks: [ { by: '조반장', at: 6 * 60 + 25 } ], snoozes: 0, endedAt: 6 * 60 + 52, endKind: 'ended' },
+    { id: 'h57', key: 'mr_power', day: '7/18', start: 16 * 60 + 35, status: 'ended', abnormal: false, ratio: 1.5,
+      acks: [], snoozes: 0, endedAt: 16 * 60 + 42, endKind: 'noack' },
+  ],
+  // 평소와 다름 사건 (2026-11-02 사용자 지시 — 위험도 평가 엔진 구성안 M4 R-S2). AI 이상진단 엔진이 "이 센서가 평소와 다르다"고 낸 주의 경보(C3)로,
+  // 헛경보를 센서마다 하루 1번 안팎까지 두는 경보라 위 위험 경보(alarms)와 따로 둔다 — 지킴이 앱 센서 이력에 개수와 최근 날짜만. 근로자 · 공장주 · 운영자 화면에는 아직 안 이어짐
+  usual: [
+    { id: 'u1', key: 'press2', day: '9/12', at: 8 * 60 + 40 }, { id: 'u2', key: 'th', day: '9/05', at: 14 * 60 + 10 }, { id: 'u3', key: 'power', day: '8/20', at: 11 * 60 },
+    { id: 'u4', key: 'hb_mixer', day: '9/14', at: 10 * 60 + 20 }, { id: 'u5', key: 'hb_th', day: '8/30', at: 15 * 60 }, { id: 'u6', key: 'hb_power', day: '7/11', at: 9 * 60 + 30 },
+    { id: 'u7', key: 'db_comp', day: '9/16', at: 7 * 60 + 45 }, { id: 'u8', key: 'db_comp', day: '9/03', at: 13 * 60 + 5 }, { id: 'u9', key: 'db_th', day: '8/02', at: 16 * 60 },
+    { id: 'u10', key: 'tg_cnc', day: '9/13', at: 10 * 60 + 50 },
+    { id: 'u11', key: 'sh_th', day: '9/16', at: 11 * 60 + 25 }, { id: 'u12', key: 'sh_comp', day: '8/29', at: 8 * 60 + 15 },
+    { id: 'u13', key: 'uj_inj', day: '9/16', at: 14 * 60 + 40 }, { id: 'u14', key: 'uj_th', day: '9/01', at: 6 * 60 + 50 },
+    { id: 'u15', key: 'sw_press1', day: '9/02', at: 9 * 60 + 55 },
+    { id: 'u16', key: 'hg_mixer', day: '9/11', at: 13 * 60 + 30 }, { id: 'u17', key: 'hg_gas', day: '8/25', at: 10 * 60 },
+    { id: 'u18', key: 'mr_robot', day: '9/17', at: 8 * 60 + 20 },
+  ],
+  // 센서가 못 본 시간 (2026-11-02 사용자 지시 — 위험도 평가 엔진 구성안 M4 R-S3). 이 동안은 무슨 일이 있어도 경보가 안 울린다 — 그래서 "경보 없음"을 믿을지 보려고 센서마다 보인다.
+  // why: missing 값 끊김 · flatline 값 멈춤 · repair 수리 중(운영자가 돌림) · learning 이상진단 학습 중. day · start ~ endDay · end (분). 지킴이 앱 센서 이력에만
+  gaps: [
+    { id: 'g1', key: 'gas', day: '9/03', start: 14 * 60, endDay: '9/03', end: 22 * 60, why: 'missing' },
+    { id: 'g2', key: 'th', day: '9/10', start: 2 * 60, endDay: '9/10', end: 8 * 60 + 30, why: 'flatline' },
+    { id: 'g3', key: 'press2', day: '8/10', start: 9 * 60, endDay: '8/10', end: 15 * 60, why: 'missing' },
+    { id: 'g4', key: 'hb_gas', day: '8/14', start: 9 * 60, endDay: '8/16', end: 11 * 60, why: 'missing' },
+    { id: 'g5', key: 'hb_leak', day: '7/23', start: 7 * 60, endDay: '7/24', end: 15 * 60, why: 'repair' },
+    { id: 'g6', key: 'db_power', day: '9/12', start: 23 * 60, endDay: '9/13', end: 5 * 60, why: 'missing' },
+    { id: 'g7', key: 'tg_leak', day: '7/28', start: 17 * 60 + 45, endDay: '7/30', end: 10 * 60, why: 'repair' },
+    { id: 'g8', key: 'tg_th', day: '8/30', start: 12 * 60, endDay: '8/31', end: 12 * 60, why: 'flatline' },
+    { id: 'g9', key: 'sh_power', day: '9/15', start: 3 * 60, endDay: '9/15', end: 4 * 60 + 30, why: 'missing' },
+    { id: 'g10', key: 'uj_leak', day: '8/18', start: 20 * 60, endDay: '8/19', end: 8 * 60, why: 'missing' },
+    { id: 'g11', key: 'sw_leak', day: '8/24', start: 9 * 60 + 5, endDay: '8/26', end: 10 * 60, why: 'repair' },
+    { id: 'g12', key: 'sw_gas', day: '9/16', start: 20 * 60, endDay: '9/16', end: 23 * 60 + 30, why: 'missing' },
+    { id: 'g13', key: 'dh_th', day: '8/01', start: 0, endDay: '8/21', end: 0, why: 'learning' },
+    { id: 'g14', key: 'hg_gas', day: '9/16', start: 18 * 60, endDay: '9/17', end: 7 * 60, why: 'missing' },
+    { id: 'g15', key: 'mr_power', day: '9/05', start: 10 * 60, endDay: '9/05', end: 16 * 60, why: 'flatline' },
   ],
   outbox: { worker: [], guard: [] },
   // 오늘 방문 세 곳 (2026-10-19 사용자 지시 — 홈 오늘 방문 넘기기를 보이려고. 전에는 한빛화학 9/18(금) 14:00, 태광기계 방문일 없음)
@@ -501,22 +681,23 @@ const SEED = {
     // 2026-10-13 재점검: 불량이 있으면 처음 결과는 재점검이다. 점검완료·패트롤·기타로 끝난 곳은 재점검 판정(final)까지 마친 것으로 둔다.
     // claim: 공장주가 고쳤어요(사진)를 보낸 문항 · fixed: 지킴이가 고쳐짐으로 판정한 문항 · fin: 판정한 날
     // kz: 시정 중에 지킴이가 정해 둔 개선여부(ok 개선완료 · no 미개선) — 개선 관리 카드 승인 · 반려 · 보류가 다 보이게 (2026-10-29)
+    // sen: 참고한 센서 경보(문항 → 경보 id) — 개선 관리 · 결과 제출에서도 보이게 (2026-11-02 사용자 지시)
     ...[['saehan', '9/14', '최지킴', 'ok', '점검완료', ['a1-2', 'a4-1'], ['a1-2', 'a4-1'], ['a1-2', 'a4-1'], '9/16'],
       ['ujin', '9/15', '박지킴', 'ok', '점검완료', ['a3-0', 'a3-2'], ['a3-0', 'a3-2'], ['a3-0'], '9/16'],  // a3-3 → a3-2 (2026-10-19 전기안전이 종이대로 3문항)
-      ['seongwon', '9/15', '박지킴', 'ok', '재점검', ['a1-0', 'a3-2'], ['a1-0']],
-      ['donghwa', '9/16', '최지킴', 'ok', '재점검', ['a2-0', 'a3-1', 'a5-2'], ['a2-0', 'a3-1'], [], null, { 'a2-0': 'ok', 'a3-1': 'no' }],
+      ['seongwon', '9/15', '박지킴', 'ok', '재점검', ['a1-0', 'a3-2'], ['a1-0'], [], null, {}, { 'a3-2': 'h49' }],
+      ['donghwa', '9/16', '최지킴', 'ok', '재점검', ['a2-0', 'a3-1', 'a5-2'], ['a2-0', 'a3-1'], [], null, { 'a2-0': 'ok', 'a3-1': 'no' }, { 'a3-1': 'h23', 'a5-2': 'h51' }],
       ['mirae', '9/16', '이조장', 'ok', '패트롤', ['a1-0', 'a2-1'], [], [], '9/17'],
       ['hangyeol', '9/16', '이조장', 'ok', '기타', ['a4-0', 'a1-1', 'a3-2'], ['a1-1', 'a3-2'], ['a1-1', 'a3-2'], '9/17'],
-    ].map(([fid, date, by, st, result, bad, claim = [], fixed = [], fin, kz = {}]) => ({
+    ].map(([fid, date, by, st, result, bad, claim = [], fixed = [], fin, kz = {}, sen = {}]) => ({
       id: 'w' + fid, fid, date, by, locked: true, st, result,
       ...(fin ? { final: { from: '재점검', at: fin, by, fixed: fixed.length, total: bad.length } } : {}),
       items: CHECKLIST.areas.flatMap((a) => a.items.map((t, i) => { const k = `${a.key}-${i}`;
         return { id: `${fid}-${k}`, text: t, src: 'base', area: a.key, answer: bad.includes(k) ? 'bad' : 'ok',
-          ...(bad.includes(k) ? { shot: true, ...(kz[k] ? { st: kz[k] } : {}), log: [...(claim.includes(k) ? [{ t: 'fix', at: date, tm: '17:30', note: '', photo: true }] : []),
+          ...(bad.includes(k) ? { shot: true, ...(kz[k] ? { st: kz[k] } : {}), ...(sen[k] ? { sen: sen[k] } : {}), log: [...(claim.includes(k) ? [{ t: 'fix', at: date, tm: '17:30', note: '', photo: true }] : []),
             ...(fin ? [{ t: 'recheck', at: fin, by, result: fixed.includes(k) ? 'fixed' : 'not', photo: claim.includes(k) }] : [])] } : {}) }; })) })),
     // 동방산업 — 재점검 기한(9/03)이 지났는데 공장주 사진은 와 있다 (2026-10-13). 고치기 전 사진은 세 장 (2026-10-22 여러 장 보기)
     { id: 'i0820', fid: 'dongbang', date: '8/20', by: '박지킴', locked: true, st: 'ok', result: '재점검', items: [
-      { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블', shot: true, pics: [0, 1, 2],
+      { id: 'b1', text: '용접기 케이블이 물기 위를 지나지 않나?', src: 'ai', answer: 'bad', memo: '바닥 물기 위 케이블', shot: true, pics: [0, 1, 2], sen: 'h36',
         log: [ { t: 'fix', at: '8/30', tm: '14:20', note: '케이블 걸이 설치', photo: true } ] },
       ...BASE_ITEMS['금속가공'].map((t, i) => ({ id: 'b' + (i + 2), text: t, src: 'base', answer: 'ok' })),
     ] },
@@ -545,7 +726,7 @@ const SEED = {
     { id: 'v2', fid: 'daesung', date: '9/16', author: 'Nguyen Van A', anon: true, kind: 'danger', lang: 'vi',
       text: 'Lối đi tòa B hay có dầu tràn, rất dễ trượt ngã.', koTx: 'B동 통로에 기름이 자주 흘러 있어 미끄러지기 쉬워요.', photo: true, readAt: null, reply: null, replyAt: null, done: false },
   ],
-  // 센서 상태 (사이트 3곳 · 센서 키마다) — watch 감시 중 · repair 수리 중(운영자가 돌림) · unknown 값 모름(끊김)
+  // 센서 상태 (센서 키마다) — watch 감시 중 · repair 수리 중(운영자가 돌림) · unknown 값 모름(끊김)
   sensors: Object.fromEntries(Object.keys(SENSORS).map((k) => [k, { state: 'watch' }])),
   faults: [],           // 공장주 센서 고장 신고 (시안 O1-마 → 운영자 M2-마)
   memos: [              // 작업 예정 알리기 (시안 O1-사~자) — AI가 알아들은 내용과 결과

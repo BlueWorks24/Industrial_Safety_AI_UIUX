@@ -752,6 +752,34 @@ span.gtdtg{cursor:default}
 .gtlx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
 .gtlx b{font-size:14px;font-weight:700}
 .gtlx small{font-size:13px;color:var(--mid)}
+/* 센서 이력 탭 (2026-11-02) — 머리 "설치된 센서 n개"(.gsgt), 센서마다 한 줄(.gsr: 이름 · 붙은 곳 | 꼬리표), 경보 있는 센서만 줄 아래 타임라인 */
+.gsgt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px;font-weight:700;color:var(--mid);margin:0 0 12px}
+.gsgt em{font-style:normal;font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}  /* 기간 — 지난 방문 n 이후 / 최근 1년 / 전체 기록 */
+.gsg .gsmore{margin-top:14px}
+.gsr .gkv dd small{display:block;font-size:12px;font-weight:500;color:var(--mid)}  /* ④ 이상 징후 줄의 "헛경보일 수 있음" */
+.gsr{padding:12px 0;border-top:1px solid var(--line)}
+.gsr:last-child{padding-bottom:0}
+.gsrh{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.gsrh b{min-width:0;font-size:15px;font-weight:800;color:var(--ink);line-height:1.35}
+.gsrh .gtg{flex:none;margin:0;font-size:13px;padding:2px 8px}
+.gsr .gkv{grid-template-columns:5em 1fr;margin:6px 0 0;font-size:13px;gap:2px 12px}  /* 위치 · 대상 · 재는 것 — 이름표 칸 너비를 정해 센서끼리 값이 줄 맞게 */
+.gsr .gkv dd{font-weight:600}
+.gsr .gtl{margin-top:12px}
+/* ③ 경보 한 줄 (2026-11-02) — 울린 시각 옆 값(i), 오른쪽 심각도 꼬리표(심각 빨강 · 주의 주황 · 정보 회색), 진행 중은 빨간 점 */
+.gtlx b i{font-style:normal;font-weight:600;color:var(--ink)}
+.gsr .gtl li .gtg{flex:none;align-self:flex-start;margin:0 0 0 auto}
+.gtg.sevc{background:var(--red-l);color:var(--red-d)}
+.gtl li.gson::before{background:var(--red)}
+/* 참고한 센서 경보 (2026-11-02) — 개선사항 펼친 줄의 칸(.gfsen, 센서 이력 꼬리표와 같은 주황 바탕)과 고르기 창 줄(.gsenr) */
+.gfsen{display:flex;align-items:center;gap:8px;min-height:52px;padding:6px 4px 6px 14px;border-radius:10px;background:var(--amber-l)}
+.gfsen span{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.gfsen b{font-size:15px;font-weight:800;color:var(--ink)}
+.gfsen small{font-size:13px;color:var(--mid)}
+.gfsen button{flex:none;display:grid;place-items:center;width:40px;height:40px;border:none;background:none;color:var(--amber);cursor:pointer}
+.gsenl{display:flex;flex-direction:column;margin:4px 0 8px}
+.gsenr{display:flex;align-items:center;gap:12px;padding:12px 4px;border:none;border-bottom:1px solid var(--line);background:none;font:inherit;color:var(--ink);text-align:left;cursor:pointer}
+.gsenr.on{color:var(--brand)}
+.gsenr>svg{flex:none;margin-left:auto;color:var(--brand)}
 /* ===== 낸 점검 다시 보기 (2026-09-22) — 답은 누를 수 없는 꼬리표 하나 ===== */
 .ginsp{display:flex;align-items:center;justify-content:center;gap:4px;width:100%;min-height:44px;margin-top:4px;border:none;border-top:1px solid var(--line);background:none;font:inherit;font-size:14px;font-weight:700;color:var(--brand);cursor:pointer}
 .glock{display:flex;align-items:center;gap:6px;padding:10px 12px;border-radius:10px;background:#f1f2f4;color:var(--mid);font-size:14px;font-weight:700}

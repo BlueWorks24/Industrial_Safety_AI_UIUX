@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 주간 보고. 운영자 제출 검사(승인·반려)는 2026-10-14 사용자 지시로 뺐다 — 아직 정해진 게 아니다.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { hq: '', sheet: null, fT: {}, fact: null, fv: null, meet: 1, cell: null, ftx: null, ftxWait: false, ptsOpen: {}, only: false, ckTab: 'prev', gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, preBack: {}, back: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
+const UI = { hq: '', sheet: null, fT: {}, fact: null, fv: null, meet: 1, cell: null, ftx: null, ftxWait: false, ptsOpen: {}, only: false, ckTab: 'prev', gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, senAll: {}, preBack: {}, back: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가', find: '현장점검 개선사항' };  // find: 10-26 개선 관리 초안
 
 function tasks(s) {
@@ -278,7 +278,7 @@ function todoRow(s, x, tab) {
   }
   // 점검 — 방문 · 지난 점검(날짜와 결과) · 지난번 미흡 · 센서 이상 · 업종과 인원
   const v = s.visits[x.fid], going = s.draft && s.draft.kind === 'first' && s.draft.fid === x.fid;
-  const li = facLast(s, x.fid), st = facSt(s, x.fid), hist = s.alarms.filter((a) => alarmFid(a) === x.fid);
+  const li = facLast(s, x.fid), st = facSt(s, x.fid), hist = senRecent(s, x.fid);  // 센서 이상은 센서 이력과 같은 기간 (2026-11-02 ⑦)
   const rows = kv('방문', v || '정하지 않음', v ? 'now' : 'soft')
     + kv('지난 점검', li ? `${li.date} ${(FAC_ST.find(([k]) => k === st) || [, ''])[1]}` : '처음 가는 곳', li ? '' : 'soft')
     + (x.prev ? kv('지난번 미흡', `${x.prev}건`, 'warn') : '')
@@ -480,12 +480,17 @@ function todoScreen(s) {
 
 // 오늘 방문할 공장 한 줄 요약 (2026-09-28 사용자 지시) — 실제 서비스에서는 AI가 지난 점검·미흡·센서 기록을 읽고 쓴다.
 // 시제품은 같은 재료로 규칙대로 지어 보인다 (가설: 요약에 들어갈 재료는 이 셋이면 된다)
+// ⑦ 센서 줄 (2026-11-02 사용자 지시 — 위험도 평가 엔진 구성안 M4 결정 4 · R-S4, M6 X6): 센서 이력 탭과 같은 기간(지난 방문 이후 / 첫 방문이면 최근 1년)의 위험 경보만 센다.
+// 먼저 볼 것은 경보 난 센서를 경보 많은 순으로 최대 2개(같으면 최근 것 먼저), 이름 뒤 괄호에 설비 종류(공간 · 공장 전체 센서는 위치). 이상 징후 · 못 본 시간은 넣지 않는다(공장 창 센서 이력에)
+const senRecent = (s, fid) => s.alarms.filter((a) => alarmFid(a) === fid && senIn(s, fid)(a)).sort((a, b) => mdNum(b.day) - mdNum(a.day) || b.start - a.start);
+const senTop = (al) => { const n = {}; al.forEach((a) => { n[a.key] = (n[a.key] || 0) + 1; }); return Object.keys(n).sort((a, b) => n[b] - n[a]).slice(0, 2); };
+const senLook = (k) => `${SENSORS[k].title}(${SENSORS[k].eq || SENSORS[k].where})`;
 function aiBrief(s, fid) {
-  const q = openIssues(s, fid), hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid), li = lastIns(s, fid);
+  const q = openIssues(s, fid), hist = senRecent(s, fid), li = lastIns(s, fid);
   // 미흡 항목은 첫 것만 짧게 따온다 (한 줄 요약이라 두 줄 안팎으로)
   const cut = (t) => { t = t.replace(/\?$/, ''); return t.length > 14 ? t.slice(0, 13) + '…' : t; };
   const iss = q.length && `미흡 ${q.length}건("${cut(q[0].it.text)}"${q.length > 1 ? ` 외 ${q.length - 1}건` : ''})`;
-  const sen = hist.length && `센서 이상 ${hist.length}건(${SIM.title(hist[0])})`;
+  const sen = hist.length && `센서 이상 ${hist.length}건(${senTop(hist).map((k) => SENSORS[k].title).join(', ')})`;
   if (iss && sen) return `지난번 ${iss}과 최근 ${sen}을 자세히 보세요.`;
   if (iss) return `지난번(${q[0].ins.date}) ${iss}을 다시 확인하세요.`;
   if (sen) return `최근 ${sen}이 있었어요. 그 설비 둘레를 자세히 보세요.`;
@@ -495,8 +500,8 @@ function aiBrief(s, fid) {
 // 미흡 흐름·센서 기록 전체는 공장 창에 있으니 여기는 개수와 날짜만 (같은 날 사용자: 너무 자세하다)
 function briefSheet(s) {
   const fid = UI.sheet.fid, f = FACTORIES[fid], v = visitDay(s.visits[fid]);
-  const q = openIssues(s, fid), hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid), li = lastIns(s, fid);
-  const look = [...q.map((e) => e.it.text), ...(hist.length ? [`${SIM.title(hist[0])} 둘레`] : [])];
+  const q = openIssues(s, fid), hist = senRecent(s, fid), li = lastIns(s, fid);
+  const look = [...q.map((e) => e.it.text), ...senTop(hist).map((k) => `${senLook(k)} 둘레`)];
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet gbrief" role="dialog" aria-label="${f.name} AI 요약"><div class="grip"></div>
     <div class="gbh"><span class="gbi">${I('sparkle', 18)}</span><div><b>${f.name} AI 요약</b><small>${v ? `오늘 ${v.tm} 방문` : ''}</small></div></div>
     <div class="gbs">${esc(aiBrief(s, fid))}</div>
@@ -1126,13 +1131,66 @@ function firmSheet(s) {
 // 탭 이름 점검 준비 → 점검 이력, 기록 → 센서 이력 (2026-10-30 사용자 지시). 점검 이력 탭: 방문 · 점검 이력 타임라인(facLine). 센서 이력 탭: 센서 이상 기록만
 const FTABS = [['info', '기업 정보'], ['prep', '점검 이력'], ['log', '센서 이력']];
 // 센서 이력 탭 — 점검 이력 탭과 같은 타임라인(카드 하나, 오래된 것부터, 머리 띠 없음) (2026-10-30 사용자 지시 — 전엔 "센서 이상 기록 n건" 띠 + 날짜 · 시각 줄 목록, 2026-09-22).
-// 줄마다 날짜 | 무슨 센서 + 울린 시각과 어떻게 끝났나
-const senLine = (hist) => (hist.length ? `<div class="q"><ol class="gtl">${[...hist].sort((a, b) => mdNum(a.day) - mdNum(b.day) || a.start - b.start).map((a) =>
-    `<li><span class="gtlw">${a.day}</span><span class="gtlx"><b>${esc(SIM.title(a))}</b><small>${hm(a.start)} 울림, ${a.acks[0] ? `${a.acks[0].at - a.start}분 만에 조치` : SIM.endWord(a)}</small></span></li>`).join('')}</ol></div>`
-  : `<div class="cnone">센서 이상 기록이 없어요</div>`);
+// → 2026-11-02 센서마다 묶음 (위험도 평가 엔진 구성안 M4 결정 1 — 지킴이가 그 설비의 위험요인을 짐작하게). 센서 이름 아래 줄마다 날짜 | 울린 시각 + 어떻게 끝났나,
+// → 같은 날 사용자 지시("경보 없음 가스, 전기 … 이건 뭐야? 보유 센서야?")로 맨 위 "설치된 센서 n개" + 센서마다 한 줄(이름 · 붙은 곳 | 경보 n건 / 경보 없음 꼬리표),
+// 경보가 있는 센서만 줄 아래 타임라인. 경보 있는 센서가 먼저. 센서가 없는 공장은 그대로 빈 칸
+// 경보가 어떻게 끝났나 — 끝난 방식 말은 엔진 구성안 M4 R-S1 그대로(수리 중으로 돌려 닫힌 것은 "센서를 멈춰 닫힘")
+const senEnd = (a) => (a.acks[0] ? `${a.acks[0].at - a.start}분 만에 조치` : SIM.live(a) ? '진행 중' : a.endKind === 'repair' ? '센서를 멈춰 닫힘' : SIM.endWord(a));
+// ③ 경보 한 줄에 담는 것 (2026-11-02 사용자 지시 "문서에 있는 대로만" — M4 R-S1): 울린 시각 + 값(평소의 n배 / 누수 감지) | 심각도 꼬리표,
+// 그 아래 차례대로 n분 만에 조치 → 끝난 시각과 방식(아무도 안 누르고 끝남 / 센서를 멈춰 닫힘 / 끝남) 또는 진행 중, 작업 예정 시간 안이었으면 한 줄 더.
+// 사양서 한계는 등록된 센서가 없어 아직 안 그린다. 센서 줄에는 붙은 곳 + 종류(기계 센서만) + 대상(SEN_TARGET)
+const SEV_WORD = { critical: ['심각', ' sevc'], warn: ['주의', ' warn'], info: ['정보', ''] };
+const senVal = (a) => (SENSORS[a.key].kind === 'state' ? `${SENSORS[a.key].short} 감지` : a.ratio ? `평소의 ${a.ratio.toFixed(1)}배` : '');
+const senMemo = (s, a) => (s.memos || []).some((m) => m.facts && m.facts.key === a.key && m.facts.day === a.day && a.start >= m.facts.start && a.start < m.facts.end);
+const senSteps = (s, a) => [a.acks[0] && `${a.acks[0].at - a.start}분 만에 조치`,
+  SIM.live(a) ? '진행 중' : `${hm(a.endedAt)} ${a.endKind === 'repair' ? '센서를 멈춰 닫힘' : a.acks[0] ? '끝남' : '아무도 안 누르고 끝남'}`,
+  senMemo(s, a) && '작업 예정 시간 안'].filter(Boolean);
+// → 같은 날 사용자 지시로 한 줄 쉼표 잇기(`반응동 1층, 진동과 온도, 대상 …` — 사용자: "이건 센서가 위치한 곳이야?")를 이름표 · 값 표로: 위치 · 대상 · 재는 것(기계 센서만)
+// → 같은 날 사용자 지시로 재는 것을 모든 센서에(사용자: "'1번 교반기'는 센서 이름이야? '가스'는 가스를 측정한다는 거야?" — 기계 센서는 붙은 기계, 나머지는 재는 것으로 이름이 붙어 헷갈렸다).
+// 기계 센서는 what, 누수는 sub가 깔린 자리 설명이라 따로, 나머지는 sub(공기 중 가스 농도 · 공장에 들어오는 전기 전체 · 보관실 온도 · 습도)
+const senWhat = (k) => (SENSORS[k].what || (SENSORS[k].type === 'leak' ? '물이 새는지, 선이 끊겼는지' : SENSORS[k].sub) || '').replace(/ · /g, ', ');
+const senKv = (k, sign, blind) => kv([['위치', esc(SENSORS[k].where)], ['대상', esc(SEN_TARGET(k))], senWhat(k) && ['재는 것', esc(senWhat(k))], sign && ['이상 징후', sign], blind && ['못 본 시간', blind]]);
+// ⑤ 센서가 못 본 시간 (2026-11-02 사용자 지시 — 엔진 구성안 M4 R-S3, 사용자가 고른 (나) 센서마다): 값 끊김 · 값 멈춤 · 수리 중 · 이상진단 학습 중이던 시간을 더해
+// 시간과 비율을 그대로(높음 · 낮음 단계 없음) + 작은 글로 까닭. 없으면 "없음". 기간은 센서 이력과 같고, 비율의 분모는 지난 방문일 0시부터 지금까지(첫 방문 · 전체 기록은 1년)
+const GAP_WHY = { missing: '값 끊김', flatline: '값 멈춤', repair: '수리 중', learning: '이상진단 학습 중' };
+const minAt = (day, m) => mdDate(day).getTime() / 60000 + m;
+// 걸린 시간 글 — 1시간 안은 분, 하루 안은 시간 + 분, 그 넘으면 일 + 시간
+const gapSpan = (n) => { const h = Math.floor(n / 60), m = n % 60, d = Math.floor(n / 1440), dh = Math.floor((n % 1440) / 60);
+  return n < 60 ? `${n}분` : n < 1440 ? `${h}시간${m ? ` ${m}분` : ''}` : `${d}일${dh ? ` ${dh}시간` : ''}`; };
+function senBlind(s, k, from) {
+  const now = minAt('9/17', s.clock);
+  const got = (s.gaps || []).filter((g) => g.key === k).map((g) => [g, Math.max(minAt(g.day, g.start), from), Math.min(minAt(g.endDay, g.end), now)]).filter(([, a, b]) => b > a);
+  if (!got.length) return '없음';
+  const n = got.reduce((t, [, a, b]) => t + b - a, 0), r = (n / (now - from)) * 100;
+  return `${gapSpan(n)} (${r < 0.1 ? '0.1% 미만' : r < 10 ? r.toFixed(1) + '%' : Math.round(r) + '%'})<small>${[...new Set(got.map(([g]) => GAP_WHY[g.why]))].join(', ')}</small>`;
+}
+// 기간 (2026-11-02 사용자 지시 — 엔진 구성안 M4 R-S4): 기본은 지난 방문 이후(방문한 날 포함 — 방문 시각을 몰라서), 첫 방문이면 최근 1년(가정).
+// 맨 아래 [이전 기록 보기 n건]으로 전부 · 다시 누르면 되돌림(공장마다 기억). 탭 옆 수도 기간 안 경보 수.
+// 시제품 날짜에는 해가 없어(모두 2026년) 최근 1년은 지난 경보 전부와 같다
+const senSince = (s, fid) => { const li = lastIns(s, fid); return li ? li.date : null; };
+const senIn = (s, fid) => { const d = senSince(s, fid); return (a) => !d || mdNum(a.day) >= mdNum(d); };
+function senLine(s, fid, hist) {
+  const keys = SITE_SENSORS(fid);
+  if (!keys.length) return `<div class="cnone">센서 이상 기록이 없어요</div>`;
+  // ④ 이상 징후 — 이상진단 엔진의 "평소와 다름"(C3, 엔진 구성안 M4 R-S2): 위험 경보와 따로, 개수와 최근 날짜만 + "헛경보일 수 있음". 기간은 위와 같다.
+  // 처음엔 카드 맨 아래 공장 전체 한 줄(문서 예시, 사용자가 고른 (가))이었다가 같은 날 사용자 지시로 센서마다 이름표 줄로(사용자: "이상진단은 센서별로 하는 거 아니야?"),
+  // 이름도 "평소와 다름" → "이상 징후"(사용자 지시). 0건이면 "없음" — 줄을 빼면 0건인지 이상진단을 안 하는 센서인지 몰라서(같은 날 사용자 지시, 처음엔 줄을 안 그렸다)
+  const us = (s.usual || []).filter((u) => alarmFid(u) === fid), usIn = us.filter(senIn(s, fid));
+  const since = senSince(s, fid), all = !!UI.senAll[fid], inP = hist.filter(senIn(s, fid)), older = hist.length - inP.length + us.length - usIn.length;
+  const shown = all ? hist : inP, per = all ? '전체 기록' : since ? `지난 방문 ${since} 이후` : '최근 1년';
+  const from = !all && since ? minAt(since, 0) : minAt('9/17', s.clock) - 365 * 1440;  // 못 본 시간 비율의 기간 시작
+  const of = (k) => shown.filter((a) => a.key === k).sort((a, b) => mdNum(a.day) - mdNum(b.day) || a.start - b.start);
+  const usOf = (k) => (all ? us : usIn).filter((u) => u.key === k).sort((a, b) => mdNum(b.day) - mdNum(a.day));
+  const row = (k) => { const al = of(k), u = usOf(k);
+    return `<div class="gsr"><div class="gsrh"><b>${esc(SENSORS[k].title)}</b><span class="gtg${al.length ? ' warn' : ''}">${al.length ? `경보 ${al.length}건` : '경보 없음'}</span></div>${senKv(k, u.length ? `${u.length}건, 최근 ${u[0].day}<small>헛경보일 수 있음</small>` : '없음', senBlind(s, k, from))}
+      ${al.length ? `<ol class="gtl">${al.map((a) => { const [sw, sc] = SEV_WORD[alarmSev(a)];
+        return `<li${SIM.live(a) ? ' class="gson"' : ''}><span class="gtlw">${a.day}</span><span class="gtlx"><b>${hm(a.start)} 울림${senVal(a) ? ` <i>${senVal(a)}</i>` : ''}</b>${senSteps(s, a).map((t) => `<small>${t}</small>`).join('')}</span><span class="gtg${sc}">${sw}</span></li>`; }).join('')}</ol>` : ''}</div>`; };
+  return `<div class="q gsg"><div class="gsgt"><span>설치된 센서 ${keys.length}개</span><em>${per}</em></div>${[...keys.filter((k) => of(k).length), ...keys.filter((k) => !of(k).length && usOf(k).length), ...keys.filter((k) => !of(k).length && !usOf(k).length)].map(row).join('')}
+    ${older ? `<button class="more gsmore" data-act="senAll" data-fid="${fid}">${all ? '지난 방문 이후만 보기' : `이전 기록 보기 ${older}건`}</button>` : ''}</div>`;
+}
 function pre(s, fid) {
   const f = FACTORIES[fid];
-  const hist = s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid);
+  const hist = s.alarms.filter((a) => alarmFid(a) === fid);  // 지금 울리는 경보도 "진행 중"으로 (2026-11-02 — 전엔 끝난 것만)
   const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
   // 아래 단추 둘 — 방문일 | 점검 시작. 점검 시작은 늘 열려 있다 (2026-10-07 사용자 지시로 예약·공장주 승인을 걷음 — 불시에 가기도 한다)
   const tab = UI.ftab[fid] || 'info';  // 공장마다 마지막에 본 탭을 기억한다 (점검 결과를 보고 돌아와도 기록 탭 그대로)
@@ -1140,10 +1198,10 @@ function pre(s, fid) {
     ${head(f.name, UI.preBack[fid] || '')}
     ${ltitle(f.name)}
     ${miniMap(fid)}
-    <div class="gtabs gftabs" role="tablist">${FTABS.map(([k, w]) => { const n = k === 'log' ? hist.length : 0;  // 점검 이력 탭 옆 지난번 미흡 수는 뺐다 (2026-10-30 사용자 지시)
+    <div class="gtabs gftabs" role="tablist">${FTABS.map(([k, w]) => { const n = k === 'log' ? hist.filter(senIn(s, fid)).length : 0;  // 점검 이력 탭 옆 지난번 미흡 수는 뺐다 (2026-10-30 사용자 지시). 센서 이력 수는 기간 안 것만 (2026-11-02)
       return `<button class="gtab${tab === k ? ' on' : ''}" role="tab" aria-selected="${tab === k}" data-act="ftab" data-fid="${fid}" data-v="${k}">${w}${n ? `<em>${n}</em>` : ''}</button>`; }).join('')}</div>
     ${tab === 'info' ? firmInfo(s, fid) : tab === 'log' ? `
-    ${senLine(hist)}` : `
+    ${senLine(s, fid, hist)}` : `
     ${kv([['방문', s.visits[fid] || '안 정함']])}
     ${facLine(s, fid)}`}
   </div><div class="ft">
@@ -1365,7 +1423,7 @@ const findWord = (d, f) => `${FIND_WORD[kindOf(f)]} ${findNo(d, f)}`;
 // 현장점검 개선사항을 점검 결과의 지적 항목으로 (2026-10-26 개선 관리 초안 — 전에는 점검 결과 내기에서 버려졌다).
 // 개선 전 내용은 memo로, 사진은 찍은 것 그대로(photos — 앱 카메라 사진이면 그 주소, 아니면 시험 사진). 잘된 사항은 보내지 않는다
 const findItems = (d) => findsOf(d).filter((f) => kindOf(f) === 'bad').map((f) => ({ id: 'find-' + f.id, text: findWord(d, f), src: 'find', answer: 'bad',
-  memo: f.text || '', post: '', st: 'ing', after: [], eval: '', log: [], risks: f.risks || [], shot: f.pics.length > 0, pics: f.pics.map((_, j) => j),
+  memo: f.text || '', post: '', st: 'ing', after: [], eval: '', log: [], risks: f.risks || [], sen: f.sen, shot: f.pics.length > 0, pics: f.pics.map((_, j) => j),
   photos: f.pics.map((k) => realOf(d, k) || { src: photoOf(k).src, w: photoOf(k).w, h: photoOf(k).h }) }));
 // 지금 펼친 줄 — 고른 적이 없으면 맨 아래 줄
 const factOf = (d) => findOf(d, UI.fact) || findsOf(d)[findsOf(d).length - 1] || null;
@@ -1433,6 +1491,8 @@ function findOpen(d, x) {
   const risk = x.kind !== 'bad' ? '' : `<div class="gfrk"><div class="gfrkh"><b>위험요인</b>${aiTag}</div>
     <div class="gfchips">${(x.risks || []).map((r) => `<span class="gfchip"><i>${RISKS.indexOf(r) + 1}</i>${r}<button data-act="fRiskDel" data-id="${x.id}" data-v="${r}" aria-label="${r} 빼기">${I('close', 15)}</button></span>`).join('')}
       <button class="gfchip gfplus" data-act="fRiskOpen" data-id="${x.id}">${I('plus', 15)}추가</button></div></div>`;
+  // 참고한 센서 경보 — 개선사항만(잘된 사항은 안 붙임)
+  const sen = x.kind !== 'bad' ? '' : senField(d.fid, x, 'f');
   return `<section class="gfr on" id="fr-${x.id}">
     <div class="gfrh"><b>${word}</b><span class="gfrn">사진 ${n} / ${FIND_MAX}</span><button class="gfrx" data-act="fDelAsk" data-id="${x.id}" aria-label="${word} 지우기">${I('trash', 20)}</button></div>
     ${pics}
@@ -1440,7 +1500,36 @@ function findOpen(d, x) {
     ${risk}
     <div class="gfrk"><div class="gfrkh"><b>${FIND_TEXT[kindOf(x)]}</b></div>
       <textarea class="gftxa" id="fxIn" data-tx="find:${x.id}" placeholder="여기에 ${FIND_TEXT[kindOf(x)]} 입력">${esc(txVal('find:' + x.id, x.text))}</textarea></div>
+    ${sen}
   </section>`;
+}
+/* 참고한 센서 경보 (2026-11-02 사용자 지시 — 위험도 평가 엔진 구성안 M4 결정 2, 사용자가 고른 안 (가)).
+   센서 경보를 보고 현장에서 확인해 찾은 개선사항이면, 개선사항을 적는 펼친 줄에서 그 경보를 골라 이어 둔다(find.sen = 경보 id → 점검 기록 item.sen).
+   점수는 이 개선사항을 다른 것과 똑같이 센다. 공장주 웹 · 운영자 웹에는 아직 안 그린다.
+   → 같은 날 사용자 지시로 개선 관리 · 제출 전 확인(개선내역)에서도 점검하기와 같은 칸으로 고르고 뺀다(전엔 보기만, 붙인 게 없으면 칸이 없어 사무실에서 정리할 때 붙일 수 없었다).
+   그 공장에 지난 경보가 없으면 칸이 없다. 하나만 고른다(가설) */
+// until: 낸 점검이면 그 점검일까지(그날 포함) — 점검 뒤에 울린 경보는 참고했을 수 없다 (2026-11-02)
+const senPast = (s, fid, until) => s.alarms.filter((a) => !SIM.live(a) && alarmFid(a) === fid && (!until || mdNum(a.day) <= mdNum(until))).sort((a, b) => mdNum(b.day) - mdNum(a.day) || b.start - a.start);
+const senOf = (s, id) => (id ? s.alarms.find((a) => a.id === id) : null);
+const senBox = (a, del = '') => `<div class="gfsen"><span><b>${esc(SIM.title(a))}</b><small>${a.day} ${hm(a.start)} 울림</small></span>${del}</div>`;
+// 칸 — pre는 단추 이름 앞머리: f 점검하기(현장점검 개선사항) · kz 개선 관리 · 제출 전 확인
+function senField(fid, x, pre, until) {
+  if (!senPast(DB.s, fid, until).length) return '';
+  const sa = senOf(DB.s, x.sen);
+  return `<div class="gfrk"><div class="gfrkh"><b>참고한 센서 경보</b></div>
+    ${sa ? senBox(sa, `<button data-act="${pre}SenDel" data-id="${x.id}" aria-label="참고한 센서 경보 빼기">${I('close', 15)}</button>`)
+      : `<div class="gfchips"><button class="gfchip gfplus" data-act="${pre}SenOpen" data-id="${x.id}">${I('plus', 15)}고르기</button></div>`}</div>`;
+}
+// 고르기 창 — 그 공장의 지난 경보, 최근 것부터. 누르면 이어 두고 닫는다. fsen 점검하기 · kzsen 개선 관리 · 제출 전 확인
+function senSheet(s) {
+  const kz = UI.sheet.type === 'kzsen', d = kz ? kzIns(s, UI.kzIns) : s.draft, f = d && (kz ? kzItem(s, UI.sheet.id) : findOf(d, UI.sheet.id));
+  if (!f) return '';
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="srh"><b>${kz ? kzName(d, f) : findWord(d, f)} 참고한 센서 경보</b></div>
+    <div class="gsenl">${senPast(s, d.fid, kz ? d.date : null).map((a) => `<button class="gsenr${f.sen === a.id ? ' on' : ''}" data-act="${kz ? 'kz' : 'f'}SenPick" data-id="${f.id}" data-v="${a.id}">
+      <span class="gtlw">${a.day}</span><span class="gtlx"><b>${esc(SIM.title(a))}</b><small>${hm(a.start)} 울림, ${senEnd(a)}</small></span>${f.sen === a.id ? I('check', 20) : ''}</button>`).join('')}</div>
+    <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button></div>
+  </div>`;
 }
 // 바로 적는 칸 — 현장점검 개선 전 내용(find:줄 id) · 분야별 안전점검 평가 내용(item:문항 id) (2026-10-23 사용자 지시 — + 단추 → 아래 창 대신).
 // 적는 대로 UI.ftx에 담고, 칸 밖을 누르거나 다른 칸으로 옮기거나 다른 화면으로 가면 저장한다.
@@ -1493,7 +1582,7 @@ function fixScreen(s) {
     ${insTabs(d, 'fix')}
     ${fs.length ? `${sum}${bad.length ? `<div class="gfrs0">${bad.map(row).join('')}</div>` : ''}${shot(true)}
       ${good.length ? `<div class="gfsec">잘된 사항</div><div class="gfrs0">${good.map(row).join('')}</div>` : ''}` : shot(false)}
-  </div><div class="ft"><button class="btn cnext" data-act="insTab" data-v="ck"><span class="cnl">다음: 분야별 안전점검</span>${I('chevron', 18)}</button></div></div>${UI.sheet && UI.sheet.type === 'frisk' ? fRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fdel' ? fDelSheet(s) : ''}${UI.fv ? findViewer(s) : ''}`;
+  </div><div class="ft"><button class="btn cnext" data-act="insTab" data-v="ck"><span class="cnl">다음: 분야별 안전점검</span>${I('chevron', 18)}</button></div></div>${UI.sheet && UI.sheet.type === 'frisk' ? fRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fsen' ? senSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fdel' ? fDelSheet(s) : ''}${UI.fv ? findViewer(s) : ''}`;
 }
 // 위험요인 고르기 — AI가 추천한 것과 고른 것을 먼저, 나머지는 접어 둔다 (불량 창과 같은 모양)
 function fRiskSheet(s) {
@@ -1899,6 +1988,7 @@ function kzRows(ins, mode) {
         <button class="gfchip gfplus" data-act="kzRiskOpen" data-id="${x.id}">${I('plus', 15)}추가</button></div></div>
       <div class="gfrk"><div class="gfrkh"><b>개선 전 내용</b></div><textarea class="gftxa" data-tx="kzpre:${x.id}" placeholder="여기에 개선 전 내용 입력">${esc(txVal('kzpre:' + x.id, x.memo))}</textarea></div>
       <div class="gfrk"><div class="gfrkh"><b>개선 후 내용</b></div><textarea class="gftxa" data-tx="kzpost:${x.id}" placeholder="여기에 개선 후 내용 입력">${esc(txVal('kzpost:' + x.id, x.post))}</textarea></div>
+      ${senField(ins.fid, x, 'kz', ins.date)}
     </section>`);
   return `${sum}${mini}<div class="gfrs0">${fs.map(row).join('')}</div>`;
 }
@@ -1931,7 +2021,7 @@ function sendScreen(s, id) {
     ${fs.length ? kzRows(ins, mode) : `<div class="cknone">${I('checkCircle', 30)}<b>개선사항 없음</b><span>현장점검에서 찍은 개선사항이 없던 점검</span></div>`}
   </div><div class="ft">${mode === 'judge' ? `<button class="btn" data-act="kzJudge" data-id="${id}">판정 저장</button>`
     : `<button class="btn" data-act="sendFac" data-id="${id}">${allOk || mode === 'fix' || mode === 'none' ? '저장' : '공장에 전송'}</button>`}</div></div>
-  ${UI.sheet && UI.sheet.type === 'kzrisk' ? kzRiskSheet(s) : ''}`;
+  ${UI.sheet && UI.sheet.type === 'kzrisk' ? kzRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'kzsen' ? senSheet(s) : ''}`;
 }
 // 공장주 회신 — 공장이 [고쳤어요]로 보낸 날 · 고친 내용 · 사진 수. 한 줄로 이어 쓰지 않고 접어 두었다가 누르면 표로 펼친다 (2026-10-26 사용자 지시).
 // 펼치고 접을 때 아코디언처럼 미끄러진다(같은 날 사용자 지시) — 표는 늘 그려 두고 칸 높이만 바꾼다(.kzfxw), 누를 때는 다시 그리지 않고 칸 class만 바꾼다(ACTS.kzFx)
@@ -2076,7 +2166,7 @@ function subScreen(s, id, tab) {
     ${body}
     ${next}
   </div></div>
-  ${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'kit' ? kitSheet(x) : ''}${UI.sheet && UI.sheet.type === 'kitEtc' ? kitEtcSheet(x) : ''}${UI.sheet && UI.sheet.type === 'kzrisk' ? kzRiskSheet(s) : ''}${UI.shot ? shotViewer() : ''}`;
+  ${UI.sheet && UI.sheet.type === 'bad' ? badSheet(s) : ''}${UI.sheet && UI.sheet.type === 'kit' ? kitSheet(x) : ''}${UI.sheet && UI.sheet.type === 'kitEtc' ? kitEtcSheet(x) : ''}${UI.sheet && UI.sheet.type === 'kzrisk' ? kzRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'kzsen' ? senSheet(s) : ''}${UI.shot ? shotViewer() : ''}`;
 }
 // 불량 항목 하나의 재점검 판정 (마지막 것)
 const rckWord = (x) => { const l = [...(x.log || [])].reverse().find((y) => y.t === 'recheck'); return l ? `재점검(${l.at}): ${l.result === 'fixed' ? '고쳐짐' : '안 고쳐짐'}` : ''; };
@@ -2690,6 +2780,9 @@ const ACTS = {
     const sh = UI.sheet; UI.sheet = null;
     kindMove(sh.id, () => DB.act((s) => { const f = findOf(s.draft, sh.id); f.risks = RISKS.filter((r) => sh.risks.includes(r)); f.own = true; }));
   },
+  fSenOpen({ id }) { sheet({ type: 'fsen', id }); },
+  fSenPick({ id, v }) { UI.sheet = null; DB.act((s) => { const f = findOf(s.draft, id); if (f) f.sen = v; }); },
+  fSenDel({ id }) { DB.act((s) => { const f = findOf(s.draft, id); if (f) delete f.sen; }); },
   fRetry({ id }) { DB.act((s) => { const f = findOf(s.draft, id); if (f.ai) f.ai.st = 'wait'; }); },
   // 사진이나 내용이 있으면 묻고 지운다. 빈 줄은 바로
   fDelAsk({ id }) { const f = findOf(DB.s.draft, id); if (f.pics.length || f.text) sheet({ type: 'fdel', id }); else { UI.sheet = { id }; ACTS.fDel(); } },
@@ -2779,6 +2872,7 @@ const ACTS = {
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
   ftab({ fid, v }) { UI.ftab[fid] = v; render(); },
+  senAll({ fid }) { UI.senAll[fid] = !UI.senAll[fid]; render(); },  // 센서 이력 — 이전 기록 보기 / 지난 방문 이후만 보기
   // 넘길 때 새 공장이 넘긴 쪽에서 밀려 들어온다 (2026-10-15 사용자 지시) — 방향은 이번 한 번 그릴 때만 쓴다
   rv({ v }) { UI.rv = (UI.rv || 0) + +v; UI.rvDir = +v; render(); UI.rvDir = 0; },
   // 머리 찾기 아이콘 — 공장 탭의 이름 찾기 칸으로 가서 바로 입력하게 한다
@@ -2880,6 +2974,9 @@ const ACTS = {
     galOpen({ ins: UI.kzIns, it: id, side: v }); },  // 누른 그 순간에 열어야 폰이 막지 않는다
   kzRiskOpen({ id }) { sheet({ type: 'kzrisk', id, risks: [...(kzItem(DB.s, id).risks || [])] }); },
   kzRiskDel({ id, v }) { DB.act((s) => { const it = kzItem(s, id); if (it) it.risks = (it.risks || []).filter((r) => r !== v); }); },
+  kzSenOpen({ id }) { sheet({ type: 'kzsen', id }); },  // 참고한 센서 경보 — 개선 관리 · 제출 전 확인 (2026-11-02)
+  kzSenPick({ id, v }) { UI.sheet = null; DB.act((s) => { const it = kzItem(s, id); if (it) it.sen = v; }); },
+  kzSenDel({ id }) { DB.act((s) => { const it = kzItem(s, id); if (it) delete it.sen; }); },
   kzRiskSave() { const { id, risks } = UI.sheet; UI.sheet = null; DB.act((s) => { const it = kzItem(s, id); if (it) it.risks = RISKS.filter((r) => risks.includes(r)); }); },
   // 공장에 전송 — 개선완료로 둔 건은 고쳐진 것으로 적고 나머지만 공장이 고친다. 다 개선완료면 보내지 않고 개선완료로 끝낸다
   sendFac({ id }) {

@@ -925,7 +925,7 @@ const OPER = (() => {
         ${kcard({ t: 'AI 제안 쓰임', v: pct(ai.length, withAi.length * AI_SHOWN), unit: withAi.length ? '%' : '', rows: [['보여 준 제안', withAi.length * AI_SHOWN + '개'], ['지킴이가 더함', ai.length + '개'], ['그중 불량', ai.filter((x) => x.answer === 'bad').length + '개']] })}
         ${kcard({ t: '지킴이가 직접 더한 문항', v: items.filter((x) => x.src === 'self').length, unit: '개', rows: [['AI를 쓴 점검', withAi.length + '건'], ['모든 점검', s.inspections.length + '건']] })}
       </div>
-      <div class="proto">시제품 · 다른 조 숫자와 4~8월은 가상이에요. AI·센서 숫자는 ${TEAM.name}과 센서 사이트 3곳 기록에서 셌어요</div>`);
+      <div class="proto">시제품 · 다른 조 숫자와 4~8월은 가상이에요. AI·센서 숫자는 ${TEAM.name}과 센서 사이트 ${Object.keys(FACTORIES).filter(HAS_SENSORS).length}곳 기록에서 셌어요</div>`);
   }
 
   /* ---------- M7 공지 · 자료 ---------- */
