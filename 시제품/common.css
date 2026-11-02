@@ -1637,7 +1637,8 @@ img.gshart{display:block;object-fit:cover}
 .sbsc em{margin-left:auto;padding-bottom:4px;font-style:normal;font-size:14px;font-weight:700;color:var(--mid)}
 .sbsc .input{width:96px;padding:6px 10px;border:2px solid var(--navy);font-size:26px;font-weight:800;text-align:center}
 .sbpen,.sbok{display:grid;place-items:center;flex:none;width:40px;height:40px;border:none;border-radius:10px;background:none;color:var(--navy)}
-.sbpen{margin:0 -8px -4px 0}
+.sbpen{margin:0 -8px -4px auto}
+.sbsc em+.sbpen{margin-left:0}  /* "AI 산출"을 빼서(2026-11-02) 연필이 홀로 오른쪽 끝 — 직접 고침이 있으면 그 옆 */
 .sbok{margin-left:auto;background:var(--navy);color:#fff}
 .sbbar{position:relative;height:10px;margin:-4px 0 2px;border-radius:5px;background:#e8ebf1}
 .sbbar.sbmine{margin-bottom:18px}  /* .ai는 다른 곳 이름과 겹쳐 안 씀 */
@@ -1645,16 +1646,12 @@ img.gshart{display:block;object-fit:cover}
 .sbbar u{position:absolute;top:-5px;bottom:-5px;width:2px;margin-left:-1px;background:var(--ink)}
 .sbbar u em{position:absolute;top:22px;left:50%;transform:translateX(-50%);font-style:normal;font-size:12.5px;font-weight:800;color:var(--mid);white-space:nowrap}
 .sbwh{display:flex;align-items:center;gap:8px;width:100%;min-height:50px;padding:0 2px;border:none;border-top:1px solid var(--line);background:none;font:inherit;text-align:left;cursor:pointer}
-.sbwh b{font-size:15.5px;font-weight:800;color:var(--ink)}
-.sbwh span{flex:1;font-size:14.5px;font-weight:700;color:var(--navy)}
+.sbwh b{flex:1;font-size:15.5px;font-weight:800;color:var(--ink)}
 .sbwh .i{color:var(--soft);transform:rotate(90deg);transition:transform .25s}
 .sbwhy.on .sbwh .i{transform:rotate(-90deg)}
 .sbwhy.on .kzfxw{grid-template-rows:1fr}
 .sbwhyb{padding:2px 2px 0}
-.sbwhyb p{margin:0 0 8px;font-size:15.5px;line-height:1.55;word-break:keep-all}
-.sbwhyb>div{display:flex;align-items:center;gap:10px;min-height:42px;border-top:1px solid var(--line)}
-.sbwhyb>div span{flex:1;font-size:15px;font-weight:600;line-height:1.4;word-break:keep-all}
-.sbwhyb>div b{font-size:15px;font-weight:800;color:var(--navy)}
+.sbwhyb p{margin:0 0 6px;font-size:15.5px;line-height:1.6;word-break:keep-all}  /* 근거는 말 글 한 덩이 (2026-11-02 — 전엔 근거 줄마다 +n점) */
 .sbtx{margin:0;font-size:16px;line-height:1.55;white-space:pre-wrap;word-break:keep-all}
 .sbck{display:flex;flex-direction:column;border-top:1px solid var(--line)}
 .sbck>div{display:flex;align-items:center;gap:10px;min-height:46px;border-bottom:1px solid var(--line);font-size:16px;font-weight:700}

@@ -2,7 +2,7 @@
 // 2026-09-22 기존 웹 방식: 조·권역, 34문항 판, 주간 보고. 운영자 제출 검사(승인·반려)는 2026-10-14 사용자 지시로 뺐다 — 아직 정해진 게 아니다.
 let ACC = null;      // 로그인한 지킴이 { login, name, org }
 let ME = '김지킴';
-const UI = { hq: '', sheet: null, fT: {}, fact: null, fv: null, meet: 1, cell: null, ftx: null, ftxWait: false, ptsOpen: {}, only: false, ckTab: 'prev', gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, preBack: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
+const UI = { hq: '', sheet: null, fT: {}, fact: null, fv: null, meet: 1, cell: null, ftx: null, ftxWait: false, ptsOpen: {}, only: false, ckTab: 'prev', gu: null, areas: [], pin: null, sort: 'near', calM: 9, calD: null, fq: '', fst: 'all', ckOpen: {}, ftab: {}, preBack: {}, back: {}, notiSeen: new Set(), notiNew: new Set(), wk: { area: null, note: {}, focus: {} } };
 const SRC = { base: '기본', prev: '지난번 미흡 항목', ai: 'AI 제안', self: '직접 추가', find: '현장점검 개선사항' };  // find: 10-26 개선 관리 초안
 
 function tasks(s) {
@@ -152,8 +152,8 @@ const TD = [['all', '전체'], ['visit', '점검'], ['rck', '개선 관리'], ['
 const rckNew = (ins) => toFix(ins).filter((it) => rckFix(it) && kzJd(it) === 'ing').length;
 const TDF = {
   // 이름은 짧게 (2026-10-30 사용자 지시 — 전엔 방문일 정함 · 방문일 없음 · 아직 안 감)
-  // 점검하기는 [전체]를 뺐다 (같은 날 사용자 지시) — 처음엔 맨 앞 [예정]
-  visit: [['date', '예정', (s, x) => !!s.visits[x.fid]], ['nodate', '미정', (s, x) => !s.visits[x.fid]], ['never', '미방문', (s, x) => !facLast(s, x.fid)]],
+  // 점검하기는 [전체]를 뺐다 (같은 날 사용자 지시) — 처음엔 맨 앞 [예정]. [미방문]도 뺐다 (2026-11-02 사용자 지시)
+  visit: [['date', '예정', (s, x) => !!s.visits[x.fid]], ['nodate', '미정', (s, x) => !s.visits[x.fid]]],
   // 개선 관리도 같은 날 짧게 — 새 사진 → 회신(공장주 회신과 같은 말), 기한 지남 → 기한초과
   rck: [['all', '전체'], ['photo', '회신', (s, x) => rckNew(x.ins) > 0], ['late', '기한초과', (s, x) => x.kind === 'recheck' && overdue(x.ins)]],
 };
@@ -463,7 +463,7 @@ function todoScreen(s) {
   // 결과 제출 줄 — 간결하게 (같은 날 사용자 지시): 기업 이름, 점검일 · 점검자, 점검 결과 꼬리표. 줄을 누르면 제출 전 확인
   const subRow = (x) => `<button class="sbrow" data-go="sub/${x.ins.id}"><span class="sbrb"><b>${FACTORIES[x.fid].name}</b>
     <small>${x.ins.date} ${esc(x.ins.by)}${tg(x.ins.result || RESULTS[0])}${tg('제출할 것', 'now')}</small></span>${I('chevron', 18)}</button>`;
-  const title = tab === 'sub' ? '결과 제출' : '할 일';
+  const title = { visit: '점검하기', rck: '개선 관리', sub: '결과 제출' }[tab] || '할 일';  // 제목은 들어온 홈 카드 이름 그대로 (2026-11-02 사용자 지시 — 점검하기 · 개선 관리도 전엔 할 일)
   return `${sbar('지킴이')}<div class="scr gtodo"><div class="bd">
     ${head(title, '')}
     ${ltitle(title)}
@@ -580,7 +580,7 @@ const notiUnseen = (s) => (s ? notis(s).filter((x) => !UI.notiSeen.has(x.id)).le
 function notiScreen(s) {
   const l = notis(s);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('알림', '')}
+    ${head('알림', UI.back.noti || '')}
     ${l.length ? `<div class="gnoti">${l.map((x) => `<button class="gnr${UI.notiNew.has(x.id) ? ' new' : ''}${x.tone ? ' ' + x.tone : ''}" data-go="${x.go}">
       <span class="gnic">${I(x.ic, 20)}</span><span class="gnt"><b>${x.t}</b><small>${x.sub}</small></span><span class="gnat">${x.at}${x.tm ? `<br>${x.tm}` : ''}</span></button>`).join('')}</div>`
       : `<div class="cnone">새 알림이 없어요</div>`}
@@ -643,7 +643,7 @@ function facSt(s, fid) {
 const rckKey = (s, fid) => { const li = facLast(s, fid); return inRecheck(li) ? daysLeft(recheckDue(li)) : 999; };
 // 공장 줄 (2026-10-14 사용자: 꼬리표 알약이 AI스럽다 → 이름 옆 색 글자도 AI스럽다) — 알약·색 글자를 걷고 이름표·값 줄로.
 // 마지막 점검 → 점검 결과 → 시정 기한 · 방문 · 미흡을 한 줄씩. 색은 값에만, 늦은 것(주황)과 방문(파랑)에만 쓴다
-// res: 점검 결과 탭에서 부를 때 — 방문(할 일) 줄을 빼고, 누르면 공장 창이 기록 탭으로 열린다 (2026-10-19)
+// res: 점검 결과 탭에서 부를 때 — 방문(할 일) 줄을 빼고, 누르면 공장 창이 기록 탭으로 열린다 (2026-10-19, 2026-11-02부터 점검 이력 탭)
 function facRow(s, fid, tk, res = false) {
   const f = FACTORIES[fid], li = facLast(s, fid), st = facSt(s, fid);
   const q = openIssues(s, fid).length, v = s.visits[fid];
@@ -703,7 +703,7 @@ function factoriesScreen(s) {
     .sort((a, b) => lastKey(b) - lastKey(a) || near(a, b));
   const n = (k) => (k === 'all' ? inTeam.length : inTeam.filter((f) => facSt(s, f) === k).length);
   return `${sbar('지킴이')}<div class="scr"><div class="bd">
-    ${head('점검 결과', '')}
+    ${head('점검 결과', UI.back.factories || '')}
     ${ltitle('점검 결과')}
     ${findRow('fac')}
     <button class="hper${UI.per ? ' on' : ''}" data-act="perOpen">${I('calendar', 16)}<span>점검 기간</span><b>${perWord()}</b>${I('chevron', 14)}</button>
@@ -1770,7 +1770,8 @@ function checkList(s) {
   const n = (v) => vis.filter((x) => x.answer === v).length;
   const done = ANS_ORDER.reduce((a, v) => a + n(v), 0);
   // 머리글 아래에 진행 막대와 상태별 수를 같이 붙여 스크롤해도 위에 남게 한다
-  const top = `<div class="apptop">${gband(f.name + ' 점검', 'pick', '')}
+  // ← 는 사전점검 · 현장점검과 같게 점검을 시작한 곳으로 (2026-11-02 — 전엔 옛 체크리스트 고르기 pick을 한 번 거쳤다)
+  const top = `<div class="apptop">${gband(f.name + ' 점검', UI.startBack ?? 'pre/' + d.fid, '')}
     <div class="progtop"><div class="rowx"><span class="t">${esc(f.name)} ${tg(CHECKLIST.ver)}</span><span class="small">${n('bad') ? `<b class="pbad">불량 ${n('bad')}</b>` : ''}<b>${done}</b> / ${vis.length} 답함</span></div>
     <div class="prog">${ANS_ORDER.map((v) => `<i class="${ansCls(v)}" style="width:${(n(v) / vis.length) * 100}%"></i>`).join('')}</div></div></div>`;
   const tab = UI.ckTab === 'list' ? 'list' : 'prev';
@@ -1920,7 +1921,7 @@ function sendScreen(s, id) {
   const f = FACTORIES[ins.fid], fs = kzList(ins);
   const nOk = fs.filter((x) => x.st === 'ok').length, allOk = fs.length && nOk === fs.length;
   return `${sbar(f.name)}<div class="scr"><div class="bd" style="gap:10px">
-    ${head(`${f.name} ${{ send: '개선 관리', none: '개선 관리', fix: '시정 중', judge: '판정' }[mode]}`, 'todo')}
+    ${head(`${f.name} ${{ send: '개선 관리', none: '개선 관리', fix: '시정 중', judge: '판정' }[mode]}`, UI.back['send/' + id] || 'todo')}
     ${ltitle(f.name)}
     <div class="tdgt">${[['점검일', `${ins.date} ${ins.by === ME ? `${ins.by} (나)` : esc(ins.by)}`], mode !== 'send' && mode !== 'none' && ['보낸 날', ins.toFac || ins.date],  // "공장에 보냄" → 보낸 날 (2026-10-26 사용자 지시)
       // 시정 기한 — 알약 대신 글자 (같은 날 사용자: AI스럽다). 남은 날은 남색, 지나면 빨강.
@@ -1975,19 +1976,21 @@ function aiScore(s, ins) {
   const kit = fx.kit || [], al = s.alarms.filter((a) => alarmFid(a) === ins.fid);
   const areas = [...new Set(bad.map((x) => (CHECKLIST.areas.find((a) => a.key === x.area) || {}).name).filter(Boolean))];
   const risks = [...new Set(left.flatMap((it) => it.risks || []))];
-  // [점수, 근거 글] — 0점인 것은 뺀다
-  const why = [[Math.min(bad.length * 8, 32), `체크리스트 불량 ${bad.length}문항${areas.length ? ` (${areas.join(', ')})` : ''}`],
-    [Math.min(left.length * 10, 30), `안 고쳐진 개선사항 ${left.length}건${risks.length ? ` (${risks.join(', ')})` : ''}`],
-    [chem.some((c) => c.startsWith('유해화학물질')) ? 12 : chem.length ? 5 : 0, `위험물질 ${chem.join(', ')}`],
-    [Math.min(al.length * 4, 12), `최근 센서 이상 ${al.length}건`],
-    [Math.min(kit.length * 2, 10), `유해위험기구 ${kit.length}종 보유`],
-    [Math.min(mid.length * 2, 10), `체크리스트 보통 ${mid.length}문항`]].filter(([p]) => p > 0).sort((a, b) => b[0] - a[0]);
-  const score = Math.min(100, 5 + why.reduce((t, [p]) => t + p, 0)), top = why.length && why[0][1].replace(/ \(.*\)$/, '');
-  const c = top && top.charCodeAt(top.length - 1), ga = c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? '이' : '가';  // 받침 따라 이 / 가
-  // 설명 글 — 점수대 한 마디 + 가장 큰 근거 (AI가 쓰는 글 흉내)
-  const say = !top ? '큰 위험 근거가 없어요.' : `${score >= 60 ? '위험 근거가 많아요.' : score >= 30 ? '위험 근거가 몇 가지 있어요.' : '위험 근거가 적어요.'} ${top}${ga} 가장 크게 반영됐어요.`;
-  return { score, say, why: [...why, [5, '기본']] };
+  // [점수, 근거 글, 짧은 이름] — 0점인 것은 뺀다. 근거는 줄 목록이 아니라 말 글로 보인다 (2026-11-02 사용자 지시 — 전엔 근거 줄마다 +n점)
+  const why = [[Math.min(bad.length * 8, 32), `체크리스트${areas.length ? ` ${areas.join(', ')}` : ''}에서 불량이 ${bad.length}문항 나왔어요.`, '체크리스트 불량'],
+    [Math.min(left.length * 10, 30), `아직 안 고쳐진 개선사항이 ${left.length}건 있어요.${risks.length ? ` 위험요인은 ${risks.join(', ')}${josa(risks.at(-1), '이에요', '예요')}.` : ''}`, '안 고쳐진 개선사항'],
+    [chem.some((c) => c.startsWith('유해화학물질')) ? 12 : chem.length ? 5 : 0, `위험물질은 ${chem.join(', ')}에 해당해요.`, '위험물질'],
+    [Math.min(al.length * 4, 12), `최근 센서 이상이 ${al.length}건 있었어요.`, '센서 이상'],
+    [Math.min(kit.length * 2, 10), `유해위험기구를 ${kit.length}종 갖고 있어요.`, '유해위험기구'],
+    [Math.min(mid.length * 2, 10), `체크리스트에서 보통이 ${mid.length}문항 나왔어요.`, '체크리스트 보통']].filter(([p]) => p > 0).sort((a, b) => b[0] - a[0]);
+  const score = Math.min(100, 5 + why.reduce((t, [p]) => t + p, 0));
+  // 설명 글 — 점수대 한 마디 + 근거를 큰 차례로 + 가장 크게 반영된 것 (AI가 쓰는 글 흉내)
+  const say = !why.length ? '큰 위험 근거가 없어요.' : [score >= 60 ? '위험 근거가 많아요.' : score >= 30 ? '위험 근거가 몇 가지 있어요.' : '위험 근거가 적어요.',
+    ...why.map((w) => w[1]), ...(why.length > 1 ? [`그중 ${why[0][2]}${josa(why[0][2], '이', '가')} 점수에 가장 크게 반영됐어요.`] : [])].join(' ');
+  return { score, say };
 }
+// 받침이 있으면 a, 없으면 b — 끝의 괄호 같은 기호는 건너뛰고 마지막 한글로 본다
+const josa = (w, a, b) => { const m = String(w).match(/[가-힣](?=[^가-힣]*$)/); return m && (m[0].charCodeAt(0) - 0xac00) % 28 ? a : b; };
 // 탭 이름 사전점검 | 분야별 안전점검 | 개선사항 → 기업정보 | 점검내역 | 개선내역 (2026-10-29 사용자 지시, 안 화면은 그대로)
 const SUB_TABS = [['meet', '기업정보'], ['ck', '점검내역'], ['kz', '개선내역'], ['end', '제출']];
 // 제출 전 확인 줄 — [맞나, 글, 고치러 갈 탭]
@@ -2037,6 +2040,7 @@ function subScreen(s, id, tab) {
   else {
     const ok = fs.filter((it) => itemState(it) === 'fixed').length, ai = aiScore(s, ins);
     // 평가 점수 — 큰 숫자 / 100 + 막대(2026-10-30 사용자가 고른 시안 2). 고친 점수면 막대에 AI 점수 자리 표시. 연필을 누르면 그 줄이 입력 칸 + ✓
+    // 카드 이름은 위험도 평가(AI), 숫자 옆 "AI 산출"은 뺐다 — 고친 점수일 때만 "직접 고침"이고 이름에서 (AI)를 뺀다 (2026-11-02 사용자 지시)
     const sc = ins.score ?? ai.score, mine = ins.score != null && ins.score !== ai.score;
     // 조언 옆 코드(일반 26ver01)는 뺐다 — 위 기업 구분 · 판 번호에서 보인다 (2026-10-30 사용자 지시)
     // 기업 구분은 조언 카드 안에서 꺼내 위험도 등급 바로 위 카드로 (같은 날 사용자 지시). 차례: 조언(판 번호 · 조언) → 기업 구분 → 위험도 등급 → 제출 전 확인
@@ -2049,14 +2053,13 @@ function subScreen(s, id, tab) {
       <textarea class="gftxa" id="advTx" data-tx="advtx:${id}" placeholder="여기에 개선을 위한 조언 입력">${esc(txVal('advtx:' + id, a.text))}</textarea></section>
     <section class="sbc"><div class="sbh"><b>기업 구분</b></div>
       <div class="seg">${ADV_CLS.map((c) => `<button class="${a.cls === c ? 'on' : ''}" data-act="advCls" data-id="${id}" data-v="${c}" aria-pressed="${a.cls === c}">${c}</button>`).join('')}</div></section>
-    <section class="sbc"><div class="sbh"><b>평가 점수</b></div>
+    <section class="sbc"><div class="sbh"><b>위험도 평가${mine ? '' : '(AI)'}</b></div>
       <div class="sbsc">${UI.scoreEdit === id
-        ? `<input class="input" type="number" inputmode="numeric" min="0" max="100" id="subScore" data-tx="score:${id}" value="${esc(txVal('score:' + id, String(sc)))}" aria-label="평가 점수"><span>/ 100</span><button class="sbok" data-act="scoreOk" aria-label="점수 저장">${I('check', 18)}</button>`
-        : `<b>${sc}</b><span>/ 100</span><em>${mine ? '직접 고침' : 'AI 산출'}</em><button class="sbpen" data-act="scoreEdit" data-id="${id}" aria-label="점수 고치기">${I('pen', 19)}</button>`}</div>
+        ? `<input class="input" type="number" inputmode="numeric" min="0" max="100" id="subScore" data-tx="score:${id}" value="${esc(txVal('score:' + id, String(sc)))}" aria-label="위험도 평가"><span>/ 100</span><button class="sbok" data-act="scoreOk" aria-label="점수 저장">${I('check', 18)}</button>`
+        : `<b>${sc}</b><span>/ 100</span>${mine ? '<em>직접 고침</em>' : ''}<button class="sbpen" data-act="scoreEdit" data-id="${id}" aria-label="점수 고치기">${I('pen', 19)}</button>`}</div>
       <div class="sbbar${mine ? ' sbmine' : ''}"><i style="width:${sc}%"></i>${mine ? `<u style="left:${ai.score}%"><em>AI ${ai.score}</em></u>` : ''}</div>
-      <div class="sbwhy${UI.scoreWhy ? ' on' : ''}"><button class="sbwh" data-act="scoreWhy" aria-expanded="${!!UI.scoreWhy}"><b>AI 판단 근거</b><span>${ai.why.length > 1 ? `${ai.why.length - 1}가지` : ''}</span>${I('chevron', 16)}</button>
-        <div class="kzfxw"><div><div class="sbwhyb"><p>${ai.say}</p>
-          ${ai.why.map(([p, t]) => `<div><span>${esc(t)}</span><b>+${p}점</b></div>`).join('')}</div></div></div></div></section>
+      <div class="sbwhy${UI.scoreWhy ? ' on' : ''}"><button class="sbwh" data-act="scoreWhy" aria-expanded="${!!UI.scoreWhy}"><b>AI 판단 근거</b>${I('chevron', 16)}</button>
+        <div class="kzfxw"><div><div class="sbwhyb"><p>${esc(ai.say)}</p></div></div></div></div></section>
     <section class="sbc"><div class="sbh"><b>제출 전 확인</b></div>
       <div class="sbck">${subCheck(ins).map(([y, w, t, el, soft]) => (!y && t ? `<button class="${soft ? 'w' : 'n'}" data-act="subGap" data-id="${id}" data-t="${t}" data-el="${el}"><i>${I(soft ? 'excl' : 'alert', 15)}</i>${w}${I('chevron', 16)}</button>`
         : `<div class="${y ? 'y' : 'n'}"><i>${I(y ? 'check' : 'alert', 15)}</i>${w}</div>`)).join('')}</div></section>`;
@@ -2124,7 +2127,7 @@ function inspView(s, id, from) {
     }).join('')}</div>`; }).join('');
   // 머리 — 기업 이름 큰 제목 + 할 일 카드와 같은 줄 표 (같은 날 사용자 지시 — 개선 관리 화면과 같게). 시정 기한은 알약 없이 글자
   const due = inRecheck(i) && recheckDue(i), dn = due && daysLeft(due);
-  const top = [['점검일', i.date], ['점검자', i.by === ME ? `${i.by} (나)` : esc(i.by)], ['결과', `${i.result || RESULTS[0]}${i.ver ? `<span class="ivver">${i.ver}</span>` : ''}`], i.score != null ? ['평가 점수', `${i.score}점`] : i.grade && ['위험도 등급', i.grade],  // 평가 점수 (2026-10-30, 옛 기록은 위험도 등급)
+  const top = [['점검일', i.date], ['점검자', i.by === ME ? `${i.by} (나)` : esc(i.by)], ['결과', `${i.result || RESULTS[0]}${i.ver ? `<span class="ivver">${i.ver}</span>` : ''}`], i.score != null ? [i.scoreAi ? '위험도 평가(AI)' : '위험도 평가', `${i.score}점`] : i.grade && ['위험도 등급', i.grade],  // 평가 점수 (2026-10-30, 옛 기록은 위험도 등급). 이름은 위험도 평가, AI 점수 그대로면 (AI) (2026-11-02)
     due && ['시정 기한', `~${due}<span class="kzdl${dn < 0 ? ' warn' : ''}">${dWord(dn)}</span>`], i.final && ['재점검', `${i.final.at} ${esc(i.final.by)}<br>고쳐짐 ${i.final.total}개 중 ${i.final.fixed}개`],
     i.sub && ['제출', `${i.sub.at} ${esc(i.sub.by)}`]].filter(Boolean);
   // 제출한 개선을 위한 조언 — 코드 + 글 (같은 날 저녁)
@@ -2431,6 +2434,7 @@ function render() {
   if (!ACC) { paintLogin(); return; }
   if (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('gftxa') && location.hash === lastHash) { UI.ftxWait = true; return; }  // 바로 적는 칸에 적는 중 — ftxSave 참고
   const s = DB.s, p = R.path();
+  const here = p.join('/'), from = location.hash !== lastHash ? cameFrom(here) : null;  // 앞으로 들어왔으면 그 전 화면, 뒤로 왔으면 null
   UI.subIns = p[0] === 'sub' ? p[1] : null;  // 제출 전 확인이면 점검 화면들이 그 점검을 고친다(ckDoc)
   syncReg(s);  // 새로 등록한 기업을 공장 목록에 (2026-10-26 기업등록)
   if (location.hash !== lastHash) { UI.mapFull = false; UI.sheet = null; UI.shot = null; UI.fv = null; UI.cell = null; }  // 다른 화면으로 가면(폰의 뒤로 가기 등) 지도 전체화면과 열린 창을 닫는다
@@ -2444,12 +2448,12 @@ function render() {
   else if (p[0] === 'firm') html = firmView(s, p[1]);
   else if (p[0] === 'map') html = mapScreen(s);
   else if (p[0] === 'cal') html = calScreen(s);
-  else if (p[0] === 'factories') html = factoriesScreen(s);
+  else if (p[0] === 'factories') { if (from != null) UI.back.factories = UI.focusQ ? from : ''; html = factoriesScreen(s); }  // 찾기 아이콘으로 왔으면 누른 화면으로, 하단바로 왔으면 홈 (2026-11-02)
   else if (p[0] === 'pre') {
     // 공장 창의 ← 는 들어온 목록(홈·지도·캘린더·공장 전체보기 등)으로 돌아간다 (2026-09-28 사용자 제보 — 지도에서 들어가도 홈으로 갔다).
     // 공장 창 안쪽 화면(점검 결과·점검)에서 돌아올 때는 처음 적어 둔 곳을 그대로 쓴다
-    const prev = (lastHash || '').replace(/^#\/?/, '').split('/')[0];
-    if (location.hash !== lastHash && [...NAV.map(([go]) => go), 'factories', 'todo', 'firms'].includes(prev)) UI.preBack[p[1]] = prev;  // 할 일 화면도 (2026-10-19)
+    // 기업등록 기업 보기(firm/…) · 알림에서 들어온 것도 그리로 (2026-11-02 사용자 제보 — 기업 보기 → 공장 창 보기 → ← 가 홈으로 갔다). 주소째 적는다
+    if (from != null && [...NAV.map(([go]) => go), 'factories', 'todo', 'firms', 'firm', 'noti'].includes(from.split('/')[0])) UI.preBack[p[1]] = from;  // 할 일 화면도 (2026-10-19)
     html = pre(s, p[1]) + mapFullView(p[1]);
   }
   else if (p[0] === 'start') { R.go(''); return; }  // 옛 주소 — 회사 창으로 합쳐졌다
@@ -2462,11 +2466,11 @@ function render() {
   else if (p[0] === 'ans' || p[0] === 'sum') { R.go('list'); return; }
   else if (p[0] === 're' || p[0] === 'resum') { R.go('pre/' + p[1]); return; }  // 옛 재점검 주소 — 회사 창으로
   else if (p[0] === 'rck') { R.go('send/' + p[1]); return; }  // 옛 판정 화면 — 개선 관리 한 화면으로 합쳤다 (2026-10-26)
-  else if (p[0] === 'send') html = sendScreen(s, p[1]);
+  else if (p[0] === 'send') { if (from != null) UI.back['send/' + p[1]] = from; html = sendScreen(s, p[1]); }  // 할 일 · 알림 · 홈 찾기에서 들어온다 (2026-11-02)
   else if (p[0] === 'sub') html = subScreen(s, p[1], p[2]);
   else if (p[0] === 'sent') { R.go(''); return; }  // 옛 낸 뒤 화면 — 걷었다 (2026-10-30)
   else if (p[0] === 'weekly') html = weekly(s);
-  else if (p[0] === 'noti') html = notiScreen(s);
+  else if (p[0] === 'noti') { if (from != null) UI.back.noti = from; html = notiScreen(s); }  // 종을 누른 화면으로 돌아간다 (2026-11-02)
   else if (p[0] === 'records') html = records(s, p[1], p[2]);
   else if (p[0] === 'insp') html = inspView(s, p[1], p[2]);
   else if (p[0] === 'me') html = meScreen(s);
@@ -2498,7 +2502,7 @@ function render() {
   findPump();
   syncWheels();
   if (NV.st === 'ready') { nvMount(); nvFacMount(); }
-  if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; }
+  if (location.hash !== lastHash) { const sc = $('#app .scr'); if (sc) sc.classList.add('enter'); lastHash = location.hash; if (TRAIL[TRAIL.length - 1] !== here) TRAIL.push(here); }
   if (UI.focusQ && $('#fq')) { UI.focusQ = false; $('#fq').focus(); }
   // 제출 전 확인의 빈 곳으로 — 탭을 바꾸면 맨 위로 올리는 것(hashchange) 뒤에 내린다. 그 칸이 그려진 뒤에만 쓴다
   if (UI.jump && document.getElementById(UI.jump)) { const j = UI.jump; UI.jump = null;
@@ -2509,6 +2513,15 @@ function render() {
   if (keep && $('#' + keep)) { const el = $('#' + keep); el.value = val; el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
 }
 let lastHash = null;
+// 지나온 화면 차례 — 앞으로 들어왔는지, ← 나 폰의 뒤로 가기로 돌아왔는지 가른다 (2026-11-02 사용자 지시 — 여러 곳에서 들어오는 화면의 ← 가 들어온 곳으로).
+// 이미 지나온 화면이면 돌아온 것으로 보고 그 뒤를 잘라 낸다(들어온 곳을 다시 적지 않는다 — 공장 창 → 알림 → ← 공장 창이 알림을 들어온 곳으로 적어 맴돌지 않게).
+// 처음 그리는 화면과 다른 주소로 넘기는 옛 주소는 차례에 안 들어간다(다 그린 뒤에 넣는다)
+const TRAIL = [];
+function cameFrom(here) {
+  const k = TRAIL.lastIndexOf(here);
+  if (k >= 0) { TRAIL.length = k + 1; return null; }
+  return TRAIL.length ? TRAIL[TRAIL.length - 1] : null;
+}
 function sheet(v) { UI.sheet = v; render(); }
 
 // 하던 점검이 있으면 그대로 두고, 없을 때만 새로 만든다
@@ -2762,7 +2775,7 @@ const ACTS = {
     R.go('firm/' + id);
   },
   facInfo({ fid }) { UI.ftab[fid] = 'info'; R.go('pre/' + fid); },  // 기업등록 기업 보기 → 공장 창 기업 정보 탭
-  facLog({ fid }) { UI.ftab[fid] = 'log'; R.go('pre/' + fid); },
+  facLog({ fid }) { UI.ftab[fid] = 'prep'; R.go('pre/' + fid); },  // 점검 결과 탭에서 → 점검 이력 탭 (2026-11-02 — 10-30에 기록 탭이 센서 이력이 되며 센서 이력으로 열리던 것)
   calDay({ v }) { UI.calD = +v; render(); },
   calToday() { UI.calM = TODAY.m; UI.calD = TODAY.d; R.go('cal'); },
   ftab({ fid, v }) { UI.ftab[fid] = v; render(); },
@@ -2913,7 +2926,9 @@ const ACTS = {
       toast({ 'sbj-kit': '유해위험기구 보유현황을 골라 주세요', 'sbj-chem': '위험물질/유해화학물질 취급여부를 골라 주세요', advTx: '개선을 위한 조언을 적어 주세요' }[el] || '답 없는 문항에 답해 주세요');
       subGap(id, t || 'end', el); return; }
     // 평가 점수를 고치지 않았으면 그때의 AI 점수로 남긴다 (2026-10-30) — 운영자 웹 · 점검 내용 보기는 이 값을 보인다
-    DB.act((s) => { const g = kzIns(s, id); if (!g) return; g.adv = advOf(g); if (g.score == null) g.score = aiScore(s, g).score; g.sub = { at: '9/17', by: ME }; DB.log(`지킴이 제출 · ${FACTORIES[g.fid].name}`); });
+    // AI 점수 그대로인지(scoreAi)도 남긴다 — 그쪽 이름이 위험도 평가(AI) / 지킴이가 고쳤으면 위험도 평가 (2026-11-02 사용자 지시)
+    DB.act((s) => { const g = kzIns(s, id); if (!g) return; g.adv = advOf(g); const ai = aiScore(s, g).score; if (g.score == null) g.score = ai;
+      if (g.score === ai) g.scoreAi = true; else delete g.scoreAi; g.sub = { at: '9/17', by: ME }; DB.log(`지킴이 제출 · ${FACTORIES[g.fid].name}`); });
     // 제출했어요 화면 없이 바로 결과 제출 목록 (2026-10-30 사용자 지시). 알림은 뺐다가 같은 날 "제출이 완료되었습니다"로 다시
     UI.td = 'sub'; R.go('todo'); toast('제출이 완료되었습니다');
   },
