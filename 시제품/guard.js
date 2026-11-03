@@ -1001,7 +1001,7 @@ function miniMap(fid) {
 function mapFullView(fid) {
   if (!UI.mapFull) return '';
   const f = FACTORIES[fid], nv = NV.st === 'ready';
-  return `<div class="gffull" role="dialog" aria-label="${esc(f.name)} 지도"><div class="gfslot"${nv ? ' id="nvFac"' : ''}>${nv ? '' : facMini(fid, Math.min(innerWidth, 420) / innerHeight)}</div>
+  return `<div class="gffull" role="dialog" aria-label="${esc(f.name)} 지도"><div class="gfslot"${nv ? ' id="nvFac"' : ''}>${nv ? '' : facMini(fid, innerWidth / innerHeight)}</div>
     <button class="gfbtn gfclose" data-act="mapClose">${I('close', 20)} 닫기</button>
     <div class="gfname">${I('pin', 16)} ${esc(f.name)}<small>화성시 ${esc(f.dong)}</small></div></div>`;
 }
@@ -1776,6 +1776,17 @@ function ptsRow(x) {
   return `<div class="cacc${open ? ' open' : ''}"><button class="cacch" data-act="ptsTg" data-k="${x.id}" aria-expanded="${open}"><span>점검 포인트</span>${I('chevronDown', 18)}</button>
     <div class="caccb"><div><div class="caccin">${l.map((g) => `${l.length > 1 ? `<b>${esc(g.name)}</b>` : ''}<ol class="gpts">${g.points.map((p) => `<li><b>${esc(p.t)}</b><span>${esc(p.d)}</span></li>`).join('')}</ol>`).join('')}</div></div></div></div>`;
 }
+// 설비 문항 옆 꼬리표 "센서 이력 n건" (2026-11-03 사용자 지시 — 엔진 구성안 M4 결정 4 "지킴이 앱이 설비 문항(15개) 옆에 '센서 이력 n건'을 보이고").
+// 그 설비를 지켜보는 센서(SENSORS eq = 보유현황 이름)가 있는 05 기구 문항에만 — 기타 설비 센서는 맞는 문항이 없다. 수는 위험 경보, 기간은 센서 이력 탭처럼 지난 방문 이후(첫 방문이면 전부).
+// 마친 점검(제출 전 확인)은 그 점검 앞 방문부터 그 점검 날까지. 0건이면 "센서 이력 없음"(가설 — 센서가 있다는 건 보이게). 누르는 동작은 없다(문서에 없음)
+// 문항은 글로 찾는다 — 씨앗의 지난 점검은 문항 id가 `daesung-a5-12`라 KIT의 `ca5-12`와 안 맞는다
+function ckSen(s, d, x) {
+  const a5 = CHECKLIST.areas.find((a) => a.key === 'a5').items, k = KIT.find((g) => g.ids.some((id) => a5[id.slice(4)] === x.text)), keys = k ? SITE_SENSORS(d.fid).filter((c) => SENSORS[c].eq === k.name) : [];
+  if (!keys.length) return '';
+  const done = d !== s.draft, prev = done ? s.inspections.filter((i) => i.fid === d.fid && mdNum(i.date) < mdNum(d.date)).sort((a, b) => mdNum(b.date) - mdNum(a.date))[0] : lastIns(s, d.fid);
+  const n = s.alarms.filter((a) => keys.includes(a.key) && (!prev || mdNum(a.day) >= mdNum(prev.date)) && (!done || mdNum(a.day) <= mdNum(d.date))).length;
+  return ` <span class="gtg${n ? ' warn' : ''}">${n ? `센서 이력 ${n}건` : '센서 이력 없음'}</span>`;
+}
 // 한 줄 = 문항 + 답 넷(양호 | 보통 | 불량 | 해당 없음) + 평가 내용 (2026-10-07 사용자 지시).
 // 불량은 예전처럼 사진과 위험요인을 적는 창이 뜬다. 평가 내용(잘한 점 같은 것)은 어느 답이든 적을 수 있다 — 2026-10-23 사용자 지시로 + 단추 → 창 대신
 // 현장점검 개선 전 내용과 같은 바로 적는 칸. 사전 확인의 01 산업안전 일반도 이 줄을 쓴다 (2026-10-23, 번호는 1~4)
@@ -1785,7 +1796,7 @@ function ckRow(d, x, i, no = i + 1) {
   const rk = st === 'bad' && (x.risks || []).length ? `<div class="crisk"><b>위험요인</b><span>${x.risks.map(esc).join(', ')}</span></div>` : '';
   const mark = st === 'bad' ? [x.memo ? '위험요인 내용: ' + esc(x.memo) : '', x.shot && !x.photo ? `사진 ${picsOf(x).length}장` : ''].filter(Boolean).join('<br>') : '';
   return `<div class="crow ${ansCls(st)}">
-    <div class="ctop"><span class="cnum">${no}</span><div class="t">${esc(x.text)}</div>${x.photo ? shotThumb(x.photo) : ''}</div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
+    <div class="ctop"><span class="cnum">${no}</span><div class="t">${esc(x.text)}${ckSen(DB.s, d, x)}</div>${x.photo ? shotThumb(x.photo) : ''}</div>${x.note ? `<div class="cmemo">${x.note}</div>` : ''}
     ${ptsRow(x)}
     <div class="cans c4">${ANS_ORDER.map((v) => `<button class="${st === v ? 'on ' + ansCls(v) : ''}" data-act="${v === 'bad' ? 'ansBad' : 'ans'}" data-n="${i}" data-v="${v}" aria-pressed="${st === v}">${ANS[v]}</button>`).join('')}</div>
     ${rk}${mark ? `<div class="cmemo">${mark}</div>` : ''}
@@ -2063,14 +2074,14 @@ function aiScore(s, ins) {
   const fx = firmOf(s, ins.fid), shown = ckShown(s, ins), seen = (x) => x.area === 'a1' || shown(x);
   const bad = ins.items.filter((x) => x.answer === 'bad' && seen(x)), mid = ins.items.filter((x) => x.answer === 'mid' && seen(x));
   const left = kzList(ins).filter((it) => itemState(it) !== 'fixed'), chem = (fx.chem || []).filter((c) => c !== CHEM[3]);
-  const kit = fx.kit || [], al = s.alarms.filter((a) => alarmFid(a) === ins.fid);
+  const kit = fx.kit || [];
   const areas = [...new Set(bad.map((x) => (CHECKLIST.areas.find((a) => a.key === x.area) || {}).name).filter(Boolean))];
   const risks = [...new Set(left.flatMap((it) => it.risks || []))];
   // [점수, 근거 글, 짧은 이름] — 0점인 것은 뺀다. 근거는 줄 목록이 아니라 말 글로 보인다 (2026-11-02 사용자 지시 — 전엔 근거 줄마다 +n점)
+  // 센서 경보는 점수에 더하지 않는다 (2026-11-03 사용자 지시 — 엔진 구성안 D2 · M4 결정 2: 지킴이가 센서 이력을 보고 적은 개선사항으로만 들어간다. 전엔 최근 센서 이상 4점씩, 최대 12)
   const why = [[Math.min(bad.length * 8, 32), `체크리스트${areas.length ? ` ${areas.join(', ')}` : ''}에서 불량이 ${bad.length}문항 나왔어요.`, '체크리스트 불량'],
     [Math.min(left.length * 10, 30), `아직 안 고쳐진 개선사항이 ${left.length}건 있어요.${risks.length ? ` 위험요인은 ${risks.join(', ')}${josa(risks.at(-1), '이에요', '예요')}.` : ''}`, '안 고쳐진 개선사항'],
     [chem.some((c) => c.startsWith('유해화학물질')) ? 12 : chem.length ? 5 : 0, `위험물질은 ${chem.join(', ')}에 해당해요.`, '위험물질'],
-    [Math.min(al.length * 4, 12), `최근 센서 이상이 ${al.length}건 있었어요.`, '센서 이상'],
     [Math.min(kit.length * 2, 10), `유해위험기구를 ${kit.length}종 갖고 있어요.`, '유해위험기구'],
     [Math.min(mid.length * 2, 10), `체크리스트에서 보통이 ${mid.length}문항 나왔어요.`, '체크리스트 보통']].filter(([p]) => p > 0).sort((a, b) => b[0] - a[0]);
   const score = Math.min(100, 5 + why.reduce((t, [p]) => t + p, 0));

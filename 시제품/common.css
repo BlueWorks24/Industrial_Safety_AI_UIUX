@@ -38,6 +38,14 @@ a{color:inherit;text-decoration:none}
 .app{margin:0 auto;min-height:100dvh;background:#f7f9fc;display:flex;flex-direction:column;position:relative}
 @media (min-width:500px){body{padding:24px 0}.app{max-width:420px;min-height:calc(100dvh - 48px);border-radius:28px;box-shadow:var(--sh-l);overflow:hidden}}
 @media (min-width:500px){.sheet,.rphv{width:420px}}
+/* 지킴이 앱은 PC · 태블릿에서도 폰 틀(가운데 폭 420 · 둥근 모서리 · 가짜 상단바) 없이 창 폭에 맞춘다. 배치는 폰 그대로 (2026-11-03 사용자 지시) */
+@media (min-width:500px){
+  body.guard{padding:0}
+  body.guard .app{max-width:none;min-height:100dvh;border-radius:0;box-shadow:none;border:none;overflow:visible}
+  body.guard .app .sbar{display:none}
+  body.guard .sheet,body.guard .rphv,body.guard .gcv{width:100%}
+  body.guard .gffull{left:0;right:0;width:auto;transform:none}
+}
 .sbar{height:30px;flex:none;font-size:12px;font-weight:700;color:var(--mid);display:flex;justify-content:space-between;align-items:center;padding:0 18px;user-select:none}
 .scr{flex:1;display:flex;flex-direction:column;min-height:0}
 .bd{flex:1;padding:8px 16px 18px;display:flex;flex-direction:column;gap:12px}
@@ -389,6 +397,7 @@ svg.i{flex:none;vertical-align:-.18em}
 .crow + .crow{border-top:1px solid var(--line)}
 .crow .ctop{display:flex;gap:10px;align-items:flex-start}
 .crow .t{font-size:16px;font-weight:700;line-height:1.45}
+.crow .t .gtg{margin:0 0 0 2px;font-size:13px}
 .cnum{flex:none;min-width:20px;font-size:14px;font-weight:700;color:var(--soft);line-height:23px}
 /* 답은 셋 — 회색 틀 안에 셋을 나란히, 고른 것만 색으로 채운다. 답한 뒤에도 남아 한 번에 고친다 (2026-09-18) */
 /* 2026-10-15 사용자: 회색 띠 위 글자는 누르는 칸으로 안 보였다 → 공장 탭 상태 칸(.gfstr)과 같은 결 — 테두리 한 상자를 세로줄로 나눈 묶음.
