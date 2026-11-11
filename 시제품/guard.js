@@ -248,18 +248,18 @@ function todoRow(s, x, tab) {
     // 보낼 것 — 점검 결과는 냈지만 지적을 아직 공장에 안 보낸 곳 (2026-10-26 개선 관리 초안)
     const fs = x.ins.items.filter((it) => it.src === 'find'), ok = fs.filter((it) => it.st === 'ok').length;
     return card(kv('점검일', `${x.ins.date} ${esc(x.ins.by)}`) + kv('개선사항', `${fs.length}건`) + kv('개선여부', `개선 중 ${fs.length - ok} · 개선완료 ${ok}`),
-      `<button class="fbtn tdgo" data-go="send/${x.ins.id}">정리하고 보내기 ${go}</button>`);
+      `${rptBtns(x.fid)}<button class="fbtn tdgo" data-go="send/${x.ins.id}">정리하고 보내기 ${go}</button>`);
   }
   if (x.kind === 'sub') {
     // 제출할 것 — 판정이 끝났거나 개선사항이 없던 점검. 조언을 적어 제출한다 (2026-10-26 사용자 지시)
     const fs = kzList(x.ins), ok = fs.filter((it) => itemState(it) === 'fixed').length;
     return card(kv('점검일', `${x.ins.date} ${esc(x.ins.by)}`) + kv('점검 결과', x.ins.result || RESULTS[0])
       + (fs.length ? kv('개선완료', `${ok}건`) + kv('미개선', `${fs.length - ok}건`, fs.length - ok ? 'warn' : '') : kv('개선사항', '없음', 'soft')),
-      `<button class="fbtn tdgo" data-go="sub/${x.ins.id}">조언 쓰고 제출 ${go}</button>`);
+      `${rptBtns(x.fid)}<button class="fbtn tdgo" data-go="sub/${x.ins.id}">조언 쓰고 제출 ${go}</button>`);
   }
   // 개선사항이 없던 점검 — 시정 기한 없이 점검일 · 개선사항 없음. 안에서 [저장]하면 결과 제출로 (2026-10-30 사용자 지시)
   if (x.kind === 'none') return card(kv('점검일', `${x.ins.date} ${esc(x.ins.by)}`) + kv('개선사항', '없음', 'soft'),
-    `<button class="fbtn tdgo" data-go="send/${x.ins.id}">개선사항 보기 ${go}</button>`);
+    `${rptBtns(x.fid)}<button class="fbtn tdgo" data-go="send/${x.ins.id}">개선사항 보기 ${go}</button>`);
   if (x.kind === 'recheck') {
     // 시정 — 공장이 고친 사진을 올리길 기다리는 곳 (2026-10-19 사용자 지시 시안 A, 지적 항목 목록은 빼고).
     // 공장에 다시 알리기는 걷었다 (2026-10-28 사용자 지시 — 따로 기능이 필요 없고 전화로 하면 된다). 그와 함께 "공장 알림 … 보냄" 줄도 뺐다
@@ -273,7 +273,7 @@ function todoRow(s, x, tab) {
     const fresh = rckNew(x.ins);
     return card(kv('점검일', `${x.ins.date} ${esc(x.ins.by)}`)
       + kv('개선사항', `${bad.length}건 <span class="tdjd">${cnt}</span>`),  // 이름표 지적 → 개선사항 (2026-10-29 사용자 지시)
-      `<div class="fbtns tdsub"><a class="fbtn line fsub" href="tel:${tel}" aria-label="${f.name}에 전화 ${tel}">${I('phone', 15)} 전화</a></div>
+      `${rptBtns(x.fid, `<a class="fbtn line fsub" href="tel:${tel}" aria-label="${f.name}에 전화 ${tel}">${I('phone', 15)} 전화</a>`)}
       <button class="fbtn tdgo" data-go="send/${x.ins.id}">개선사항 보기 ${go}</button>`, due, '', fresh ? tg(`${I('image', 14)}새 사진 ${fresh}`, 'now tdmk') : '');
   }
   // 점검 — 방문 · 지난 점검(날짜와 결과) · 지난번 미흡 · 센서 이상 · 업종과 인원
@@ -286,7 +286,7 @@ function todoRow(s, x, tab) {
     + kv('업종', `${esc(f.type)} ${f.workers}명`);
   // 일정 변경은 이름 줄 오른쪽 위, 점검 시작 · 이어서 점검은 아래 카드 폭 긴 단추 (2026-10-26 사용자 지시 — 둘이 나란히 아래에 있었다).
   // 개선 관리 카드도 같은 날 같은 꼴 — 주 단추는 맨 아래 긴 단추, 시정 중의 전화는 그 위
-  return card(rows, `<button class="fbtn tdgo" data-act="newDraft" data-fid="${x.fid}">${going ? '이어서 점검' : '점검 시작'} ${go}</button>`, null,
+  return card(rows, `${rptBtns(x.fid)}<button class="fbtn tdgo" data-act="newDraft" data-fid="${x.fid}">${going ? '이어서 점검' : '점검 시작'} ${go}</button>`, null,
     `<button class="fbtn line fsub tdsch" data-act="date" data-fid="${x.fid}">${I('calendar', 15)} ${v ? '일정 변경' : '방문일 정하기'}</button>`);
 }
 // 기업등록 (2026-10-26 사용자 지시 — 홈 카드 "전체 공장"을 기존 화성 웹의 기업등록으로 바꿈). 이름 · 칸 · 꼭 적을 칸(*)은 기존 웹 그대로.
@@ -389,6 +389,20 @@ function refSheet(x) {
     <label class="fform"><span class="lbl">방문하거나 연락한 사람</span><input class="input" data-fv="who" value="${esc(v.who)}" autocomplete="off"></label>
     <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="refSave">저장</button></div></div>`;
 }
+// 즉시 신고 · 기타 (2026-11-11 사용자 지시) — 점검하기 · 개선 관리 · 결과 제출 목록의 카드마다, 주 단추 위 작은 테두리 단추 줄(시정 중 카드는 전화 옆).
+// 처음엔 내가 권한 대로 공장 창 · 개선 관리 · 제출 전 확인의 공장 이름 줄 오른쪽이었는데, 같은 날 사용자 지시로 목록으로 옮김.
+// 즉시 신고: 직접 점검이 어려울 만큼 위험한 사업장. 기타: 폐업 등 그 밖의 까닭. 누르면 창에서 날짜 · 사유 · 사람을 적어 공장마다 쌓는다(s.report).
+// 누구에게 가는지, 목록에서 빼는지, 점검 결과 "기타"와 같은 것인지는 아직 안 정함 — 지금은 기록만
+const RPT = { now: ['즉시 신고', '신고날짜', '위험 내용', '예: 가스 냄새가 심해 들어갈 수 없음', '신고한 사람'], etc: ['기타', '날짜', '사유', '예: 폐업', '적은 사람'] };
+const rptBtns = (fid, lead = '') => `<div class="fbtns tdsub tdrpt">${lead}<button class="fbtn line fsub ltref" data-act="rptOpen" data-fid="${fid}" data-v="now">즉시 신고</button><button class="fbtn line fsub ltetc" data-act="rptOpen" data-fid="${fid}" data-v="etc">기타</button></div>`;
+function rptSheet() {
+  const { fid, k, vals: v } = UI.sheet, [w, dl, wl, ph, pl] = RPT[k];
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet fsheet"><div class="grip"></div><div class="mid">${esc(FACTORIES[fid].name)} ${w}</div>
+    <label class="fform"><span class="lbl">${dl}</span><input class="input" type="date" data-fv="date" value="${v.date}"></label>
+    <label class="fform"><span class="lbl">${wl}</span><textarea class="input" data-fv="why" placeholder="${ph}">${esc(v.why)}</textarea></label>
+    <label class="fform"><span class="lbl">${pl}</span><input class="input" data-fv="who" value="${esc(v.who)}" autocomplete="off"></label>
+    <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="rptSave">${k === 'now' ? '신고' : '저장'}</button></div></div>`;
+}
 // 기업등록 — 기존 웹 등록 칸과 차례 그대로(1. 기업정보 한 묶음). 칸에 적는 값은 UI.fgr에 두어 다시 그려도 남는다(DB는 등록하기 때만)
 const fgR0 = () => ({ name: '', biz: '', ceo: '', tel: '', fax: '', mail: '', zip: '', road: '', addr2: '', dong: '', ksic: '', product: '', workers: '', foreign: '',
   own: '', kind: '', mgr: '', mgrTel: '', mgrMail: '', inj: { 2024: '', 2025: '', 2026: '', 2027: '', 2028: '' }, why: '현장등록', regDate: isoOf(`${TODAY.m}/${TODAY.d}`) });
@@ -461,8 +475,11 @@ function todoScreen(s) {
   const sort = `<div class="hsort" role="group" aria-label="정렬">${SORTS.map(([k, w]) => `<button class="${UI.sort === k ? 'on' : ''}" aria-pressed="${UI.sort === k}" data-act="sort" data-v="${k}">${w}</button>`).join('')}</div>`;
   const grp = (w, g) => (g.length ? `<div class="hgrp">${w} ${g.length}곳</div>${g.map((x) => todoRow(s, x, tab)).join('')}` : '');
   // 결과 제출 줄 — 간결하게 (같은 날 사용자 지시): 기업 이름, 점검일 · 점검자, 점검 결과 꼬리표. 줄을 누르면 제출 전 확인
-  const subRow = (x) => `<button class="sbrow" data-go="sub/${x.ins.id}"><span class="sbrb"><b>${FACTORIES[x.fid].name}</b>
-    <small>${x.ins.date} ${esc(x.ins.by)}${tg(x.ins.result || RESULTS[0])}${tg('제출할 것', 'now')}</small></span>${I('chevron', 18)}</button>`;
+  // 즉시 신고 · 기타는 줄 아래 같은 흰 칸 안에 (2026-11-11 사용자 지시 — 줄 전체가 눌리는 단추라 그 밖에 둔다)
+  // 그 아래 카드 폭 긴 단추 [제출 전 확인 ›] (같은 날 사용자 지시 — 점검하기 [점검 시작] · 개선 관리 [개선사항 보기]처럼). 줄을 눌러도 같은 곳
+  const subRow = (x) => `<div class="sbcard"><button class="sbrow" data-go="sub/${x.ins.id}"><span class="sbrb"><b>${FACTORIES[x.fid].name}</b>
+    <small>${x.ins.date} ${esc(x.ins.by)}${tg(x.ins.result || RESULTS[0])}${tg('제출할 것', 'now')}</small></span>${I('chevron', 18)}</button>${rptBtns(x.fid)}
+    <button class="fbtn tdgo" data-go="sub/${x.ins.id}">제출 전 확인 ${I('chevron', 16)}</button></div>`;
   const title = { visit: '점검하기', rck: '개선 관리', sub: '결과 제출' }[tab] || '할 일';  // 제목은 들어온 홈 카드 이름 그대로 (2026-11-02 사용자 지시 — 점검하기 · 개선 관리도 전엔 할 일)
   return `${sbar('지킴이')}<div class="scr gtodo"><div class="bd">
     ${head(title, '')}
@@ -475,7 +492,7 @@ function todoScreen(s) {
       : grp('보낼 것', l.filter((x) => x.kind === 'send')) + grp('판정 필요', l.filter((x) => x.kind === 'recheck' && toJudge(x.ins))) + grp('시정 중', l.filter((x) => x.kind === 'recheck' && !toJudge(x.ins)))
         + grp('점검', l.filter((x) => x.kind === 'visit'))}
       ${l.length ? '' : `<div class="stat"><div class="mid">${F && fk !== 'all' ? '조건에 맞는 공장이 없어요' : UI.areas.length ? '조건에 맞는 할 일이 없어요' : tab === 'sub' ? '제출할 점검이 없어요' : '할 일이 없어요'}</div></div>`}</div>
-  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}`;
+  </div></div>${UI.sheet && UI.sheet.type === 'date' ? dateSheet(s) : ''}${UI.sheet && UI.sheet.type === 'area' ? areaSheet(s) : ''}${UI.sheet && UI.sheet.type === 'rpt' ? rptSheet() : ''}`;
 }
 
 // 오늘 방문할 공장 한 줄 요약 (2026-09-28 사용자 지시) — 실제 서비스에서는 AI가 지난 점검·미흡·센서 기록을 읽고 쓴다.
@@ -1001,7 +1018,7 @@ function miniMap(fid) {
 function mapFullView(fid) {
   if (!UI.mapFull) return '';
   const f = FACTORIES[fid], nv = NV.st === 'ready';
-  return `<div class="gffull" role="dialog" aria-label="${esc(f.name)} 지도"><div class="gfslot"${nv ? ' id="nvFac"' : ''}>${nv ? '' : facMini(fid, innerWidth / innerHeight)}</div>
+  return `<div class="gffull" role="dialog" aria-label="${esc(f.name)} 지도"><div class="gfslot"${nv ? ' id="nvFac"' : ''}>${nv ? '' : facMini(fid, $('#app').offsetWidth / innerHeight)}</div>
     <button class="gfbtn gfclose" data-act="mapClose">${I('close', 20)} 닫기</button>
     <div class="gfname">${I('pin', 16)} ${esc(f.name)}<small>화성시 ${esc(f.dong)}</small></div></div>`;
 }
@@ -1135,15 +1152,17 @@ const FTABS = [['info', '기업 정보'], ['prep', '점검 이력'], ['log', '�
 // → 같은 날 사용자 지시("경보 없음 가스, 전기 … 이건 뭐야? 보유 센서야?")로 맨 위 "설치된 센서 n개" + 센서마다 한 줄(이름 · 붙은 곳 | 경보 n건 / 경보 없음 꼬리표),
 // 경보가 있는 센서만 줄 아래 타임라인. 경보 있는 센서가 먼저. 센서가 없는 공장은 그대로 빈 칸
 // 경보가 어떻게 끝났나 — 끝난 방식 말은 엔진 구성안 M4 R-S1 그대로(수리 중으로 돌려 닫힌 것은 "센서를 멈춰 닫힘")
-const senEnd = (a) => (a.acks[0] ? `${a.acks[0].at - a.start}분 만에 조치` : SIM.live(a) ? '진행 중' : a.endKind === 'repair' ? '센서를 멈춰 닫힘' : SIM.endWord(a));
+// 공장주 · 운영자가 손으로 끈 경보(endKind 'user')는 문서의 "사용자가 닫음"을 누가인지 나눠 "공장주가 닫음" / "운영자가 닫음" (2026-11-04 사용자 지시 — "사용자"만으론 누가 껐는지 몰라서)
+const senBy = (a) => `${a.closedBy === 'operator' ? '운영자' : '공장주'}가 닫음`;
+const senEnd = (a) => (a.acks[0] ? `${a.acks[0].at - a.start}분 만에 조치` : SIM.live(a) ? '진행 중' : a.endKind === 'repair' ? '센서를 멈춰 닫힘' : a.endKind === 'user' ? senBy(a) : SIM.endWord(a));
 // ③ 경보 한 줄에 담는 것 (2026-11-02 사용자 지시 "문서에 있는 대로만" — M4 R-S1): 울린 시각 + 값(평소의 n배 / 누수 감지) | 심각도 꼬리표,
-// 그 아래 차례대로 n분 만에 조치 → 끝난 시각과 방식(아무도 안 누르고 끝남 / 센서를 멈춰 닫힘 / 끝남) 또는 진행 중, 작업 예정 시간 안이었으면 한 줄 더.
+// 그 아래 차례대로 n분 만에 조치 → 끝난 시각과 방식(아무도 안 누르고 끝남 / 센서를 멈춰 닫힘 / 공장주가 닫음 / 운영자가 닫음 / 끝남) 또는 진행 중, 작업 예정 시간 안이었으면 한 줄 더.
 // 사양서 한계는 등록된 센서가 없어 아직 안 그린다. 센서 줄에는 붙은 곳 + 종류(기계 센서만) + 대상(SEN_TARGET)
 const SEV_WORD = { critical: ['심각', ' sevc'], warn: ['주의', ' warn'], info: ['정보', ''] };
 const senVal = (a) => (SENSORS[a.key].kind === 'state' ? `${SENSORS[a.key].short} 감지` : a.ratio ? `평소의 ${a.ratio.toFixed(1)}배` : '');
 const senMemo = (s, a) => (s.memos || []).some((m) => m.facts && m.facts.key === a.key && m.facts.day === a.day && a.start >= m.facts.start && a.start < m.facts.end);
 const senSteps = (s, a) => [a.acks[0] && `${a.acks[0].at - a.start}분 만에 조치`,
-  SIM.live(a) ? '진행 중' : `${hm(a.endedAt)} ${a.endKind === 'repair' ? '센서를 멈춰 닫힘' : a.acks[0] ? '끝남' : '아무도 안 누르고 끝남'}`,
+  SIM.live(a) ? '진행 중' : `${hm(a.endedAt)} ${a.endKind === 'repair' ? '센서를 멈춰 닫힘' : a.endKind === 'user' ? senBy(a) : a.acks[0] ? '끝남' : '아무도 안 누르고 끝남'}`,
   senMemo(s, a) && '작업 예정 시간 안'].filter(Boolean);
 // → 같은 날 사용자 지시로 한 줄 쉼표 잇기(`반응동 1층, 진동과 온도, 대상 …` — 사용자: "이건 센서가 위치한 곳이야?")를 이름표 · 값 표로: 위치 · 대상 · 재는 것(기계 센서만)
 // → 같은 날 사용자 지시로 재는 것을 모든 센서에(사용자: "'1번 교반기'는 센서 이름이야? '가스'는 가스를 측정한다는 거야?" — 기계 센서는 붙은 기계, 나머지는 재는 것으로 이름이 붙어 헷갈렸다).
@@ -1182,15 +1201,36 @@ function senLine(s, fid, hist) {
   const of = (k) => shown.filter((a) => a.key === k).sort((a, b) => mdNum(a.day) - mdNum(b.day) || a.start - b.start);
   const usOf = (k) => (all ? us : usIn).filter((u) => u.key === k).sort((a, b) => mdNum(b.day) - mdNum(a.day));
   const row = (k) => { const al = of(k), u = usOf(k);
-    return `<div class="gsr"><div class="gsrh"><b>${esc(SENSORS[k].title)}</b><span class="gtg${al.length ? ' warn' : ''}">${al.length ? `경보 ${al.length}건` : '경보 없음'}</span></div>${senKv(k, u.length ? `${u.length}건, 최근 ${u[0].day}<small>헛경보일 수 있음</small>` : '없음', senBlind(s, k, from))}
+    return `<div class="gsr"><div class="gsrh"><b>${esc(SENSORS[k].title)}</b><span class="gtg${al.length ? ' warn' : ''}">${al.length ? `경보 ${al.length}건` : '경보 없음'}</span></div>${tbNum(k)}${senKv(k, u.length ? `${u.length}건, 최근 ${u[0].day}<small>헛경보일 수 있음</small>` : '없음', senBlind(s, k, from))}
       ${al.length ? `<ol class="gtl">${al.map((a) => { const [sw, sc] = SEV_WORD[alarmSev(a)];
         return `<li${SIM.live(a) ? ' class="gson"' : ''}><span class="gtlw">${a.day}</span><span class="gtlx"><b>${hm(a.start)} 울림${senVal(a) ? ` <i>${senVal(a)}</i>` : ''}</b>${senSteps(s, a).map((t) => `<small>${t}</small>`).join('')}</span><span class="gtg${sc}">${sw}</span></li>`; }).join('')}</ol>` : ''}</div>`; };
   return `<div class="q gsg"><div class="gsgt"><span>설치된 센서 ${keys.length}개</span><em>${per}</em></div>${[...keys.filter((k) => of(k).length), ...keys.filter((k) => !of(k).length && usOf(k).length), ...keys.filter((k) => !of(k).length && !usOf(k).length)].map(row).join('')}
     ${older ? `<button class="more gsmore" data-act="senAll" data-fid="${fid}">${all ? '지난 방문 이후만 보기' : `이전 기록 보기 ${older}건`}</button>` : ''}</div>`;
 }
+// 진짜 센서 경보와 지금 값 (2026-11-09 사용자 지시 — 한빛화학 온습도를 Jetson ThingsBoard에 붙임, server.py TB_LINK).
+// 서버가 ThingsBoard WebSocket으로 받아 둔 경보로 그 센서의 씨앗 경보를 바꿔 끼우고, 센서 이름 옆에 지금 값을 보인다. 상태(DB)에는 안 넣는다.
+// 센서 이력 탭을 보는 동안만 서버와 연결(EventSource — 바뀔 때마다 서버가 밀어 줌)을 열고, 나가면 닫는다 (같은 날 사용자 지시 — 처음엔 10초마다 물었다).
+// 경보가 바뀌면 화면을 다시 그리고, 값만 바뀌면 그 글자만 바꾼다. 계정이 없거나 닿지 않으면(ok false) 씨앗 그대로
+// 지금 값 모양은 같은 날 사용자가 고른 3안 — 센서 이름 아래 큰 숫자 칸(온도 | 습도) + "HH:MM:SS 받음" (처음엔 이름 옆 작은 회색 글자였다)
+const TBA = { ok: false, keys: [], alarms: [], latest: {}, sig: '', es: null };
+const tbAt = (k) => { const d = new Date(TBA.latest[k].ts); return `${[d.getHours(), d.getMinutes(), d.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':')} 받음`; };
+const tbNum = (k) => (TBA.ok && TBA.latest[k] ? `<div class="gsnum">${TBA.latest[k].vals.map(([n, v, u], i) => `<div><span>${esc(n)}</span><b data-tbv="${k}:${i}">${esc(v + u)}</b></div>`).join('')}</div><div class="gsat" data-tbat="${k}">${tbAt(k)}</div>` : '');
+function tbLive(on) {
+  if (on && !TBA.es) {
+    TBA.es = new EventSource('api/tb/live');
+    TBA.es.onmessage = (ev) => {
+      const j = JSON.parse(ev.data), sig = JSON.stringify([j.ok, j.keys, j.alarms, Object.entries(j.latest || {}).map(([k, x]) => [k, x.vals.map((v) => v[0])])]);
+      Object.assign(TBA, { ok: !!j.ok, keys: j.keys || [], alarms: j.alarms || [], latest: j.latest || {} });
+      if (sig !== TBA.sig) { TBA.sig = sig; render(); return; }
+      document.querySelectorAll('[data-tbv]').forEach((el) => { const [k, i] = el.dataset.tbv.split(':'), v = TBA.latest[k].vals[i]; if (v) el.textContent = v[1] + v[2]; });
+      document.querySelectorAll('[data-tbat]').forEach((el) => { el.textContent = tbAt(el.dataset.tbat); });
+    };
+  } else if (!on && TBA.es) { TBA.es.close(); TBA.es = null; }
+}
+const withTb = (list) => (TBA.ok ? [...list.filter((a) => !TBA.keys.includes(a.key)), ...TBA.alarms] : list);
 function pre(s, fid) {
   const f = FACTORIES[fid];
-  const hist = s.alarms.filter((a) => alarmFid(a) === fid);  // 지금 울리는 경보도 "진행 중"으로 (2026-11-02 — 전엔 끝난 것만)
+  const hist = withTb(s.alarms).filter((a) => alarmFid(a) === fid);  // 지금 울리는 경보도 "진행 중"으로 (2026-11-02 — 전엔 끝난 것만)
   const going = s.draft && s.draft.kind === 'first' && s.draft.fid === fid;  // 하던 점검이 있으면 지우지 않는다
   // 아래 단추 둘 — 방문일 | 점검 시작. 점검 시작은 늘 열려 있다 (2026-10-07 사용자 지시로 예약·공장주 승인을 걷음 — 불시에 가기도 한다)
   const tab = UI.ftab[fid] || 'info';  // 공장마다 마지막에 본 탭을 기억한다 (점검 결과를 보고 돌아와도 기록 탭 그대로)
@@ -1219,13 +1259,14 @@ const shotsOf = (d) => d.shots || Array.from({ length: d.photos || 0 }, (_, i) =
 // 찍은 차례대로 돌려 쓴다 (2026-10-22 사용자 지시 — 전에는 번호마다 그린 현장 그림이었다).
 // w · h: 사진 크기(크게 보기 칸을 사진 비율대로),
 // risks: 현장점검 개선사항에서 AI가 추천하는 위험요인 — 사진에 보이는 만큼만, 없으면 빈 칸 (같은 날 사용자 지시 — 셋을 맞추지 않는다).
+// eq: 현장점검 개선사항에서 AI가 먼저 추천하는 장비 및 설비 (2026-11-11) — 다섯 장 모두 보유현황 기구가 아니라 기타, 랙은 지게차가 다니는 자리라 지게차도
 // 진짜 AI를 부르지 않는다. 사진을 보고 정해 둔 흉내다
 const PHOTOS = [
-  { src: 'photos/1_exit_door.png', w: 416, h: 486, risks: ['화재', '무너짐'] },
-  { src: 'photos/2_extinguisher.png', w: 423, h: 489, risks: [] },
-  { src: 'photos/3_wet_floor.png', w: 419, h: 489, risks: ['넘어짐'] },
-  { src: 'photos/4_panel_open.png', w: 626, h: 431, risks: ['전류 접촉', '화재'] },
-  { src: 'photos/5_rack.png', w: 646, h: 432, risks: ['떨어짐(낙하)', '무너짐'] },
+  { src: 'photos/1_exit_door.png', w: 416, h: 486, risks: ['화재', '무너짐'], eq: ['기타'] },
+  { src: 'photos/2_extinguisher.png', w: 423, h: 489, risks: [], eq: ['기타'] },
+  { src: 'photos/3_wet_floor.png', w: 419, h: 489, risks: ['넘어짐'], eq: ['기타'] },
+  { src: 'photos/4_panel_open.png', w: 626, h: 431, risks: ['전류 접촉', '화재'], eq: ['기타'] },
+  { src: 'photos/5_rack.png', w: 646, h: 432, risks: ['떨어짐(낙하)', '무너짐'], eq: ['기타', '지게차'] },
 ];
 const photoOf = (k) => PHOTOS[(k - 1) % PHOTOS.length];
 const photoBox = (k) => `aspect-ratio:${photoOf(k).w}/${photoOf(k).h}`;  // 크게 보기 칸을 사진 비율대로
@@ -1265,6 +1306,15 @@ const KIT = (() => { const m = new Map();
     if (g) m.set(g[1], [...(m.get(g[1]) || []), `ca5-${i}`]); });
   return [...m.values()].map((ids, i) => ({ name: KIT_NAMES[i], ids })); })();
 const KIT_IDS = KIT.flatMap((k) => k.ids);
+// 현장점검 개선사항의 장비 및 설비 (2026-11-11 사용자 지시) — 사진을 찍으면 AI가 먼저 이 설비가 무엇인지 1~3개 추천하고, 지킴이가 x로 하나만 남기거나
+// 다 지우고 직접 하나를 고른다. 고르는 칸은 종이 6번 보유현황 칸 그대로, 기타장비는 "기타"(목록에 없는 장비, 바닥 · 소화기 · 페인트 통처럼 장비가 아닌 것)
+const EQ_NAMES = [...KIT_NAMES.slice(0, -1), '기타'];
+// 장비를 하나로 정한 뒤 [AI 추천]의 흉내 답 — 그 장비의 종이 9번 05 문항 글을 RISK_HINT로 본 것(선반 · 밀링 · CNC는 걸리는 낱말이 없어 끼임 · 절단, 가설).
+// 기타는 장비로 알 수 없어 사진으로(시험 사진은 PHOTOS risks, 앱 카메라 사진은 realRisks)
+const EQ_RISKS = { '지게차': ['부딪힘'], '이동식 및 천장크레인': ['부딪힘', '떨어짐(낙하)'], '용접기': ['유해위험물질 노출', '화재', '전류 접촉'],
+  '리프트': ['부딪힘', '떨어짐(낙하)'], '사다리': ['떨어짐(추락)'], '컨베이어': ['끼임'], '산업용로봇': ['부딪힘', '끼임'], '사출성형기': ['끼임'],
+  '선반·밀링·CNC 절삭장비': ['끼임', '절단'], '레이져컷팅기': ['절단', '화재'], '프레스': ['끼임'], '압력용기': ['이상기압 노출', '폭발'],
+  '분쇄기·파쇄기·전단기': ['끼임', '절단'], '배합기·밀링·혼합기': ['끼임'], '롤러기': ['끼임'] };
 const CHEM = ['유해화학물질 제조', '유해화학물질 취급', '기준량이하 제조/취급', '해당없음'];
 // 단계 — 종이 1번 / 2~5번 / 6번 / 7번 / 9번 01 (1~5번을 한 화면에 두면 30줄이라 둘로 나눔)
 const MEET = [['기업정보', '기업정보'], ['관리 · 담당자 · 점검 정보', '관리 · 점검 정보'], ['유해위험기구 보유현황', '보유현황'], ['위험물질/유해화학물질 취급여부', '위험물질'], ['01 산업안전 일반', '산업안전 일반']];
@@ -1427,12 +1477,14 @@ const findItems = (d) => findsOf(d).filter((f) => kindOf(f) === 'bad').map((f) =
   photos: f.pics.map((k) => realOf(d, k) || { src: photoOf(k).src, w: photoOf(k).w, h: photoOf(k).h }) }));
 // 지금 펼친 줄 — 고른 적이 없으면 맨 아래 줄
 const factOf = (d) => findOf(d, UI.fact) || findsOf(d)[findsOf(d).length - 1] || null;
-// 대표 사진(첫 장)이 바뀌면 AI가 다시 본다. 잘된 사항은 보지 않는다. 지킴이가 손댄 위험요인은 그대로 둔다
+// 대표 사진(첫 장)이 바뀌면 AI가 장비 및 설비를 다시 본다(f.ai — 2026-11-11부터 장비, 전엔 위험요인). 잘된 사항은 보지 않는다.
+// 지킴이가 손댄 장비 · 위험요인은 그대로 두고, AI가 넣은 위험요인([AI 추천], f.rai)은 비운다
 function repCheck(f) {
   const rep = f.kind === 'bad' ? f.pics[0] : undefined;
   if ((f.ai && f.ai.rep) === rep) return;
   f.ai = rep ? { st: 'wait', rep } : null;
-  if (!f.own) f.risks = null;
+  if (!f.eqOwn) f.eq = null;
+  if (!f.own) { f.risks = null; delete f.rai; }
 }
 // 점검 안의 탭 — 사전점검 → 현장점검(종이 10번 현장점검 개선사항) → 분야별 안전점검(종이 9번 체크리스트) 차례
 // (2026-10-23 사전 확인을 앞에 더함. 같은 날 사용자 지시로 이름을 사전 확인 · 지적사항 · 체크리스트에서 바꿈)
@@ -1446,6 +1498,10 @@ function findPump() {
   findsOf(d).filter((f) => f.ai && f.ai.st === 'wait' && !UI.fT[f.id]).forEach((f) => {
     UI.fT[f.id] = setTimeout(() => { delete UI.fT[f.id]; findDone(f.id); }, 2500 + (f.ai.rep % 3) * 700);
   });
+  // [AI 추천]을 누른 위험요인 (2026-11-11)
+  findsOf(d).filter((f) => f.rai && f.rai.st === 'wait' && !UI.fT[f.id + 'r']).forEach((f) => {
+    UI.fT[f.id + 'r'] = setTimeout(() => { delete UI.fT[f.id + 'r']; riskDone(f.id); }, 1800);
+  });
 }
 // 진짜 사진(가상기기 카메라로 찍은 것 등)은 정해 둔 답이 없어 18가지 중 셋을 아무렇게나 고른다 (2026-10-28 사용자 지시 — 전에는 흉내 답 없음).
 // 사진 주소로 고르므로 같은 사진은 다시 봐도, 다른 기기에서도 같은 셋이다
@@ -1456,47 +1512,80 @@ function realRisks(src) {
   while (out.length < 3) { h = (Math.imul(h, 1103515245) + 12345) >>> 0; out.push(l.splice(h % l.length, 1)[0]); }
   return RISKS.filter((r) => out.includes(r));
 }
+// 진짜 사진의 장비 및 설비 흉내 답 — 같은 식으로 보유현황 칸(+ 기타) 중 1~3개 (2026-11-11)
+function realEq(src) {
+  let h = 7;
+  for (const c of src) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
+  const l = [...EQ_NAMES], out = [], n = 1 + (h % 3);
+  while (out.length < n) { h = (Math.imul(h, 1103515245) + 12345) >>> 0; out.push(l.splice(h % l.length, 1)[0]); }
+  return out;
+}
+// 대표 사진을 본 AI — 장비 및 설비 추천 (2026-11-11 사용자 지시 — 전엔 여기서 위험요인을 바로 넣었다. 위험요인은 이제 [AI 추천]을 눌러야)
 function findDone(id) {
   const f0 = DB.s.draft && findOf(DB.s.draft, id);
   if (!f0 || !f0.ai || f0.ai.st !== 'wait' || !DB.s.net.guard) return;
-  const real = realOf(DB.s.draft, f0.ai.rep), sh = UI.sheet;
-  const recs = real ? realRisks(real.src) : photoOf(f0.ai.rep).risks;  // 시험 사진은 사진마다 정해 둔 것 (PHOTOS risks, 없을 수도 있다)
-  // 그 건의 위험요인 창이 열려 있고 아직 안 만졌으면 창에도 넣는다
-  if (!DB.s.aiDown && sh && sh.type === 'frisk' && sh.id === id && !sh.touched && !f0.own) sh.risks = [...recs];
+  const real = realOf(DB.s.draft, f0.ai.rep);
+  const recs = real ? realEq(real.src) : photoOf(f0.ai.rep).eq;  // 시험 사진은 사진마다 정해 둔 것 (PHOTOS eq)
   DB.act((s) => {
     const f = findOf(s.draft, id);
     if (s.aiDown) { f.ai.st = 'fail'; return; }
-    f.ai.st = 'done'; f.ai.recs = recs;
-    if (!f.own) f.risks = [...recs];
+    f.ai.st = 'done'; f.ai.eq = recs;
+    if (!f.eqOwn) f.eq = [...recs];
   });
 }
+// [AI 추천]을 누른 뒤 — 하나로 정한 장비로 위험요인을 고른다 (흉내: EQ_RISKS, 기타는 대표 사진으로)
+function riskDone(id) {
+  const f0 = DB.s.draft && findOf(DB.s.draft, id);
+  if (!f0 || !f0.rai || f0.rai.st !== 'wait' || !DB.s.net.guard) return;
+  const rep = f0.pics[0], real = realOf(DB.s.draft, rep);
+  const recs = EQ_RISKS[(f0.eq || [])[0]] || (real ? realRisks(real.src) : rep ? photoOf(rep).risks : []);
+  // 위험요인을 다 지워 잘된 사항이 된 줄이면 개선사항으로 돌아가며 알린다(kindMove)
+  kindMove(id, () => DB.act((s) => {
+    const f = findOf(s.draft, id);
+    if (s.aiDown) { f.rai.st = 'fail'; return; }
+    f.rai = { st: 'done', recs }; f.risks = [...recs]; f.own = false;
+  }));
+}
 // 접힌 줄의 둘째 줄 — 지적사항은 위험요인(없으면 내용), 잘된 사항은 내용
-const findSub = (x) => (kindOf(x) === 'bad' && x.ai && x.ai.st === 'wait' && !x.own ? '<span class="gfai"><i class="gspin"></i>AI 분석 중</span>'
+const findSub = (x) => (kindOf(x) === 'bad' && ((x.ai && x.ai.st === 'wait' && !x.eqOwn) || (x.rai && x.rai.st === 'wait')) ? '<span class="gfai"><i class="gspin"></i>AI 분석 중</span>'
   : kindOf(x) === 'bad' && (x.risks || []).length ? x.risks.map((r) => `<span class="gfmini"><i>${RISKS.indexOf(r) + 1}</i>${r}</span>`).join('')
   : x.text ? `<span class="gfrtx">${esc(x.text)}</span>` : kindOf(x) === 'bad' && x.risks ? '<span class="gfrtx">위험요인 없음</span>' : '');
 // 펼친 줄 — 사진(대표는 크게), 위험요인(지적사항만), 내용. 찍기와 사진첩은 아래 단추로 이 줄에 넣는다
 // (같은 날 사용자 지시로 걷은 것 — 줄 안의 찍기 · 사진첩 칸, 지적사항 | 잘된 사항 바꾸기, 왼쪽 색 띠와 아이콘 동그라미, 알약 칩. 종류는 더할 때 고른다)
 function findOpen(d, x) {
-  const n = x.pics.length, ai = x.ai, word = findWord(d, x), recs = ai && ai.st === 'done' ? ai.recs : [];
+  const n = x.pics.length, ai = x.ai, word = findWord(d, x);
   // 사진 — 대표 사진만 크게, 나머지 장수는 오른쪽 아래 "+4"로. 누르면 크게 보며 넘긴다
   // (같은 날 사용자 지시로 걷은 것 — 대표 옆 · 아래에 늘어놓기, 대표 뒤에 겹쳐 쌓기)
   const pics = n ? `<button class="gfrep" data-act="fvOpen" data-id="${x.id}" data-i="0" aria-label="${word} 사진 ${n}장 크게 보기">${findArt(d, x.pics[0])}<em>대표</em>${n > 1 ? `<b>${I('image', 15)}+${n - 1}</b>` : ''}</button>`
     : `<div class="gfp0">${I('camera', 28)}<span>사진 없음</span></div>`;
   // 이 줄에 사진 더 찍기 (2026-10-23 사용자 지시 — 아래 카메라를 걷어 줄마다 단추). 5장이면 회색, 누르면 까닭을 알린다
   const more = `<button class="gfpmore${n >= FIND_MAX ? ' full' : ''}" data-act="fcam" data-id="${x.id}">${I('camera', 18)}사진 추가</button>`;
-  const aiTag = ai && ai.st === 'wait' && !x.own ? '<span class="gfai"><i class="gspin"></i>AI가 대표 사진을 보는 중</span>'
-    : ai && ai.st === 'fail' ? `<button class="gfai fail" data-act="fRetry" data-id="${x.id}">${I('alert', 15)}AI 다시</button>`
-    : recs.length && !x.own ? tg('AI 추천')
-    : ai && ai.st === 'done' && !x.own ? '<span class="gfai">AI가 찾은 위험요인 없음</span>' : '';
-  const risk = x.kind !== 'bad' ? '' : `<div class="gfrk"><div class="gfrkh"><b>위험요인</b>${aiTag}</div>
-    <div class="gfchips">${(x.risks || []).map((r) => `<span class="gfchip"><i>${RISKS.indexOf(r) + 1}</i>${r}<button data-act="fRiskDel" data-id="${x.id}" data-v="${r}" aria-label="${r} 빼기">${I('close', 15)}</button></span>`).join('')}
-      <button class="gfchip gfplus" data-act="fRiskOpen" data-id="${x.id}">${I('plus', 15)}추가</button></div></div>`;
+  // 장비 및 설비 (2026-11-11 사용자 지시) — 위험요인 위, 같은 꼴(칸 + x). AI가 대표 사진을 보고 1~3개 넣고, 지킴이가 x로 하나만 남긴다.
+  // [+ 추가]는 칸이 다 비었을 때만 — 하나를 직접 고른다
+  const eqs = x.eq || [];
+  const eqTag = ai && ai.st === 'wait' && !x.eqOwn ? '<span class="gfai"><i class="gspin"></i>AI가 대표 사진을 보는 중</span>'
+    : ai && ai.st === 'fail' && !x.eqOwn ? `<button class="gfai fail" data-act="fRetry" data-id="${x.id}">${I('alert', 15)}AI 다시</button>`
+    : eqs.length && !x.eqOwn ? tg('AI 추천') : '';
+  const eq = x.kind !== 'bad' ? '' : `<div class="gfrk"><div class="gfrkh"><b>장비 및 설비</b>${eqTag}</div>
+    <div class="gfchips">${eqs.map((e) => `<span class="gfchip gfeq">${e}<button data-act="fEqDel" data-id="${x.id}" data-v="${e}" aria-label="${e} 빼기">${I('close', 15)}</button></span>`).join('')}
+      ${eqs.length ? '' : `<button class="gfchip gfplus" data-act="fEqOpen" data-id="${x.id}">${I('plus', 15)}추가</button>`}</div></div>`;
+  // 위험요인 — 저절로 넣지 않고 [AI 추천] · [직접 고르기]로 (같은 날 사용자 지시). AI 추천은 장비를 하나로 정해야 눌리고(회색 · 자물쇠, 누르면 까닭),
+  // 고른 뒤엔 전처럼 칸 + x + [+ 추가]
+  const rai = x.rai, rs = x.risks || [], one = eqs.length === 1;
+  const rTag = rai && rai.st === 'wait' ? '<span class="gfai"><i class="gspin"></i>AI가 위험요인을 보는 중</span>'
+    : rai && rai.st === 'fail' ? `<button class="gfai fail" data-act="fRiskAi" data-id="${x.id}">${I('alert', 15)}AI 다시</button>`
+    : rai && !x.own ? (rs.length ? tg('AI 추천') : '<span class="gfai">AI가 찾은 위험요인 없음</span>') : '';
+  const risk = x.kind !== 'bad' ? '' : `<div class="gfrk"><div class="gfrkh"><b>위험요인</b>${rTag}</div>
+    ${rs.length ? `<div class="gfchips">${rs.map((r) => `<span class="gfchip"><i>${RISKS.indexOf(r) + 1}</i>${r}<button data-act="fRiskDel" data-id="${x.id}" data-v="${r}" aria-label="${r} 빼기">${I('close', 15)}</button></span>`).join('')}
+      <button class="gfchip gfplus" data-act="fRiskOpen" data-id="${x.id}">${I('plus', 15)}추가</button></div>`
+    : rai && rai.st === 'wait' ? '' : `<div class="gfrkb"><button class="btn sm${one ? '' : ' glocked'}" data-act="fRiskAi" data-id="${x.id}">${one ? '' : I('lock', 16)}AI 추천</button><button class="btn sm ghost" data-act="fRiskOpen" data-id="${x.id}">직접 고르기</button></div>`}</div>`;
   // 참고한 센서 경보 — 개선사항만(잘된 사항은 안 붙임)
   const sen = x.kind !== 'bad' ? '' : senField(d.fid, x, 'f');
   return `<section class="gfr on" id="fr-${x.id}">
     <div class="gfrh"><b>${word}</b><span class="gfrn">사진 ${n} / ${FIND_MAX}</span><button class="gfrx" data-act="fDelAsk" data-id="${x.id}" aria-label="${word} 지우기">${I('trash', 20)}</button></div>
     ${pics}
     ${more}
+    ${eq}
     ${risk}
     <div class="gfrk"><div class="gfrkh"><b>${FIND_TEXT[kindOf(x)]}</b></div>
       <textarea class="gftxa" id="fxIn" data-tx="find:${x.id}" placeholder="여기에 ${FIND_TEXT[kindOf(x)]} 입력">${esc(txVal('find:' + x.id, x.text))}</textarea></div>
@@ -1582,17 +1671,28 @@ function fixScreen(s) {
     ${insTabs(d, 'fix')}
     ${fs.length ? `${sum}${bad.length ? `<div class="gfrs0">${bad.map(row).join('')}</div>` : ''}${shot(true)}
       ${good.length ? `<div class="gfsec">잘된 사항</div><div class="gfrs0">${good.map(row).join('')}</div>` : ''}` : shot(false)}
-  </div><div class="ft"><button class="btn cnext" data-act="insTab" data-v="ck"><span class="cnl">다음: 분야별 안전점검</span>${I('chevron', 18)}</button></div></div>${UI.sheet && UI.sheet.type === 'frisk' ? fRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fsen' ? senSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fdel' ? fDelSheet(s) : ''}${UI.fv ? findViewer(s) : ''}`;
+  </div><div class="ft"><button class="btn cnext" data-act="insTab" data-v="ck"><span class="cnl">다음: 분야별 안전점검</span>${I('chevron', 18)}</button></div></div>${UI.sheet && UI.sheet.type === 'frisk' ? fRiskSheet(s) : ''}${UI.sheet && UI.sheet.type === 'feq' ? fEqSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fsen' ? senSheet(s) : ''}${UI.sheet && UI.sheet.type === 'fdel' ? fDelSheet(s) : ''}${UI.fv ? findViewer(s) : ''}`;
 }
 // 위험요인 고르기 — AI가 추천한 것과 고른 것을 먼저, 나머지는 접어 둔다 (불량 창과 같은 모양)
 function fRiskSheet(s) {
   const d = s.draft, sh = UI.sheet, f = findOf(d, sh.id);
   if (!f) return '';
-  const recs = f.ai && f.ai.st === 'done' ? f.ai.recs : [];
+  const recs = f.rai && f.rai.st === 'done' ? f.rai.recs : [];
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="srh"><b>${findWord(d, f)} 위험요인</b></div>
     ${riskPicker(sh.risks, recs)}
     <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button><button class="btn" data-act="fRiskSave">저장</button></div>
+  </div>`;
+}
+// 장비 및 설비 직접 고르기 (2026-11-11) — 종이 6번 칸 + 기타 중 하나, 누르면 들어가고 닫힌다. AI가 추천했던 것에는 "AI 추천"
+function fEqSheet(s) {
+  const d = s.draft, f = findOf(d, UI.sheet.id);
+  if (!f) return '';
+  const recs = (f.ai && f.ai.eq) || [];
+  return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
+    <div class="srh"><b>${findWord(d, f)} 장비 및 설비</b></div>
+    <section class="kpsec"><div class="kpscr"><div class="kplist">${EQ_NAMES.map((e) => `<button class="kprow" data-act="fEqPick" data-id="${f.id}" data-v="${e}"><span>${e}</span>${recs.includes(e) ? '<em class="gfrec">AI 추천</em>' : ''}</button>`).join('')}</div></div></section>
+    <div class="row sstick"><button class="btn ghost cxl" data-act="closeSheet">취소</button></div>
   </div>`;
 }
 function fDelSheet(s) {
@@ -2145,15 +2245,16 @@ function subScreen(s, id, tab) {
     const sc = ins.score ?? ai.score, mine = ins.score != null && ins.score !== ai.score;
     // 조언 옆 코드(일반 26ver01)는 뺐다 — 위 기업 구분 · 판 번호에서 보인다 (2026-10-30 사용자 지시)
     // 기업 구분은 조언 카드 안에서 꺼내 위험도 등급 바로 위 카드로 (같은 날 사용자 지시). 차례: 조언(판 번호 · 조언) → 기업 구분 → 위험도 등급 → 제출 전 확인
+    // → 2026-11-11 사용자 지시로 기업 구분과 위험도 평가 자리를 바꿈. 차례: 조언 → 위험도 평가 → 기업 구분 → 제출 전 확인
     const top = [['점검일', `${ins.date} ${ins.by === ME ? `${ins.by} (나)` : esc(ins.by)}`], ['점검 결과', ins.result || RESULTS[0]],
       ...(fs.length ? [['개선완료', `${ok}건`], ['미개선', `${fs.length - ok}건`]] : [['개선사항', '없음']])];
+    const cls = `<section class="sbc"><div class="sbh"><b>기업 구분</b></div>
+      <div class="seg">${ADV_CLS.map((c) => `<button class="${a.cls === c ? 'on' : ''}" data-act="advCls" data-id="${id}" data-v="${c}" aria-pressed="${a.cls === c}">${c}</button>`).join('')}</div></section>`;
     body = `<div class="tdgt">${top.map(([k, v]) => `<div><em>${k}</em><b>${v}</b></div>`).join('')}</div>
     <section class="sbc"><div class="sbh"><b>개선을 위한 조언</b></div>
       <label class="sbver"><span class="sbl">판 번호</span><input class="input" id="advVer" data-tx="advver:${id}" value="${esc(txVal('advver:' + id, a.ver))}" placeholder="예: 26ver01" autocomplete="off"></label>
       <div class="sbl">조언</div>
       <textarea class="gftxa" id="advTx" data-tx="advtx:${id}" placeholder="여기에 개선을 위한 조언 입력">${esc(txVal('advtx:' + id, a.text))}</textarea></section>
-    <section class="sbc"><div class="sbh"><b>기업 구분</b></div>
-      <div class="seg">${ADV_CLS.map((c) => `<button class="${a.cls === c ? 'on' : ''}" data-act="advCls" data-id="${id}" data-v="${c}" aria-pressed="${a.cls === c}">${c}</button>`).join('')}</div></section>
     <section class="sbc"><div class="sbh"><b>위험도 평가${mine ? '' : '(AI)'}</b></div>
       <div class="sbsc">${UI.scoreEdit === id
         ? `<input class="input" type="number" inputmode="numeric" min="0" max="100" id="subScore" data-tx="score:${id}" value="${esc(txVal('score:' + id, String(sc)))}" aria-label="위험도 평가"><span>/ 100</span><button class="sbok" data-act="scoreOk" aria-label="점수 저장">${I('check', 18)}</button>`
@@ -2161,6 +2262,7 @@ function subScreen(s, id, tab) {
       <div class="sbbar${mine ? ' sbmine' : ''}"><i style="width:${sc}%"></i>${mine ? `<u style="left:${ai.score}%"><em>AI ${ai.score}</em></u>` : ''}</div>
       <div class="sbwhy${UI.scoreWhy ? ' on' : ''}"><button class="sbwh" data-act="scoreWhy" aria-expanded="${!!UI.scoreWhy}"><b>AI 판단 근거</b>${I('chevron', 16)}</button>
         <div class="kzfxw"><div><div class="sbwhyb"><p>${esc(ai.say)}</p></div></div></div></div></section>
+    ${cls}
     <section class="sbc"><div class="sbh"><b>제출 전 확인</b></div>
       <div class="sbck">${subCheck(ins).map(([y, w, t, el, soft]) => (!y && t ? `<button class="${soft ? 'w' : 'n'}" data-act="subGap" data-id="${id}" data-t="${t}" data-el="${el}"><i>${I(soft ? 'excl' : 'alert', 15)}</i>${w}${I('chevron', 16)}</button>`
         : `<div class="${y ? 'y' : 'n'}"><i>${I(y ? 'check' : 'alert', 15)}</i>${w}</div>`)).join('')}</div></section>`;
@@ -2535,6 +2637,7 @@ function render() {
   if (!ACC) { paintLogin(); return; }
   if (document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('gftxa') && location.hash === lastHash) { UI.ftxWait = true; return; }  // 바로 적는 칸에 적는 중 — ftxSave 참고
   const s = DB.s, p = R.path();
+  tbLive(p[0] === 'pre' && UI.ftab[p[1]] === 'log');  // 진짜 센서 값 연결은 센서 이력 탭에서만
   const here = p.join('/'), from = location.hash !== lastHash ? cameFrom(here) : null;  // 앞으로 들어왔으면 그 전 화면, 뒤로 왔으면 null
   UI.subIns = p[0] === 'sub' ? p[1] : null;  // 제출 전 확인이면 점검 화면들이 그 점검을 고친다(ckDoc)
   syncReg(s);  // 새로 등록한 기업을 공장 목록에 (2026-10-26 기업등록)
@@ -2669,6 +2772,15 @@ const ACTS = {
     DB.act((s) => { s.refuse = s.refuse || {}; (s.refuse[id] = s.refuse[id] || []).push({ ...v, at: '9/17', by: ME }); DB.log(`지킴이 점검거부 기록 · ${name}`); });
     sheet(null); toast('점검거부를 기록했어요');
   },
+  // 즉시 신고 · 기타 (2026-11-11) — 점검거부처럼 공장마다 기록만 쌓는다(s.report)
+  rptOpen({ fid, v }) { sheet({ type: 'rpt', fid, k: v, vals: { date: isoOf(`${TODAY.m}/${TODAY.d}`), why: '', who: ME } }); },
+  rptSave() {
+    const { fid, k, vals } = UI.sheet, v = Object.fromEntries(Object.entries(vals).map(([a, b]) => [a, String(b).trim()]));
+    const miss = [['date', '날짜를 골라 주세요'], ['why', k === 'now' ? '위험 내용을 적어 주세요' : '사유를 적어 주세요'], ['who', `${RPT[k][4]}을 적어 주세요`]].find(([x]) => !v[x]);
+    if (miss) { toast(miss[1]); return; }
+    DB.act((s) => { s.report = s.report || {}; (s.report[fid] = s.report[fid] || []).push({ k, ...v, at: '9/17', by: ME }); DB.log(`지킴이 ${RPT[k][0]} · ${FACTORIES[fid].name}`); });
+    sheet(null); toast(k === 'now' ? '즉시 신고를 기록했어요' : '기타 사유를 기록했어요');
+  },
   firmSave() {
     const { fid, k, vals } = UI.sheet, clean = Object.fromEntries(Object.entries(vals).map(([a, b]) => [a, String(b).trim()]));
     DB.act((s) => { s.firm = s.firm || {}; const cur = s.firm[fid] || {};
@@ -2795,6 +2907,17 @@ const ACTS = {
   fSenPick({ id, v }) { UI.sheet = null; DB.act((s) => { const f = findOf(s.draft, id); if (f) f.sen = v; }); },
   fSenDel({ id }) { DB.act((s) => { const f = findOf(s.draft, id); if (f) delete f.sen; }); },
   fRetry({ id }) { DB.act((s) => { const f = findOf(s.draft, id); if (f.ai) f.ai.st = 'wait'; }); },
+  // 장비 및 설비 (2026-11-11) — x로 빼기, 다 비면 [+ 추가]로 하나 고르기
+  fEqDel({ id, v }) { DB.act((s) => { const f = findOf(s.draft, id); f.eq = (f.eq || []).filter((e) => e !== v); f.eqOwn = true; }); },
+  fEqOpen({ id }) { sheet({ type: 'feq', id }); },
+  fEqPick({ id, v }) { UI.sheet = null; DB.act((s) => { const f = findOf(s.draft, id); f.eq = [v]; f.eqOwn = true; }); },
+  // 위험요인 [AI 추천] — 장비가 하나일 때만. 아니면 까닭을 알린다
+  fRiskAi({ id }) {
+    const f = findOf(DB.s.draft, id), n = (f.eq || []).length;
+    if (f.ai && f.ai.st === 'wait' && !f.eqOwn) { toast('AI가 장비 및 설비를 보는 중이에요'); return; }
+    if (n !== 1) { toast(n ? '장비 및 설비를 하나만 남겨 주세요' : '장비 및 설비를 먼저 골라 주세요'); return; }
+    DB.act((s) => { findOf(s.draft, id).rai = { st: 'wait' }; });
+  },
   // 사진이나 내용이 있으면 묻고 지운다. 빈 줄은 바로
   fDelAsk({ id }) { const f = findOf(DB.s.draft, id); if (f.pics.length || f.text) sheet({ type: 'fdel', id }); else { UI.sheet = { id }; ACTS.fDel(); } },
   fDel() {

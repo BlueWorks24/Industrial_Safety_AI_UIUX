@@ -10,6 +10,7 @@ UI/UX 연구용이다. 진짜 서비스의 서버 구조가 아니다.
 표준 라이브러리만 쓴다.
 """
 import argparse
+import base64
 import hashlib
 import http.server
 import json
@@ -19,7 +20,12 @@ import secrets
 import shutil
 import socket
 import sqlite3
+import struct
 import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime
 from http import cookies
 from urllib.parse import urlparse, parse_qs
@@ -50,7 +56,232 @@ SEED_INVITES = [
     ('DS-NGUYEN', 'Nguyen Van A', 'daesung', 'vi', 'A동 2라인', 'open'),
     ('DS-USED', '이현장', 'daesung', 'ko', 'A동', 'used'),
     ('DS-OLD', '박신입', 'daesung', 'ko', 'A동', 'expired'),
+    # 한빛화학 근로자 (2026-11-11 사용자 지시 — 센서 관련 PoC는 진짜 센서를 붙인 한빛화학 기준으로 하고 그 다음 넓힌다). 이름 · 일하는 곳은 내가 정함
+    ('HB-JUNG', '정근로', 'hanbit', 'ko', '반응동 1층', 'open'),
 ]
+
+# ---- 진짜 센서 경보 (2026-11-09 사용자 지시 — 한빛화학 온습도 센서를 Jetson의 ThingsBoard에 붙임) ----
+# 시제품 센서 키 → (ThingsBoard 장치 이름, 지금 값으로 보일 값 [ThingsBoard 키, 화면 이름, 단위]). 이 센서의 경보는 씨앗 대신 ThingsBoard 경보를 보인다 (지킴이 공장 창 센서 이력만)
+TB_LINK = {'hb_th': ('HTA843f28-TEMPHUMI', [('temperature', '온도', '℃'), ('humidity', '습도', '%')]),
+           # 전력량계 (같은 날 사용자 지시 — 네 칸. 전류 · 전력은 CT를 달기 전까지 0). 사무실 시험 장비가 단상이라 A상 값을 쓴다
+           'hb_power': ('HTA843f28-GIMAC1000', [('voltage_a', '전압', 'V'), ('frequency', '주파수', 'Hz'), ('current_a', '전류', 'A'), ('active_power', '전력', 'W')])}
+# 계정은 깃 밖 data/tb.env (TB_URL · TB_USER · TB_PASS 세 줄, `이름=값`) 또는 같은 이름의 환경변수. 읽기만 한다
+TB_ENV = os.path.join(ROOT, 'data', 'tb.env')
+TB_SEV = {'CRITICAL': 'critical', 'MAJOR': 'warn', 'MINOR': 'warn', 'WARNING': 'info', 'INDETERMINATE': 'info'}
+TB = {'token': None, 'dev': {}}
+# 받아 둔 것 — ThingsBoard WebSocket 스레드(tb_live)가 채우고, 화면 쪽 연결(/api/tb/live)이 바뀔 때마다 받아 간다
+TB_NOW = {'ok': False, 'why': 'no-account', 'alarms': {}, 'latest': {}, 'ver': 0}
+TB_CV = threading.Condition()
+
+
+def tb_conf():
+    c = {}
+    if os.path.isfile(TB_ENV):
+        with open(TB_ENV, encoding='utf-8') as f:
+            for line in f:
+                if '=' in line and not line.lstrip().startswith('#'):
+                    k, v = line.split('=', 1)
+                    c[k.strip()] = v.strip()
+    for k in ('TB_URL', 'TB_USER', 'TB_PASS'):
+        c[k] = os.environ.get(k) or c.get(k)
+    return c if all(c.get(k) for k in ('TB_URL', 'TB_USER', 'TB_PASS')) else None
+
+
+def tb_call(c, path, body=None, login=False):
+    url = c['TB_URL'].rstrip('/') + path
+    head = {'Content-Type': 'application/json'}
+    if not login:
+        if not TB['token']:
+            TB['token'] = tb_call(c, '/api/auth/login', {'username': c['TB_USER'], 'password': c['TB_PASS']}, login=True)['token']
+        head['X-Authorization'] = 'Bearer ' + TB['token']
+    req = urllib.request.Request(url, data=json.dumps(body).encode() if body is not None else None, headers=head)
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            return json.loads(r.read() or b'null')
+    except urllib.error.HTTPError as e:
+        if e.code == 401 and not login and TB['token']:  # 토큰이 끝났으면 한 번 다시 로그인
+            TB['token'] = None
+            return tb_call(c, path, body)
+        raise
+
+
+def tb_device(c, name):
+    if name not in TB['dev']:
+        me = tb_call(c, '/api/auth/user')
+        q = 'pageSize=10&page=0&textSearch=' + urllib.parse.quote(name)
+        cid = (me.get('customerId') or {}).get('id')
+        path = f'/api/customer/{cid}/devices?{q}' if me.get('authority') == 'CUSTOMER_USER' else f'/api/tenant/devices?{q}'
+        hit = [d for d in tb_call(c, path).get('data', []) if d.get('name') == name]
+        if not hit:
+            raise LookupError(f'장치 없음: {name}')
+        TB['dev'][name] = hit[0]['id']['id']
+    return TB['dev'][name]
+
+
+def tb_alarm(key, a):
+    """ThingsBoard 경보 하나를 시제품 경보 꼴(seed.js alarms)로. 시각은 이 기계 시간대(한국)"""
+    at = lambda ms: datetime.fromtimestamp(ms / 1000)
+    t0 = at(a.get('startTs') or a['createdTime'])
+    mins = lambda t: t.hour * 60 + t.minute
+    cleared = a.get('cleared') or str(a.get('status', '')).startswith('CLEARED')
+    out = {'id': 'tb-' + a['id']['id'], 'key': key, 'day': f'{t0.month}/{t0.day:02d}', 'start': mins(t0),
+           'status': 'ended' if cleared else 'live', 'abnormal': False, 'sev': TB_SEV.get(a.get('severity'), 'info'),
+           'acks': [{'by': '', 'at': mins(at(a['ackTs']))}] if a.get('acknowledged') and a.get('ackTs') else [], 'snoozes': 0, 'tb': True}
+    if cleared:
+        out['endedAt'] = mins(at(a.get('clearTs') or a.get('endTs') or a['createdTime']))
+        out['endKind'] = 'ended' if out['acks'] else 'noack'
+    return out
+
+
+def tb_snap():
+    """화면에 줄 것 한 덩어리. 계정이 없거나 닿지 않으면 ok False — 화면은 씨앗 경보를 그대로 보인다"""
+    return {'ok': TB_NOW['ok'], 'keys': list(TB_LINK), 'alarms': list(TB_NOW['alarms'].values()), 'latest': TB_NOW['latest']}
+
+
+TB_FACTORY = 'hanbit'  # TB_LINK 센서가 달린 공장 — 센서 관련 PoC는 한빛화학 기준 (2026-11-11 사용자 결정)
+
+
+def tb_state(factory):
+    """근로자 앱 센서 감시용 (2026-11-11 사용자 지시) — 센서마다 마지막으로 받은 때, 울리는 경보가 있는지, 경보 기록, 지금 값.
+    처음엔 근로자는 센서 값을 보지 않는다(2026-10-20 사용자 결정)에 따라 값을 뺐는데, 같은 날 사용자 지시("온습도면 온도, 습도를 실시간으로")로
+    센서 하나 화면에서는 지금 값을 보이게 되어 vals도 준다(홈 센서 감시 칸은 그대로 상태만). 다른 공장 근로자는 ok False(씨앗 그대로)"""
+    if factory != TB_FACTORY:
+        return {'ok': False}
+    al = TB_NOW['alarms'].values()
+    # 센서 하나 화면의 경보 기록 — 지킴이 센서 이력 타임라인과 같은 줄을 그리게 울린 때 · 조치한 때 · 끝난 때 · 심각도, 최근 30건
+    md = lambda a: tuple(int(x) for x in a['day'].split('/')) + (a['start'],)
+    log = lambda k: [{'day': a['day'], 'start': a['start'], 'end': a.get('endedAt'), 'live': a['status'] == 'live',
+                      'ack': a['acks'][0]['at'] if a['acks'] else None, 'sev': a['sev']}
+                     for a in sorted((a for a in al if a['key'] == k), key=md, reverse=True)[:30]]
+    now = lambda k: TB_NOW['latest'].get(k) or {}
+    return {'ok': TB_NOW['ok'], 'keys': list(TB_LINK),
+            'st': {k: {'ts': now(k).get('ts'), 'vals': now(k).get('vals'), 'abn': any(a['key'] == k and a['status'] == 'live' for a in al), 'al': log(k)} for k in TB_LINK}}
+
+
+def tb_set(**kw):
+    with TB_CV:
+        TB_NOW.update(kw)
+        TB_NOW['ver'] += 1
+        TB_CV.notify_all()
+
+
+class WSClient:
+    """WebSocket 받는 쪽만 (ws:// 하나, 표준 라이브러리만). ThingsBoard /api/ws에 붙어 JSON을 주고받는다"""
+    def __init__(self, url):
+        u = urlparse(url)
+        self.sock = socket.create_connection((u.hostname, u.port or 80), timeout=60)
+        key = base64.b64encode(os.urandom(16)).decode()
+        self.sock.sendall((f'GET {u.path} HTTP/1.1\r\nHost: {u.netloc}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
+                           f'Sec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n').encode())
+        buf = b''
+        while b'\r\n\r\n' not in buf:
+            got = self.sock.recv(4096)
+            if not got:
+                raise EOFError('handshake')
+            buf += got
+        head, self.rest = buf.split(b'\r\n\r\n', 1)
+        if b' 101 ' not in head.split(b'\r\n')[0]:
+            raise OSError(head.split(b'\r\n')[0].decode(errors='replace'))
+
+    def _take(self, n):
+        while len(self.rest) < n:
+            got = self.sock.recv(65536)
+            if not got:
+                raise EOFError('closed')
+            self.rest += got
+        out, self.rest = self.rest[:n], self.rest[n:]
+        return out
+
+    def send(self, obj, op=1):
+        data = json.dumps(obj).encode() if op == 1 else obj
+        n, mask = len(data), os.urandom(4)
+        size = bytes([0x80 | n]) if n < 126 else bytes([0x80 | 126]) + struct.pack('>H', n) if n < 65536 else bytes([0x80 | 127]) + struct.pack('>Q', n)
+        self.sock.sendall(bytes([0x80 | op]) + size + mask + bytes(b ^ mask[i % 4] for i, b in enumerate(data)))
+
+    def recv(self):
+        msg = b''
+        while True:
+            b0, b1 = self._take(2)
+            n = b1 & 0x7f
+            if n == 126:
+                n = struct.unpack('>H', self._take(2))[0]
+            elif n == 127:
+                n = struct.unpack('>Q', self._take(8))[0]
+            mask = self._take(4) if b1 & 0x80 else None
+            data = self._take(n)
+            if mask:
+                data = bytes(b ^ mask[i % 4] for i, b in enumerate(data))
+            op = b0 & 0x0f
+            if op == 9:  # ping → pong
+                self.send(data, 10)
+                continue
+            if op == 10:  # 우리가 보낸 "살아 있나"의 답(pong) — 버린다 (2026-11-11 — 전엔 빈 글을 JSON으로 읽다 오류가 나 끊겼다)
+                continue
+            if op == 8:
+                raise EOFError('closed')
+            msg += data
+            if b0 & 0x80:
+                return json.loads(msg)
+
+
+def tb_live():
+    """ThingsBoard WebSocket에 붙어 있는 스레드 (2026-11-09 사용자 지시 — 10초마다 묻던 것을 바꿈).
+    장치마다 지금 값(ENTITY_DATA)과 경보(ALARM_DATA)를 구독한다. 끊기면 5초 뒤 다시 로그인해서 붙는다"""
+    while True:
+        c = tb_conf()
+        if not c:
+            tb_set(ok=False, why='no-account', alarms={}, latest={})
+            time.sleep(30)
+            continue
+        try:
+            # 새로 붙을 때마다 새 토큰 (오래 붙어 있다 끊긴 경우). 장치 id도 다시 찾는다 — 그래야 로그인을 한다
+            # (2026-11-11 — 전엔 id를 기억해 둬서 다시 붙을 때 로그인을 건너뛰고 빈 토큰으로 붙어, 한 번 끊기면 서버를 다시 켤 때까지 계속 거절당했다)
+            TB['token'], TB['dev'] = None, {}
+            devs = {tb_device(c, name): key for key, (name, _) in TB_LINK.items()}
+            ws = WSClient(c['TB_URL'].replace('http', 'ws', 1).rstrip('/') + '/api/ws')
+            ws.send({'authCmd': {'cmdId': 0, 'token': TB['token']}})
+            cmds, cmd_key = [], {}
+            for i, (dev, key) in enumerate(devs.items()):
+                one = {'type': 'singleEntity', 'singleEntity': {'entityType': 'DEVICE', 'id': dev}}
+                vals = [{'type': 'TIME_SERIES', 'key': k} for k, _, _ in TB_LINK[key][1]]
+                cmds.append({'type': 'ENTITY_DATA', 'cmdId': 10 + 2 * i, 'query': {'entityFilter': one, 'pageLink': {'page': 0, 'pageSize': 1},
+                             'entityFields': [], 'latestValues': vals}, 'latestCmd': {'keys': vals}})
+                cmds.append({'type': 'ALARM_DATA', 'cmdId': 11 + 2 * i, 'query': {'entityFilter': one, 'entityFields': [], 'latestValues': [],
+                             'alarmFields': [{'type': 'ALARM_FIELD', 'key': 'createdTime'}],
+                             'pageLink': {'page': 0, 'pageSize': 100, 'timeWindow': 365 * 86400000, 'searchPropagatedAlarms': False,
+                                          'statusList': [], 'severityList': [], 'typeList': [],
+                                          'sortOrder': {'key': {'type': 'ALARM_FIELD', 'key': 'createdTime'}, 'direction': 'DESC'}}}})
+                cmd_key[10 + 2 * i] = cmd_key[11 + 2 * i] = key
+            ws.send({'cmds': cmds})
+            alarms, latest, got = {}, {}, {}
+            while True:
+                try:
+                    m = ws.recv()
+                except socket.timeout:  # 1분 동안 아무것도 안 오면(센서가 쉬면) 끊지 않고 살아 있나만 묻는다
+                    ws.send(b'', 9)
+                    continue
+                key = cmd_key.get(m.get('cmdId'))
+                if not key or m.get('errorCode'):
+                    continue
+                rows = (m.get('data') or {}).get('data') or m.get('update') or []
+                if m.get('cmdUpdateType') == 'ALARM_DATA':
+                    for a in rows:
+                        x = tb_alarm(key, a)
+                        alarms[x['id']] = x
+                else:
+                    lv = (rows[0].get('latest') or {}).get('TIME_SERIES', {}) if rows else {}
+                    if not lv:
+                        continue
+                    got.setdefault(key, {}).update(lv)  # 바뀐 키만 올 때도 있어 앞의 것과 합친다
+                    have = got[key]
+                    # 값이 같아도 받을 때마다 보낸다 — 화면의 "받은 시각"이 센서가 살아 있는지 알려 준다 (같은 날 사용자가 고른 3안)
+                    latest[key] = {'ts': max(int(v['ts']) for v in have.values()),
+                                   'vals': [[name, have[k]['value'], unit] for k, name, unit in TB_LINK[key][1] if k in have]}
+                tb_set(ok=True, why='', alarms=dict(alarms), latest=dict(latest))
+        except Exception as e:  # 시제품이라 까닭만 남기고 다시 붙는다
+            tb_set(ok=False, why=type(e).__name__ + ': ' + str(e)[:200])
+            time.sleep(5)
+
 
 
 def pw_hash(pw, salt):
@@ -101,8 +332,8 @@ def init_db(reset=False):
                 salt = secrets.token_hex(8)
                 con.execute('INSERT INTO accounts (login,salt,pw,role,name,factory,org) VALUES (?,?,?,?,?,?,?)',
                             (login, salt, pw_hash(pw, salt), role, name, factory, org))
-        if con.execute('SELECT COUNT(*) FROM invites').fetchone()[0] == 0:
-            con.executemany('INSERT INTO invites VALUES (?,?,?,?,?,?)', SEED_INVITES)
+        # 시험용 초대는 없는 것만 넣는다 — 이미 있는 초대(공장주가 만든 것 · 상태)는 그대로 (2026-11-11 — 전엔 초대 표가 비었을 때만이라 켜 둔 서버에 새 시험 초대가 안 들어갔다)
+        con.executemany('INSERT OR IGNORE INTO invites VALUES (?,?,?,?,?,?)', SEED_INVITES)
         con.execute('INSERT OR IGNORE INTO state (id, ver, json, updated) VALUES (1, 0, NULL, NULL)')
 
 
@@ -195,6 +426,34 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if u.path == '/api/me':
             row = self.me(self.where(u))
             return self.json_out(200, account_public(row)) if row else self.json_out(401, {'error': 'login'})
+        if u.path == '/api/tb/live':  # 진짜 센서 경보와 지금 값 (2026-11-09) — 지킴이. 바뀔 때마다 밀어 주는 연결(Server-Sent Events)
+            # 근로자 앱도 (2026-11-11) — ?app=1로 묻고 값 없이 상태만(tb_state). 어느 앱이 묻는지로 가른다:
+            # 시제품은 한 브라우저에 지킴이 · 근로자 로그인이 같이 있어, 지킴이 로그인을 먼저 보던 때는 근로자 앱에 지킴이 데이터(값 포함)가 갔다
+            if self.where(u) == 'app':
+                w = self.me('app')
+                if not (w and w['role'] == 'worker'):
+                    return self.json_out(401, {'error': 'login'})
+                snap = lambda f=w['factory']: tb_state(f)
+            else:
+                if not self.me('guard'):
+                    return self.json_out(401, {'error': 'login'})
+                snap = tb_snap
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/event-stream; charset=utf-8')
+            self.end_headers()
+            seen = -1
+            try:
+                while True:
+                    with TB_CV:
+                        if TB_NOW['ver'] == seen:
+                            TB_CV.wait(15)
+                        ver, body = TB_NOW['ver'], json.dumps(snap(), ensure_ascii=False)
+                    # 그대로면 빈 줄로 연결이 살아 있나만 본다 (화면을 닫으면 여기서 끊겨 끝난다)
+                    self.wfile.write(b': keep\n\n' if ver == seen else f'data: {body}\n\n'.encode())
+                    self.wfile.flush()
+                    seen = ver
+            except (BrokenPipeError, ConnectionResetError):
+                return
         if u.path == '/api/state':
             since = parse_qs(u.query).get('since', [None])[0]
             with db() as con:
@@ -336,6 +595,7 @@ def main():
     ap.add_argument('--reset', action='store_true', help='임시 DB를 지우고 처음 계정으로 다시 만든다')
     a = ap.parse_args()
     init_db(a.reset)
+    threading.Thread(target=tb_live, daemon=True).start()
     srv = make_server(a.port)
     fam = 'IPv4+IPv6' if srv.address_family == socket.AF_INET6 else 'IPv4'
     print(f'시제품 서버: http://localhost:{a.port}/  ({fam})  (DB: {DB_PATH})', flush=True)

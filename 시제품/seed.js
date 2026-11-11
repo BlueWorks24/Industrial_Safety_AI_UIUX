@@ -511,7 +511,7 @@ function daesungInspection() {
 }
 
 const SEED = {
-  v: 10,                              // 2026-10-13 재점검 데이터로 바뀌어 7, 2026-10-14 고치기 전 사진·운영자 검사 뺌으로 8, 2026-10-19 오늘 방문 세 곳으로 9, 같은 날 체크리스트 글을 종이대로 10 (7~9는 common.js upgrade로 옮겨 온다)
+  v: 11,                              // 2026-10-13 재점검 데이터로 바뀌어 7, 2026-10-14 고치기 전 사진·운영자 검사 뺌으로 8, 2026-10-19 오늘 방문 세 곳으로 9, 같은 날 체크리스트 글을 종이대로 10, 2026-11-04 사람이 끈 경보로 11 (7~10은 common.js upgrade로 옮겨 온다)
   clock: 9 * 60 + 10,                 // 가상 시각 09:10 (분)
   net: { worker: true, guard: true },
   offlineSince: { worker: null },
@@ -527,8 +527,10 @@ const SEED = {
       acks: [], snoozes: 0, endedAt: 11 * 60 + 6, endKind: 'noack' },
     { id: 'h5', key: 'hb_gas', day: '9/11', start: 15 * 60 + 20, status: 'ended', abnormal: false, ratio: 2.1,
       acks: [ { by: '최반장', at: 15 * 60 + 24 } ], snoozes: 0, endedAt: 15 * 60 + 41, endKind: 'ended' },
+    // 공장주 · 운영자가 확인 없이 손으로 끈 경보 (2026-11-04 사용자 지시 — 엔진 구성안 M4 R-S1 "사용자가 닫음", IoT 끝 이유 user): endKind 'user' + closedBy owner / operator.
+    // h6 · h10 · h13 셋(동방금속 · 태광기계 — 공장주 웹에 계정이 있는 대성정밀 · 한빛화학은 피함, 공장주 웹 "조치 완료" 수가 틀어져서). 전엔 아무도 안 누르고 끝남(noack)
     { id: 'h6', key: 'db_comp', day: '9/08', start: 7 * 60 + 50, status: 'ended', abnormal: false, ratio: 1.6,
-      acks: [], snoozes: 0, endedAt: 7 * 60 + 58, endKind: 'noack' },
+      acks: [], snoozes: 0, endedAt: 7 * 60 + 58, endKind: 'user', closedBy: 'owner' },
     // 예시 공장 열 곳 모두의 지난 경보 (2026-11-02 사용자 지시) — 조치함 · 아무도 안 누름 · 수리로 닫힘을 섞고, 지난 점검 앞뒤로 나눠 둔다. 이름은 모두 가상
     { id: 'h7', key: 'hb_mixer', day: '8/19', start: 10 * 60 + 40, status: 'ended', abnormal: false, ratio: 1.9,
       acks: [ { by: '한주임', at: 10 * 60 + 46 } ], snoozes: 0, endedAt: 11 * 60 + 15, endKind: 'ended' },
@@ -537,13 +539,13 @@ const SEED = {
     { id: 'h9', key: 'db_gas', day: '8/12', start: 13 * 60 + 5, status: 'ended', abnormal: false, ratio: 2.4,
       acks: [ { by: '정반장', at: 13 * 60 + 7 } ], snoozes: 0, endedAt: 13 * 60 + 27, endKind: 'ended' },
     { id: 'h10', key: 'db_th', day: '9/14', start: 14 * 60 + 30, status: 'ended', abnormal: false, ratio: 1.5,
-      acks: [], snoozes: 0, endedAt: 15 * 60 + 10, endKind: 'noack' },
+      acks: [], snoozes: 0, endedAt: 15 * 60 + 10, endKind: 'user', closedBy: 'operator' },
     { id: 'h11', key: 'tg_cnc', day: '9/09', start: 8 * 60 + 45, status: 'ended', abnormal: false, ratio: 2.2,
       acks: [ { by: '윤반장', at: 8 * 60 + 49 } ], snoozes: 0, endedAt: 9 * 60 + 15, endKind: 'ended' },
     { id: 'h12', key: 'tg_leak', day: '7/28', start: 16 * 60 + 10, status: 'ended', abnormal: false,
       acks: [], snoozes: 0, endedAt: 17 * 60 + 45, endKind: 'repair' },
     { id: 'h13', key: 'tg_cnc', day: '6/17', start: 10 * 60 + 20, status: 'ended', abnormal: false, ratio: 1.6,
-      acks: [], snoozes: 0, endedAt: 10 * 60 + 27, endKind: 'noack' },
+      acks: [], snoozes: 0, endedAt: 10 * 60 + 27, endKind: 'user', closedBy: 'owner' },
     { id: 'h14', key: 'sh_th', day: '8/07', start: 13 * 60 + 40, status: 'ended', abnormal: false, ratio: 1.7,
       acks: [ { by: '한대리', at: 13 * 60 + 49 } ], snoozes: 0, endedAt: 14 * 60 + 30, endKind: 'ended' },
     { id: 'h15', key: 'sh_comp', day: '9/04', start: 9 * 60 + 30, status: 'ended', abnormal: false, ratio: 1.8,

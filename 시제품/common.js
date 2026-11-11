@@ -91,6 +91,11 @@ function upgrade(s) {
     if (T) { s.inspections.forEach((i) => { i.items = fix(i.items); }); if (s.draft && s.draft.items) s.draft.items = fix(s.draft.items); }
     s.v = 10;
   }
+  // 공장주 · 운영자가 손으로 끈 경보 (2026-11-04) — 아무도 안 누르고 끝났던 예시 경보 셋을 사람이 끈 것으로 (seed.js h6 · h10 · h13)
+  if (s.v === 10) {
+    [['h6', 'owner'], ['h10', 'operator'], ['h13', 'owner']].forEach(([id, by]) => { const a = s.alarms.find((x) => x.id === id && x.endKind === 'noack'); if (a) { a.endKind = 'user'; a.closedBy = by; } });
+    s.v = 11;
+  }
   return s;
 }
 let chan = null;

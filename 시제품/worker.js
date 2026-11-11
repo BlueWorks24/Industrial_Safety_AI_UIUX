@@ -4,7 +4,9 @@ let ACC = null;                                    // 로그인한 근로자 { n
 let ME = '김근로';
 const UI = { undo: null, timer: null, sheet: null, dlg: null, inv: null, noticeOrig: {},
   amin: new Set(), apick: null, adone: null, aunsent: null, aShown: false,  // 경보 창: 내려 둔 것 · 고른 것 · 보낸 뒤 · 못 보냄
-  voice: { kind: 'danger', text: '', photo: false, anon: true } };
+  voice: { kind: 'danger', text: '', photo: false, anon: true },
+  selfs: [], selfI: 0, selfDir: 0,  // 자가진단 — 찍은 것 차례로, 보는 장, 넘긴 쪽 (2026-11-11)
+  senMore: {} };  // 센서 하나 — 경보 기록을 펼친 센서 (같은 날)
 
 /* ---------- 이 기기에만 두는 설정 ---------- */
 const pref = {
@@ -59,7 +61,7 @@ function welcome() {
   </div></div>${UI.sheet === 'scan' ? scanSheet() : ''}`;
 }
 function scanSheet() {
-  const codes = [['DS-KIM', '김근로 · 대성정밀'], ['DS-NGUYEN', 'Nguyen Van A · 대성정밀 (Tiếng Việt)'], ['DS-USED', '이미 쓴 초대 (오류 화면 보기)'], ['DS-OLD', '기간 지난 초대 (오류 화면 보기)']];
+  const codes = [['DS-KIM', '김근로 · 대성정밀'], ['HB-JUNG', '정근로 · 한빛화학'], ['DS-NGUYEN', 'Nguyen Van A · 대성정밀 (Tiếng Việt)'], ['DS-USED', '이미 쓴 초대 (오류 화면 보기)'], ['DS-OLD', '기간 지난 초대 (오류 화면 보기)']];
   return `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div>
     <div class="mid">${T('ob.pick')}</div>
     <div class="small">실제 앱에서는 카메라로 QR을 찍어요. 시제품에서는 아래에서 골라요.</div>
@@ -115,14 +117,69 @@ function notifAsk() {
 /* ---------- W1 홈 ---------- */
 // 지킴이 홈과 같은 틀 (2026-10-20 사용자 지시) — 위쪽 남색 띠(공장 이름 · 공지 · 내 정보, 날짜와 일하는 곳, 인사), 센서 감시 카드(띠는 이 카드 가운데서 끝남),
 // 큰 카드 넷(받은 경보 · 안전 공지 · 의견 보내기 · 알림과 언어), 아래 최근 소식. 들어가는 화면과 일은 그대로다
+// 센서 하나의 지금 상태 — 진짜 센서(온습도 · 전기)는 ThingsBoard, 나머지는 씨앗. 홈 칸 · 센서 목록 · 센서 하나가 같이 쓴다
+function senState(s, k, vis) {
+  const a = vis.find((x) => x.key === k), ss = SIM.sensor(s, k).state;
+  return wtbOf(k) || (ss !== 'watch' ? ss : a ? (a.status === 'watch' ? 'acked' : 'abn') : 'ok');
+}
 function monitor(s, vis) {
-  // 센서 감시 줄 — 값은 보여 주지 않고 상태만 (근로자는 센서 값을 보지 않는다)
-  return `<div class="mon">${SITE_SENSORS(ACC.factory).map((k) => {
-    const a = vis.find((x) => x.key === k);
-    const ss = SIM.sensor(s, k).state;
-    const st = ss !== 'watch' ? ss : a ? (a.status === 'watch' ? 'acked' : 'abn') : 'ok';
-    return `<div class="ms ${st}">${I(iconOf(k), 20)}<b>${esc(SNAME(k, true))}</b><span><i></i>${T('mon.' + st)}</span></div>`;
-  }).join('')}</div>`;
+  // 센서 감시 줄 — 값은 보여 주지 않고 상태만 (근로자는 센서 값을 보지 않는다).
+  // 칸을 누르면 그 센서 화면, 아래 [전체 보기]는 센서 목록 (2026-11-11 사용자 지시)
+  return `<div class="mon">${SITE_SENSORS(ACC.factory).map((k) => { const st = senState(s, k, vis);
+    return `<button class="ms ${st}" data-act="senOpen" data-k="${k}">${I(iconOf(k), 20)}<b>${esc(SNAME(k, true))}</b><span><i></i>${T('mon.' + st)}</span></button>`;
+  }).join('')}</div><button class="wmall" data-go="sensors">${T('sen.all')}${I('chevron', 15)}</button>`;
+}
+/* ---------- W10 센서 목록 · 센서 하나 (2026-11-11 사용자 지시 — 더 자세히 볼 수 있게) ----------
+   보기만 한다. 처음엔 값 없이 상태, 위치, 재는 것, 마지막 확인 시각, 경보 기록이었고, 같은 날 사용자 지시로 센서 하나는 지킴이 센서 이력 꼴 + 지금 값(아래 sensorScreen).
+   진짜 센서(온습도 · 전기)는 ThingsBoard 기록(서버 tb_state의 al — 짧게 끝난 경보도 여기서 본다), 나머지는 씨앗 경보(누르면 받은 경보 상세).
+   목록은 이상 · 조치됨 · 모름 · 수리 중 · 감시 중 차례 */
+const SEN_TG = { abn: 'bad', acked: 'warn', unknown: 'warn', repair: '', ok: 's-ok' };
+const SEN_RANK = { abn: 0, acked: 1, unknown: 2, repair: 3, ok: 4 };
+const SX = (k, f) => (LANG !== 'ko' && txOf(k)[f]) || SENSORS[k][f] || '';
+const senWhat = (k) => (SX(k, 'what') || SX(k, 'sub')).replace(/ · /g, ', ');
+// 값을 받은 시각 — 한국 시간으로 (폰 시간대와 상관없이 경보 기록 시각과 맞춘다)
+const hms = (ms) => new Date(ms).toLocaleTimeString('en-GB', { timeZone: 'Asia/Seoul', hour12: false });
+const mdKey = (d) => { const [m, dd] = d.split('/').map(Number); return m * 100 + dd; };
+// 경보 기록 — 최근 것부터. 한 줄: 날짜 · 울린 때 · 조치한 때(분) · 끝난 때와 방식 · 심각도 · (씨앗만) 평소와 견준 말
+function senLog(s, k, vis) {
+  if (WTB.ok && WTB.st[k]) return (WTB.st[k].al || []).map((x) => ({ ...x, endW: T(x.ack != null ? 'end.ended' : 'end.noack') }));
+  return s.alarms.filter((a) => a.key === k && alarmFid(a) === ACC.factory && (!SIM.live(a) || vis.includes(a)))
+    .sort((a, b) => mdKey(b.day) - mdKey(a.day) || b.start - a.start)
+    .map((a) => ({ day: a.day, start: a.start, end: a.endedAt, live: SIM.live(a), ack: a.acks[0] ? a.acks[0].at : null, sev: alarmSev(a), endW: endWord(a),
+      val: SENSORS[k].kind === 'state' ? T('a.wet') : a.ratio ? T('sl.ratio', { r: a.ratio }) : '' }));
+}
+// 지금 값 이름 — 서버가 주는 한국어 이름을 언어마다
+const VAL_TX = { 온도: ['온도', 'Nhiệt độ', 'Temperature'], 습도: ['습도', 'Độ ẩm', 'Humidity'], 전압: ['전압', 'Điện áp', 'Voltage'],
+  주파수: ['주파수', 'Tần số', 'Frequency'], 전류: ['전류', 'Dòng điện', 'Current'], 전력: ['전력', 'Công suất', 'Power'] };
+const SEV_C = { critical: ' sevc', warn: ' warn', info: '' };
+function sensorsScreen(s) {
+  const vis = visibleAlarms(s), ks = SITE_SENSORS(ACC.factory).map((k) => ({ k, st: senState(s, k, vis), log: senLog(s, k, vis) }))
+    .sort((a, b) => SEN_RANK[a.st] - SEN_RANK[b.st]);
+  return wscr(s, T('sen.title'), '', `${ltitle(T('sen.title'))}<div class="wsens">
+    <div class="small">${T('sen.n', { n: ks.length })}</div>
+    ${ks.map(({ k, st, log }) => `<button class="q wcard" data-act="senOpen" data-k="${k}" data-from="sensors"><div class="wct"><b>${I(iconOf(k), 18)}${esc(SNAME(k))}</b>${tg(T('mon.' + st), SEN_TG[st])}${I('chevron', 18)}</div>
+      ${kv([[T('sen.where'), esc(SX(k, 'where'))], [T('sen.recent'), log[0] ? `${log[0].day} ${hm(log[0].start)}` : T('sen.none')]])}</button>`).join('')}</div>`);
+}
+// 센서 하나 — 지킴이 앱 공장 창 센서 이력의 센서 한 칸과 같은 꼴 (같은 날 사용자 지시 — 처음엔 이름표 표 + 경보 기록 줄이었다):
+// 머리(경보 기록 | 경보 n건) → 지금 값 큰 숫자 칸 + "HH:MM:SS 받음"(진짜 센서만) → 위치 · 재는 것 → 타임라인(날짜 | 울림 + 조치 · 끝남 | 심각도, 차례는 아래 tl).
+// 지금 값은 근로자도 본다 — 같은 날 사용자 지시("온습도면 온도, 습도를 실시간으로"), 2026-10-20 "근로자는 센서 값을 보지 않는다"에서 이 화면만 바뀜.
+// 값은 서버가 ThingsBoard WebSocket으로 받아 이 화면으로 밀어 준다(SSE) — 값 글자만 바꾼다(wtbPaint)
+function sensorScreen(s, k) {
+  if (!SENSORS[k] || !SITE_SENSORS(ACC.factory).includes(k)) { R.go('sensors'); return ''; }
+  const vis = visibleAlarms(s), st = senState(s, k, vis), log = senLog(s, k, vis), tb = WTB.ok && WTB.st[k];
+  const num = tb && tb.vals ? `<div class="gsnum">${tb.vals.map(([n, v, u], i) => `<div><span>${esc(VAL_TX[n] ? LX(VAL_TX[n]) : n)}</span><b data-wtbv="${k}:${i}">${esc(v + u)}</b></div>`).join('')}</div>
+    <div class="gsat" data-wtbat="${k}">${T('sl.got', { t: hms(tb.ts) })}</div>` : '';
+  const steps = (x) => [x.ack != null && T('sl.ackIn', { n: x.ack - x.start }), x.live ? T('sen.live') : x.end != null && `${hm(x.end)} ${x.endW}`].filter(Boolean);
+  // 타임라인 — 최근 것이 위 (같은 날 사용자 지시 — 처음엔 지킴이처럼 오래된 것부터라 오늘 기록이 맨 밑이었다).
+  // 기록이 늘면 너무 길어져 처음엔 최근 5건만, [이전 기록 n건 더 보기]로 나머지(서버가 주는 최근 30건까지) · [접기] (같은 날 사용자 지시, 센서마다 기억)
+  // 날짜는 그날 첫 줄에만 (같은 날 사용자 지시 — 11.09가 줄마다 되풀이되지 않게). 칸 너비는 그대로 둬 시각 줄이 맞는다
+  const open = UI.senMore[k], shown = open ? log : log.slice(0, 5);
+  const tl = shown.length ? `<ol class="gtl">${shown.map((x, i, l) => `<li${x.live ? ' class="gson"' : ''}><span class="gtlw">${i && l[i - 1].day === x.day ? '' : x.day}</span><span class="gtlx"><b>${T('sen.ring', { t: hm(x.start) })}${x.val ? ` <i>${esc(x.val)}</i>` : ''}</b>${steps(x).map((t) => `<small>${t}</small>`).join('')}</span><span class="gtg${SEV_C[x.sev] || ''}">${T('sev.' + (x.sev || 'info'))}</span></li>`).join('')}</ol>`
+    + (log.length > 5 ? `<button class="more gsmore" data-act="senMore" data-k="${k}">${open ? T('sl.fold') : T('sl.more', { n: log.length - 5 })}</button>` : '') : '';
+  return wscr(s, esc(SNAME(k)), UI.senFrom || '', `<div class="wsens">
+    <div class="ltrow">${ltitle(esc(SNAME(k)))}${tg(T('mon.' + st), SEN_TG[st])}</div>
+    <div class="q wcard gsg"><div class="gsr"><div class="gsrh"><b>${T('sen.log')}</b><span class="gtg${log.length ? ' warn' : ''}">${log.length ? T('sl.n', { n: log.length }) : T('sen.none')}</span></div>
+      ${num}${kv([[T('sen.where'), esc(SX(k, 'where'))], [T('sen.what'), esc(senWhat(k))]])}${tl}</div></div></div>`);
 }
 function feed(s) {
   const items = [];
@@ -139,10 +196,32 @@ function feed(s) {
       <span class="fic">${I(x.ic, 20)}</span><span class="ftx"><b>${x.t}${x.fresh ? tg(T('n.new'), 'now') : ''}</b><small>${x.sub}</small></span><span class="fd">${x.d}</span></button>`).join('')}</div>`;
 }
 // 센서 감시 카드 — 겹칠 때 순서: 알림 꺼짐 · 인터넷 끊김 → 경보 → 일부 모름 → 이상 없음 (시안 W1)
+/* ---------- 진짜 센서 상태 (2026-11-11 사용자 지시 — 한빛화학 근로자 센서 감시를 ThingsBoard 값으로) ----------
+   온습도 · 전기(server.py TB_LINK)만 진짜이고 나머지 센서는 씨앗 그대로. 서버가 센서마다 마지막으로 받은 때 · 울리는 경보 여부 · 경보 기록 · 지금 값을 준다
+   (홈 칸은 상태만 — 사용자가 고른 추천안. 지금 값은 같은 날 사용자 지시로 센서 하나 화면에만). 2분 넘게 값이 안 오면 모름(센서가 1초마다 보내서, 내 판단), 경보가 울리면 이상, 아니면 감시 중.
+   경보 창 · 조치 완료는 아직 없다 — 센서 감시 카드에 이상만(같은 날, 내 판단 — 조치 기록이 공장주 · 지킴이 화면과 이어져 있어 상태부터). 홈을 보는 동안만 연결 */
+const WTB_FAC = 'hanbit';  // server.py TB_FACTORY와 같다 — 센서 관련 PoC는 한빛화학 기준
+const WTB = { es: null, ok: false, st: {}, sig: '', timer: null };
+const wtbOf = (k) => { const x = WTB.ok && WTB.st[k]; if (!x) return null; return !x.ts || Date.now() - x.ts > 2 * 60 * 1000 ? 'unknown' : x.abn ? 'abn' : 'ok'; };
+// 상태나 경보 기록이 바뀔 때만 다시 그린다. 마지막 확인 시각(센서 하나 화면)은 그 글자만 바꾼다
+function wtbPaint() {
+  const g = JSON.stringify([WTB.ok, Object.keys(WTB.st).map((k) => [wtbOf(k), (WTB.st[k].al || []).map((x) => `${x.day} ${x.start} ${x.end}`).join()])]);
+  if (g !== WTB.sig) { WTB.sig = g; render(); }
+  document.querySelectorAll('[data-wtbat]').forEach((el) => { const x = WTB.st[el.dataset.wtbat]; if (x && x.ts) el.textContent = plain(T('sl.got', { t: hms(x.ts) })); });
+  document.querySelectorAll('[data-wtbv]').forEach((el) => { const [k, i] = el.dataset.wtbv.split(':'), v = ((WTB.st[k] || {}).vals || [])[i]; if (v) el.textContent = v[1] + v[2]; });
+}
+function wtbLive(on) {
+  if (on && !WTB.es) {
+    WTB.es = new EventSource('api/tb/live?app=1');  // 근로자 앱이라고 밝힌다 — 같은 브라우저에 지킴이 로그인이 있어도 근로자 것으로
+    WTB.es.onmessage = (ev) => { const j = JSON.parse(ev.data); Object.assign(WTB, { ok: !!j.ok, st: j.st || {} }); wtbPaint(); };
+    WTB.timer = setInterval(wtbPaint, 15000);  // 값이 끊기면 아무것도 안 오니 시계로 모름을 본다
+  } else if (!on && WTB.es) { WTB.es.close(); WTB.es = null; clearInterval(WTB.timer); Object.assign(WTB, { ok: false, st: {}, sig: '' }); }
+}
 function statusCard(s, vis) {
   const watching = vis.filter((a) => a.status === 'watch'), open = vis.filter((a) => a.status === 'open' || a.status === 'remind');
   const notifOff = pref.get('notif') !== 'on';
-  const sens = SITE_SENSORS(ACC.factory).map((k) => SIM.sensor(s, k).state);
+  const sens = SITE_SENSORS(ACC.factory).map((k) => { const tb = wtbOf(k); return tb ? (tb === 'unknown' ? 'unknown' : 'watch') : SIM.sensor(s, k).state; });
+  const tbAbn = SITE_SENSORS(ACC.factory).filter((k) => wtbOf(k) === 'abn');
   const live = s.net.worker && !notifOff ? `<span class="wlive"><i></i>${T(pref.get('sound', 'sv') === 'v' ? 'live.v' : 'live.on')}</span>` : '';
   const line = (c, ic, t, sub, btn = '') => `<div class="wnow ${c}">${I(ic, 26)}<div><b>${t}</b>${sub ? `<span>${sub}</span>` : ''}</div>${btn}</div>`;
   let now;
@@ -158,6 +237,9 @@ function statusCard(s, vis) {
     now = line('bad', 'alert', `${T('h.alarms', { n: watching.length })} ${tg(T('h.still'), 'bad')}`,
       `${esc(ST(a, 'title'))}<br>${a.snoozes > 0 ? T('h.remindAt', { t: hm(a.remindAt) }) : T('h.acked', { t: hm(a.remindAt) })}`,
       `<button class="hst red" data-go="alarm/${a.id}">${T('h.see')}</button>`);
+  } else if (tbAbn.length) {
+    // 진짜 센서 경보 — 경보 창 · 조치 완료 없이 이상만 (2026-11-11)
+    now = line('bad', 'alert', T('h.alarms', { n: tbAbn.length }), tbAbn.map((k) => esc(SNAME(k))).join('<br>'));
   } else if (sens.includes('unknown')) {
     // 값이 안 오는 센서가 있으면 "이상 없음"이라고 말하지 않는다 (시안 W1-마)
     now = line('part', 'help', T('h.partial'), `${T('h.partialRest')}<br>${T('h.at', { t: hm(s.clock) })}`);
@@ -186,6 +268,7 @@ function home(s) {
     <div class="hhi"><small>${T('today.date')} ${ACC.area ? tg(esc(AREA(ACC.area))) : ''}</small><b>${T('h.hi', { n: ME })}</b></div>
     ${statusCard(s, vis)}
     <div class="hkg">
+      ${card('self', 'camera', T('tile.self'), `<span class="hpill">${T('self.pill')}</span>`).replace('class="hkc"', 'class="hkc wselfc"')}
       ${card('history', 'alert', T('tile.hist'), `<span class="hpill">${T('c.n', { n: hist })}</span>`)}
       ${card('notice', 'megaphone', T('tile.notice'), un ? `<span class="hpill n">${T('new', { n: un })}</span>` : `<span class="hpill">${T('c.n', { n: myNotices(s).length })}</span>`)}
       ${card('voice', 'message', T('tile.voice'), `<span class="hpill">${T('c.n', { n: mine })}</span>`)}
@@ -477,6 +560,217 @@ function me(s) {
 }
 /* ---------- 그리기 ---------- */
 let lastAttention = '';
+/* ---------- W9 자가진단 (2026-11-11 사용자 지시 — 지킴이 앱 현장점검처럼 근로자가 사진을 찍으면 무엇을 봐야 하는지 알려 준다) ----------
+   작업 시작 전이나 정해진 점검 시간에 쓴다(사용자). 장비나 작업 자리를 한 장 찍으면 AI가 무슨 장비인지 알아보고
+   주의 깊게 볼 점 · 흔히 고쳐야 하는 것(장비마다 정해 둔 것) · 이 사진에서 보이는 것(AI)을 보여 준다.
+   알려 주기만 한다 — 근로자가 답하거나 고르는 것, 공장주 · 지킴이에게 보내기, 확인받기, 기록은 없다(사용자 결정).
+   장비는 지킴이 앱 현장점검과 같은 종이 6번 15가지 + 기타(바닥 · 소화기처럼 장비가 아닌 것 — 이 사진에서 보이는 것만). 이름은 근로자용으로 줄임(내 판단).
+   사진은 한 장, 서버에 올리지 않고 이 화면에서만 본다(기록이 없어서 — 내 판단). PC는 [시험 사진].
+   찍기는 지킴이 앱처럼 앱 안 카메라(아래 WCAM, 같은 날 사용자 지시 — 처음엔 폰 기본 카메라였다).
+   AI는 흉내 — 시험 사진 다섯 장은 모두 기타 + 사진마다 정해 둔 글, 폰으로 찍은 사진은 사진마다 정해진 장비 하나 + 그 장비의 흔한 문제 하나 또는 없음.
+   글은 [한국어, 베트남어, 영어] — 베트남어 · 영어는 초벌 번역(원어민 검수 전). 주의 깊게 볼 점은 seed.js EQUIP 점검 포인트를 근로자 말투로 바꿨고,
+   흔히 고쳐야 하는 것은 새로 씀(가설) */
+const SELF_EQ = [
+  { n: ['지게차', 'Xe nâng', 'Forklift'],
+    look: [['후진할 때 경보음이 울리고 등이 켜지는지 봐요.', 'Khi lùi xe, còi báo và đèn có hoạt động không.', 'Check the reverse alarm sounds and the lights work.'],
+      ['포크에 사람이 타거나 앞이 가리게 짐을 싣지 않아요.', 'Không để người đứng trên càng nâng, không chất hàng che tầm nhìn.', 'Nobody rides on the forks, and loads must not block the view.'],
+      ['운전할 때는 안전띠를 매요.', 'Thắt dây an toàn khi lái xe.', 'Wear the seat belt while driving.']],
+    fix: [['헤드가드나 짐받이가 없거나 휘어 있음', 'Thiếu hoặc cong khung bảo vệ đầu, tấm chắn hàng', 'Head guard or backrest missing or bent'],
+      ['후진 경보음이나 전조등이 고장 남', 'Còi lùi hoặc đèn pha bị hỏng', 'Reverse alarm or headlights broken'],
+      ['타이어가 닳거나 기름이 샘', 'Lốp mòn hoặc rò dầu', 'Worn tires or oil leaks']] },
+  { n: ['크레인', 'Cần trục', 'Crane'],
+    look: [['매단 짐 아래에 들어가지 않아요.', 'Không đứng dưới hàng đang treo.', 'Never stand under a hanging load.'],
+      ['훅에 걸쇠(해지장치)가 있는지 봐요.', 'Móc có chốt an toàn không.', 'Check the hook has a safety latch.'],
+      ['비상정지 단추가 바로 눌리는지 봐요.', 'Nút dừng khẩn cấp có bấm được ngay không.', 'Check the emergency stop button works.']],
+    fix: [['와이어로프 가닥이 끊어지거나 꼬임', 'Cáp bị đứt sợi hoặc bị xoắn', 'Broken strands or kinks in the wire rope'],
+      ['훅 걸쇠가 없거나 부러짐', 'Chốt móc bị mất hoặc gãy', 'Hook latch missing or broken'],
+      ['과부하 방지장치가 작동하지 않음', 'Thiết bị chống quá tải không hoạt động', 'Overload limiter not working']] },
+  { n: ['용접기', 'Máy hàn', 'Welding machine'],
+    look: [['둘레에 탈 물건이 없는지 봐요.', 'Xung quanh không có vật dễ cháy.', 'Check nothing flammable is nearby.'],
+      ['케이블이 물기 위를 지나지 않는지 봐요.', 'Dây cáp không nằm trên chỗ ướt.', 'Check cables are not lying in water.'],
+      ['용접 연기를 빨아들이는 장치를 켜요.', 'Bật máy hút khói hàn.', 'Turn on the fume extractor.']],
+    fix: [['케이블 피복이 벗겨짐', 'Vỏ cáp bị bong tróc', 'Damaged cable insulation'],
+      ['자동 전격 방지기가 없음', 'Không có thiết bị chống giật tự động', 'No anti-shock device'],
+      ['소화기가 가까이 없음', 'Không có bình chữa cháy ở gần', 'No fire extinguisher nearby']] },
+  { n: ['리프트', 'Thang nâng hàng', 'Goods lift'],
+    look: [['화물용 리프트에는 사람이 타지 않아요.', 'Không đi thang nâng chở hàng.', 'Never ride a goods lift.'],
+      ['문을 닫아야 움직이는지 봐요.', 'Thang chỉ chạy khi cửa đã đóng.', 'Check it moves only with the door closed.']],
+    fix: [['문이 열린 채로 움직임', 'Thang chạy khi cửa còn mở', 'Moves with the door open'],
+      ['승강로 둘레 울타리가 없음', 'Không có rào quanh giếng thang', 'No fence around the shaft'],
+      ['탑승 금지 표지가 없음', 'Không có biển cấm người đi', 'No "no riders" sign']] },
+  { n: ['사다리', 'Thang', 'Ladder'],
+    look: [['펼침 고정장치를 끝까지 걸어요.', 'Khóa thanh giằng cho chắc.', 'Lock the spreader fully.'],
+      ['맨 위 발판에는 올라서지 않아요.', 'Không đứng lên bậc trên cùng.', "Don't stand on the top step."]],
+    fix: [['발판이나 다리에 금이 가거나 휨', 'Bậc hoặc chân thang bị nứt, cong', 'Cracked or bent steps or legs'],
+      ['다리 끝 미끄럼 막이가 닳거나 없음', 'Đế chống trượt bị mòn hoặc mất', 'Worn or missing anti-slip feet']] },
+  { n: ['컨베이어', 'Băng tải', 'Conveyor'],
+    look: [['비상정지 줄이나 단추에 손이 닿는지 봐요.', 'Dây hoặc nút dừng khẩn cấp có với tới được không.', 'Check you can reach the emergency stop.'],
+      ['돌아가는 벨트에 손을 넣지 않아요.', 'Không cho tay vào băng tải đang chạy.', 'Keep your hands off the moving belt.']],
+    fix: [['벨트와 풀리가 맞물리는 곳에 덮개가 없음', 'Không có nắp che chỗ băng tải và puli ăn khớp', 'No guard where the belt meets the pulley'],
+      ['비상정지가 작동하지 않음', 'Dừng khẩn cấp không hoạt động', "Emergency stop doesn't work"]] },
+  { n: ['산업용 로봇', 'Robot công nghiệp', 'Industrial robot'],
+    look: [['로봇이 움직이는 범위 안에 들어가지 않아요.', 'Không vào vùng robot hoạt động.', "Stay out of the robot's working area."],
+      ['울타리 문을 열면 로봇이 멈추는지 봐요.', 'Mở cửa rào thì robot có dừng không.', 'Check the robot stops when the fence door opens.']],
+    fix: [['울타리가 없거나 열려 있음', 'Không có rào hoặc rào bị mở', 'Fence missing or left open'],
+      ['조작기(교시 펜던트) 비상정지가 고장 남', 'Nút dừng khẩn cấp trên bộ điều khiển cầm tay bị hỏng', 'Teach pendant emergency stop broken']] },
+  { n: ['사출성형기', 'Máy ép phun', 'Injection molding machine'],
+    look: [['문을 열면 금형이 멈추는지 봐요.', 'Mở cửa thì khuôn có dừng không.', 'Check the mold stops when the door opens.'],
+      ['뜨거운 실린더에 맨손을 대지 않아요.', 'Không chạm tay trần vào xi lanh nóng.', "Don't touch the hot barrel with bare hands."]],
+    fix: [['문을 열어도 기계가 움직임', 'Mở cửa máy vẫn chạy', 'Machine runs with the door open'],
+      ['유압 호스에서 기름이 샘', 'Ống thủy lực bị rò dầu', 'Hydraulic hose leaking']] },
+  { n: ['선반, 밀링, CNC', 'Máy tiện, phay, CNC', 'Lathe, milling, CNC'],
+    look: [['돌아가는 공작물에 장갑 낀 손을 대지 않아요.', 'Không đeo găng tay chạm vào phôi đang quay.', "Don't touch spinning parts with gloves on."],
+      ['문을 열면 주축이 멈추는지 봐요.', 'Mở cửa thì trục chính có dừng không.', 'Check the spindle stops when the door opens.'],
+      ['칩은 손 대신 솔로 치워요.', 'Dọn phoi bằng chổi, không dùng tay.', 'Clear chips with a brush, not your hand.']],
+    fix: [['척이나 커터 둘레에 덮개가 없음', 'Không có nắp che mâm cặp hoặc dao cắt', 'No guard around the chuck or cutter'],
+      ['척 핸들을 꽂아 둔 채로 둠', 'Để quên tay vặn trên mâm cặp', 'Chuck key left in the chuck']] },
+  { n: ['레이저 커팅기', 'Máy cắt laser', 'Laser cutter'],
+    look: [['문을 열면 레이저가 꺼지는지 봐요.', 'Mở cửa thì laser có tắt không.', 'Check the laser turns off when the door opens.'],
+      ['둘레에 탈 물건이 없는지 봐요.', 'Xung quanh không có vật dễ cháy.', 'Check nothing flammable is nearby.']],
+    fix: [['연기를 빨아들이는 장치가 꺼져 있음', 'Máy hút khói không chạy', 'Fume extractor is off'],
+      ['소화기가 가까이 없음', 'Không có bình chữa cháy ở gần', 'No fire extinguisher nearby']] },
+  { n: ['프레스', 'Máy dập', 'Press'],
+    look: [['방호장치(빛 센서, 두 손 단추)가 켜져 있는지 봐요.', 'Thiết bị bảo vệ (cảm biến ánh sáng, nút hai tay) có đang bật không.', 'Check the safety device (light curtain, two-hand button) is on.'],
+      ['금형 사이에 손을 넣지 않아요.', 'Không cho tay vào giữa khuôn.', 'Never put your hands between the dies.']],
+    fix: [['방호장치를 끄거나 떼어 놓음', 'Thiết bị bảo vệ bị tắt hoặc tháo ra', 'Safety device turned off or removed'],
+      ['페달에 덮개가 없음', 'Bàn đạp không có nắp che', 'No cover on the foot pedal'],
+      ['금형을 바꿀 때 안전블록을 안 씀', 'Không dùng khối an toàn khi thay khuôn', 'No safety block used when changing dies']] },
+  { n: ['압력용기', 'Bình chịu áp lực', 'Pressure vessel'],
+    look: [['압력계 바늘이 정상 범위 안에 있는지 봐요.', 'Kim đồng hồ áp suất có nằm trong vùng bình thường không.', 'Check the pressure gauge is in the normal range.'],
+      ['새는 소리나 이상한 냄새가 없는지 봐요.', 'Không có tiếng xì hoặc mùi lạ.', 'Check there is no hissing or strange smell.']],
+    fix: [['안전밸브 봉인이 뜯겨 있음', 'Niêm phong van an toàn bị bóc', 'Safety valve seal broken'],
+      ['몸체에 녹이 슬거나 샘', 'Thân bình bị gỉ hoặc rò', 'Rust or leaks on the body'],
+      ['안전검사 기간이 지남', 'Quá hạn kiểm định an toàn', 'Safety inspection overdue']] },
+  { n: ['분쇄기, 파쇄기, 전단기', 'Máy nghiền, máy hủy, máy cắt', 'Pulverizer, crusher, shear'],
+    look: [['막혔을 때는 전원을 끄고 잠근 뒤에 빼요.', 'Khi bị kẹt, tắt và khóa nguồn rồi mới gỡ.', 'When it jams, switch off and lock the power before clearing it.'],
+      ['넣는 곳이나 날 앞에 손을 넣지 않아요.', 'Không cho tay vào miệng nạp hoặc trước lưỡi dao.', 'Keep your hands out of the feed opening and away from the blade.']],
+    fix: [['넣는 곳이나 날 앞에 덮개가 없음', 'Không có nắp che miệng nạp hoặc lưỡi dao', 'No guard on the feed opening or blade'],
+      ['비상정지가 작동하지 않음', 'Dừng khẩn cấp không hoạt động', "Emergency stop doesn't work"]] },
+  { n: ['배합기, 혼합기', 'Máy trộn', 'Mixer'],
+    look: [['뚜껑을 열면 날개가 멈추는지 봐요.', 'Mở nắp thì cánh trộn có dừng không.', 'Check the blades stop when the lid opens.'],
+      ['청소하러 들어갈 때는 전원을 잠가요.', 'Khóa nguồn trước khi vào vệ sinh.', 'Lock the power before going in to clean.']],
+    fix: [['원료 넣는 곳에 덮개나 망이 없음', 'Không có nắp hoặc lưới ở chỗ đổ nguyên liệu', 'No cover or mesh on the feed opening'],
+      ['접지선이 빠져 있음', 'Dây tiếp địa bị tuột', 'Ground wire disconnected']] },
+  { n: ['롤러기', 'Máy cán', 'Roller machine'],
+    look: [['급정지 장치(손, 무릎, 몸으로 누르는 것)를 누르면 바로 서는지 봐요.', 'Bấm thiết bị dừng gấp (bằng tay, đầu gối, thân) thì máy có dừng ngay không.', 'Check the emergency stop bar stops it right away.'],
+      ['장갑 낀 손을 롤러 가까이 대지 않아요.', 'Không đưa tay đeo găng lại gần trục cán.', "Keep gloved hands away from the rollers."]],
+    fix: [['롤러가 맞물리는 곳에 가드가 없음', 'Không có tấm chắn chỗ hai trục ăn khớp', 'No guard at the roller nip point'],
+      ['급정지 장치가 늦게 서거나 고장 남', 'Thiết bị dừng gấp chậm hoặc bị hỏng', 'Emergency stop is slow or broken']] },
+  { n: ['기타', 'Khác', 'Other'], look: [], fix: [] },
+];
+const SELF_ETC = SELF_EQ.length - 1;
+// 시험 사진 — 지킴이 앱과 같은 다섯 장(photos/), 모두 기타. find: 이 사진에서 보이는 것 (없으면 null)
+const SELF_PHOTOS = [
+  { src: 'photos/1_exit_door.png', find: ['비상구 바로 옆에 짐이 높이 쌓여 있어요. 문 앞이 막히지 않게 해요.', 'Hàng xếp cao ngay cạnh cửa thoát hiểm. Đừng để chắn lối cửa.', 'Goods are stacked high right next to the emergency exit. Keep the door clear.'] },
+  { src: 'photos/2_extinguisher.png', find: null },
+  { src: 'photos/3_wet_floor.png', find: ['통로 바닥에 물이 고여 있어요. 미끄러지지 않게 닦아야 해요.', 'Có nước đọng trên lối đi. Cần lau khô để không bị trượt.', 'Water is pooled on the walkway. Wipe it up so no one slips.'] },
+  { src: 'photos/4_panel_open.png', find: ['분전반 문이 열려 있고 전선이 드러나 있어요. 손대지 마세요.', 'Tủ điện đang mở, dây điện lộ ra. Không được chạm vào.', "The electrical panel is open with wires exposed. Don't touch it."] },
+  { src: 'photos/5_rack.png', find: ['랙 위쪽에 짐이 높이 쌓여 있어요. 떨어지지 않게 묶였는지 봐요.', 'Hàng xếp cao trên giá. Kiểm tra đã buộc chắc chưa để không rơi.', 'Goods are stacked high on the rack. Check they are tied down so they cannot fall.'] },
+];
+const LX = (t) => t[Math.max(0, LANGS.findIndex((l) => l.id === LANG))];
+// AI 흉내 — 시험 사진은 정해 둔 것, 폰 사진은 파일 이름 · 크기로 정해지는 장비 하나와 그 장비의 흔한 문제 하나(셋 중 하나는 없음)
+function selfAi(x) {
+  if (x.test) return { eq: SELF_ETC, find: SELF_PHOTOS[x.test - 1].find };
+  let h = 7;
+  for (const c of x.key) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
+  const eq = h % SELF_EQ.length, fx = SELF_EQ[eq].fix;
+  return { eq, find: fx.length && (h >>> 4) % 3 ? fx[(h >>> 8) % fx.length] : null };
+}
+const selfIn = Object.assign(document.createElement('input'), { type: 'file', accept: 'image/*', hidden: true });
+selfIn.setAttribute('capture', 'environment');  // 폰에서는 카메라 앱이 바로 열린다
+selfIn.addEventListener('change', () => { const f = selfIn.files[0]; selfIn.value = ''; if (f) selfStart({ src: URL.createObjectURL(f), key: `${f.name}:${f.size}:${f.lastModified}` }); });
+document.body.appendChild(selfIn);
+// 앱 안 카메라 (2026-11-11 사용자 지시 — 지킴이 앱처럼). 지킴이 카메라(guard.js CAM)와 같은 화면 조각(.gcv)과 차례:
+// 셔터 → 찍은 사진을 멈춰 보이고 [다시 찍기] / [사진 사용] → 사용하면 자가진단으로. 한 장이라 장수 점은 없다. 플래시 · 확대는 폰이 되는 것만.
+// 브라우저 규칙상 https · localhost에서만 켜진다 — 아니면 전처럼 폰 기본 카메라, 못 켜면(권한 거절 · 카메라 없음) [카메라 앱으로] [시험 사진]
+const WCAM = { open: false, st: '', shot: null, stream: null, torch: false, flash: false, zoom: null, zm: 1 };
+function wcamOpen() {
+  if (!window.isSecureContext || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { selfIn.click(); return; }  // 누른 그 순간에 열어야 폰이 막지 않는다
+  Object.assign(WCAM, { open: true, shot: null }); wcamStart();
+}
+function wcamStart() {
+  WCAM.st = 'start'; wcamPaint();
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1440 } }, audio: false })
+    .then((st) => {
+      if (!WCAM.open) { st.getTracks().forEach((t) => t.stop()); return; }
+      WCAM.stream = st; const v = $('#camv video'), tr = st.getVideoTracks()[0], cap = tr && tr.getCapabilities ? tr.getCapabilities() : {};
+      Object.assign(WCAM, { torch: !!cap.torch, flash: false, zoom: cap.zoom && cap.zoom.max >= 2 ? cap.zoom : null, zm: 1 });
+      v.onloadedmetadata = () => { v.play().catch(() => {}); if (WCAM.st === 'start') { WCAM.st = 'live'; wcamPaint(); } };  // 영상 크기가 잡힌 뒤에 셔터를 켠다
+      v.srcObject = st;
+    })
+    .catch(() => { if (WCAM.open) { WCAM.st = 'off'; wcamPaint(); } });
+}
+function wcamStop() { if (WCAM.stream) { WCAM.stream.getTracks().forEach((t) => t.stop()); WCAM.stream = null; } }
+function wcamClose(keep) {
+  wcamStop(); WCAM.open = false; WCAM.st = '';
+  if (WCAM.shot && !keep) URL.revokeObjectURL(WCAM.shot.url);
+  WCAM.shot = null; wcamPaint();
+}
+// 화면은 #app 밖에 따로 둔다 — 다시 그릴 때마다 카메라 영상이 끊기지 않게 (지킴이와 같음)
+function wcamPaint() {
+  let el = $('#camv');
+  if (!WCAM.open) { if (el) el.remove(); return; }
+  if (!el) {
+    el = document.createElement('div'); el.id = 'camv'; el.className = 'gcv'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', plain(T('self.shoot')));
+    el.innerHTML = '<div class="gcvh"></div><div class="gcvb"><video playsinline muted autoplay></video><img alt=""><p></p><div class="gcvo"></div><div class="gcvz"></div></div><div class="gcvl"><div class="gcvd"></div><div class="gcvf"></div></div>';
+    document.body.appendChild(el);
+  }
+  const st = WCAM.st;
+  el.dataset.st = st;
+  el.querySelector('.gcvh').innerHTML = `<button class="gcvx" data-act="wcamClose" aria-label="${plain(T('close'))}">${I('close', 24)}</button><b>${T('tile.self')}</b>`;
+  if (st === 'last') el.querySelector('.gcvb img').src = WCAM.shot.url;
+  el.querySelector('.gcvo').innerHTML = '<span></span>'
+    + (WCAM.torch ? `<button class="gcvlt${WCAM.flash ? ' on' : ''}" data-act="wcamFlash" aria-label="${plain(T('cam.flash'))}" aria-pressed="${WCAM.flash}">${I('bolt', 22)}</button>` : '');
+  el.querySelector('.gcvz').innerHTML = WCAM.zoom ? `<span class="gcvzm">${[1, 2].map((z) => `<button class="${WCAM.zm === z ? 'on' : ''}" data-act="wcamZoom" data-v="${z}" aria-pressed="${WCAM.zm === z}">${z}×</button>`).join('')}</span>` : '';
+  el.querySelector('.gcvb p').innerHTML = st === 'start' ? T('cam.start') : st === 'off' ? `${T('cam.off')}<small>${T('cam.offSub')}</small>` : '';
+  el.querySelector('.gcvf').innerHTML = st === 'last' ? `<button class="gcvbt" data-act="wcamRetake">${T('self.again')}</button><button class="gcvbt ok" data-act="wcamUse">${T('cam.use')}</button>`
+    : st === 'off' ? `<button class="gcvbt" data-act="wcamApp">${I('camera', 20)}${T('cam.app')}</button><button class="gcvbt" data-act="wcamTest">${I('image', 20)}${T('self.test')}</button>`
+    : `<span></span><button class="gcvsh" data-act="wcamSnap" aria-label="${plain(T('cam.snap'))}"${st === 'live' ? '' : ' disabled'}></button><span></span>`;
+}
+addEventListener('hashchange', () => { if (WCAM.open) wcamClose(); });  // 폰의 뒤로 가기
+// 자가진단 결과를 옆으로 밀어 넘기기 — 왼쪽으로 밀면 다음 장 (지킴이 사진 크게 보기와 같은 방식). 세로로 미는 것은 화면 스크롤
+let swX = null, swY = null;
+document.addEventListener('pointerdown', (e) => { const on = e.target.closest('[data-swipe]'); swX = on ? e.clientX : null; swY = on ? e.clientY : null; });
+document.addEventListener('pointerup', (e) => {
+  if (swX == null) return; const dx = e.clientX - swX, dy = e.clientY - swY; swX = null;
+  if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+  ACTS.selfStep({ v: dx < 0 ? 1 : -1 });
+});
+// 다른 앱에 다녀오면 카메라가 꺼져 있을 수 있다 — 다시 켠다
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && WCAM.open && WCAM.stream && WCAM.stream.getVideoTracks().every((t) => t.readyState === 'ended')) { wcamStop(); if (WCAM.st === 'live') wcamStart(); }
+});
+// 찍은 것은 차례로 쌓아 옆으로 넘겨 본다 (같은 날 사용자 지시 — 처음엔 다시 찍으면 앞 결과가 사라졌다). 새로 찍으면 맨 뒤에 붙고 그 장을 보인다.
+// 닫기는 홈으로만 — 다시 들어오면 그대로. 이 폰의 메모리에만 있어 앱을 다시 열면 비워진다(기록 없음 — 내 판단)
+function selfStart(x) {
+  const me = { ...x, st: 'wait' };
+  UI.selfs.push(me); UI.selfI = UI.selfs.length - 1; UI.selfDir = 1;
+  R.go('self'); render();
+  setTimeout(() => { Object.assign(me, selfAi(me), { st: 'done' }); render(); }, 1800);
+}
+function selfScreen(s) {
+  const all = UI.selfs, n = all.length;
+  if (!n) return wscr(s, T('tile.self'), '', `${ltitle(T('tile.self'))}
+    <div class="q wcard"><div class="small ink">${T('self.intro')}</div></div>`,
+  `<div class="ft"><button class="btn" data-act="selfShoot">${I('camera', 22)} ${T('self.shoot')}</button><button class="btn ghost sm" data-act="selfTest">${T('self.test')}</button></div>`);
+  const i = Math.min(UI.selfI, n - 1), x = all[i], dir = UI.selfDir;
+  UI.selfDir = 0;  // 넘길 때 한 번만 미끄러지게 (AI가 끝나 다시 그릴 때는 그대로)
+  // 넘기기 — 사진 위 양옆 단추(지킴이 사진 크게 보기와 같은 꼴)와 사진 밑 점, 화면을 옆으로 밀어도 넘어간다(data-swipe)
+  const nav = n > 1 ? `<button class="gpvb prev" data-act="selfStep" data-v="-1"${i ? '' : ' disabled'} aria-label="${plain(T('self.prev'))}">${I('chevron', 22)}</button><button class="gpvb next" data-act="selfStep" data-v="1"${i < n - 1 ? '' : ' disabled'} aria-label="${plain(T('self.next'))}">${I('chevron', 22)}</button>` : '';
+  const ph = `<div class="wsph"><img src="${esc(x.src)}" alt="">${x.st === 'wait' ? `<span class="wsai"><i class="gspin"></i>${T('self.wait')}</span>` : ''}${nav}</div>
+    ${n > 1 ? `<div class="wsdots" aria-label="${plain(T('self.nth', { i: i + 1, m: n }))}">${all.map((_, j) => `<i${j === i ? ' class="on"' : ''}></i>`).join('')}</div>` : ''}`;
+  const e = x.st === 'wait' ? null : SELF_EQ[x.eq];
+  const list = (k, items) => (items.length ? `<section class="q wcard"><div class="wct"><b>${T(k)}</b></div><ul class="wsl">${items.map((t) => `<li>${esc(LX(t))}</li>`).join('')}</ul></section>` : '');
+  return wscr(s, T('tile.self'), '', `${ltitle(T('tile.self'))}<div class="wspg${dir ? (dir > 0 ? ' inr' : ' inl') : ''}" data-swipe>${ph}
+    ${e ? `<div class="wseq"><b>${esc(LX(e.n))}</b>${x.own ? '' : tg(T('self.aiTag'))}<button class="fbtn line fsub" data-act="selfOther">${T('self.other')}</button></div>
+    ${list('self.look', e.look)}${list('self.fix', e.fix)}
+    <section class="q wcard"><div class="wct"><b>${T('self.seen')}</b></div>${x.find ? `<p class="wsp">${esc(LX(x.find))}</p>` : `<p class="wsp wsnone">${T('self.none')}</p>`}</section>` : ''}</div>`,
+  `<div class="ft"><div class="row"><button class="btn ghost" data-act="selfClose">${T('close')}</button><button class="btn" data-act="selfShoot">${I('camera', 20)} ${T('self.new')}</button></div></div>`)
+  + (UI.sheet === 'self' ? `<div class="ov" data-act="closeSheet"></div><div class="sheet"><div class="grip"></div><div class="mid">${T('self.pickT')}</div>
+    <section class="kpsec"><div class="kpscr"><div class="kplist">${SELF_EQ.map((q, i) => `<button class="kprow${x.eq === i ? ' on' : ''}" data-act="selfPick" data-v="${i}"><span>${esc(LX(q.n))}</span></button>`).join('')}</div></div></section>
+    <button class="btn ghost" data-act="closeSheet">${T('close')}</button></div>` : '');
+}
+
 function render() {
   const s = DB.s, p = R.path();
   let html;
@@ -509,11 +803,15 @@ function render() {
   else if (p[0] === 'voice') html = voiceForm(s);
   else if (p[0] === 'settings') html = settings(s);
   else if (p[0] === 'me') html = me(s);
+  else if (p[0] === 'self') html = selfScreen(s);
+  else if (p[0] === 'sensors') html = sensorsScreen(s);
+  else if (p[0] === 'sensor' && p[1]) html = sensorScreen(s, p[1]);
   else {
     // 다른 사람이 조치한 경보를 처음 보면 한 번 알려 준다 (W2-바)
     const other = visibleAlarms(s).find((a) => a.status === 'watch' && SIM.lastAck(a).by !== ME && !seen(a.id + a.acks.length));
     html = other ? othersAcked(s, other) : home(s);
   }
+  wtbLive(ACC.factory === WTB_FAC && (html.includes('whome') || html.includes('wsens')));  // 진짜 센서 상태 연결은 홈(센서 감시 카드) · 센서 목록 · 센서 하나에서만
   // 조치 안 된 경보는 어느 화면에서든 위에 얹는다 — 창 또는 아래 막대 (시안 B)
   UI.aShownNext = false;
   html += alarmLayer(s, todo);
@@ -537,6 +835,43 @@ const ACTS = {
   scan() { UI.sheet = 'scan'; render(); },
   pickInvite({ code }) { UI.sheet = null; R.go('join/' + code); },
   closeSheet() { UI.sheet = null; render(); },
+  // 자가진단 (2026-11-11) — 찍기 · 시험 사진(차례로 돌림) · 장비 바꾸기 · 다시 찍기(처음 화면) · 닫기(홈)
+  senOpen({ k, from }) { UI.senFrom = from || ''; R.go('sensor/' + k); },  // 센서 하나 — 뒤로 가면 들어온 곳(홈 · 센서 목록)
+  senMore({ k }) { UI.senMore[k] = !UI.senMore[k]; render(); },  // 경보 기록 펼치기 · 접기
+  selfShoot() { wcamOpen(); },
+  // 앱 안 카메라 — 셔터는 보이는 3:4 칸 그대로 가운데를 잘라 남긴다(지킴이와 같음)
+  wcamSnap() {
+    const v = $('#camv video');
+    if (WCAM.st !== 'live' || !v || !v.videoWidth) return;
+    WCAM.st = 'snap';
+    const b = $('#camv .gcvb');
+    b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash');
+    const r = b.clientWidth / b.clientHeight, vw = v.videoWidth, vh = v.videoHeight, sw = Math.min(vw, vh * r), sh = sw / r;
+    camShrink(v, sw, sh, (vw - sw) / 2, (vh - sh) / 2).then((p) => { if (!WCAM.open) { URL.revokeObjectURL(p.url); return; } WCAM.shot = p; WCAM.st = 'last'; wcamPaint(); });
+    wcamPaint();
+  },
+  wcamRetake() { URL.revokeObjectURL(WCAM.shot.url); WCAM.shot = null; if (WCAM.stream) { WCAM.st = 'live'; wcamPaint(); } else wcamStart(); },
+  wcamUse() { const p = WCAM.shot; wcamClose(true); selfStart({ src: p.url, key: `cam:${p.w}x${p.h}:${p.b.size}` }); },
+  wcamClose() { wcamClose(); },
+  wcamApp() { wcamClose(); selfIn.click(); },
+  wcamTest() { wcamClose(); ACTS.selfTest(); },
+  wcamFlash() {
+    const tr = WCAM.stream && WCAM.stream.getVideoTracks()[0]; if (!tr) return;
+    WCAM.flash = !WCAM.flash;
+    tr.applyConstraints({ advanced: [{ torch: WCAM.flash }] }).catch(() => { WCAM.flash = false; WCAM.torch = false; wcamPaint(); });
+    wcamPaint();
+  },
+  wcamZoom({ v }) {
+    const tr = WCAM.stream && WCAM.stream.getVideoTracks()[0], z = WCAM.zoom; if (!tr || !z) return;
+    WCAM.zm = +v;
+    tr.applyConstraints({ advanced: [{ zoom: Math.min(z.max, Math.max(z.min, WCAM.zm)) }] }).catch(() => { WCAM.zoom = null; WCAM.zm = 1; wcamPaint(); });
+    wcamPaint();
+  },
+  selfTest() { UI.selfN = ((UI.selfN || 0) % SELF_PHOTOS.length) + 1; selfStart({ src: SELF_PHOTOS[UI.selfN - 1].src, test: UI.selfN }); },
+  selfOther() { UI.sheet = 'self'; render(); },
+  selfPick({ v }) { UI.sheet = null; Object.assign(UI.selfs[UI.selfI], { eq: +v, own: true }); render(); },
+  selfStep({ v }) { const j = UI.selfI + +v; if (j < 0 || j >= UI.selfs.length) return; UI.selfI = j; UI.selfDir = +v; render(); },
+  selfClose() { R.go(''); },
   closeDlg() { UI.dlg = null; render(); },
   async accept({ code }) {
     const r = await fetch('api/invite/accept', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
