@@ -13,7 +13,7 @@
 
 ## 앱 주소와 배포
 
-- 설문용 주소: `https://industrial-safety-guard-survey.onrender.com` — 개발용과 따로 둔 Render 정적 사이트. `survey` 가지만 따라간다. 자세한 것은 `시제품/README.md` "지킴이 설문용 시험판".
+- 설문용 주소: `https://industrial-safety-guard-survey.onrender.com` — 개발용과 따로 둔 Render 정적 사이트. `survey` 가지만 따라간다. 자세한 것은 `prototype/README.md` "지킴이 설문용 시험판".
 - 서버가 없어 데이터는 **각자 폰에만** 남는다 — 지킴이가 넣은 점검을 운영자 화면에서 모아 볼 수 없다. 평가는 이 설문으로만 받는다.
 - 네이버 지도: NCP Maps 애플리케이션에 설문 주소를 등록했다(2026-10-07, 실제 주소에서 지도가 뜨는 것 확인).
 - 홈 화면에 추가하면 "안전지킴이"와 파란 방패 아이콘. 크롬 "설치" 가능 확인.
